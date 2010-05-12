@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.cipango</groupId>
     <artifactId>cipango-project</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0.0M1</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
@@ -34,7 +34,7 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>jboss-sar-maven-plugin</artifactId>
-        <version>1.0-SNAPSHOT</version>
+        <version>1.0.0M1</version>
         <extensions>true</extensions>
       </plugin>
     </plugins>
