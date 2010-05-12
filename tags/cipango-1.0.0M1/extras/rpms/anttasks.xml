@@ -22,7 +22,7 @@
         </fileset>
       </copy>
 
-      <replace dir="${project.build.directory}/cipango" token="1.0-SNAPSHOT" value="${project.version}">
+      <replace dir="${project.build.directory}/cipango" token="1.0.0M1" value="${project.version}">
         <include name="**/pom.xml"/>
       </replace>
 
