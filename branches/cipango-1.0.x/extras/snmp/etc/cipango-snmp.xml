@@ -37,7 +37,7 @@
     </Arg>
   </Call>
   
-  <Call class="org.cipango.log.EventLog" name="setLog">
+  <Call class="org.cipango.log.event.Events" name="setDispatcher">
     <Arg><New class="org.cipango.log.JmxEventLogger" id="JmxEventLogger"/></Arg>
   </Call>
 
