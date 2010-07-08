@@ -95,8 +95,8 @@ public class ResultCode
 		else
 		{
 			AVPList expRc = new AVPList();
-			expRc.add(Base.EXPERIMENTAL_RESULT_CODE, _code);
 			expRc.add(Base.VENDOR_ID, _vendorId);
+			expRc.add(Base.EXPERIMENTAL_RESULT_CODE, _code);
 			return new AVP<AVPList>(Base.EXPERIMENTAL_RESULT, expRc);
 		}
 	}
