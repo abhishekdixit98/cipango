@@ -522,17 +522,12 @@ public class SipProxy implements Proxy, ServerTransactionListener, Serializable
         }
     }
 	
-    /**
-     * 
-     * @return <code>true</code> if there is remains active branches.
-     */
-	private boolean tryFinal()
+	private void tryFinal()
     {
+	    assert (_actives == 0);
+	    
 	    if (Log.isDebugEnabled()) 
 	    	Log.debug("tryFinal, branches: {}, untried: {}", _branches, _targets);
-
-	    if (_actives > 0)
-	    	return true;
         
     	if (_best == null)
     	{
@@ -550,10 +545,9 @@ public class SipProxy implements Proxy, ServerTransactionListener, Serializable
         {
             if (Log.isDebugEnabled()) 
             	Log.debug("new branch(es) created in callback {}", _branches, null);
-            return true;
+            return;
         }
 		forward(_best);
-		return false;
 	}
 	
     private void invokeServlet(SipResponse response)
@@ -977,14 +971,19 @@ public class SipProxy implements Proxy, ServerTransactionListener, Serializable
 	            {
 	            	if (LazyList.size(_targets) > 0)
 	            		startProxy();
-	                if (tryFinal())
-	                {
-	                	response.setBranchResponse(true);
-	                	invokeServlet(response);
-	                }
+	            	
+	            	if (_actives > 0)
+	            	{
+	            		response.setBranchResponse(true);
+	            		invokeServlet(response);
+	            	}
+	            	else
+	            	{
+	            		tryFinal();
+	            	}
 	            }
-			}
-		}
+	        }
+	    }
     }
 	
 	class BranchIterator implements Iterator<Branch>
