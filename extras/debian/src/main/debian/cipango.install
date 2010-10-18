@@ -1,3 +1,0 @@
-etc/*                   etc/jetty6
-lib/*										usr/share/jetty6/lib
-sipapps/								/var/lib/jetty6
