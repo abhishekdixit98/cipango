@@ -1,1 +1,0 @@
-update src/main/debian/changelog (cipango-version) before building for a new release.
