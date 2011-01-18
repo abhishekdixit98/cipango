@@ -89,7 +89,7 @@ public class ConsoleFilter implements Filter
 {
 	
 	public static final ObjectName 
-		APPLICATION_PAGES = ObjectNameFactory.create("org.cipango.console:page=*"),
+		APPLICATION_PAGES = ObjectNameFactory.create("org.cipango.console:*"),
 		CONNECTOR_MANAGER = ObjectNameFactory.create("org.cipango.server:type=connectormanager,id=0"),
 		CONTEXT_DEPLOYER = ObjectNameFactory.create("org.cipango.deployer:type=contextdeployer,id=0"),
 		DAR = ObjectNameFactory.create("org.cipango.dar:type=defaultapplicationrouter,id=0"),
@@ -114,12 +114,13 @@ public class ConsoleFilter implements Filter
 	private StatisticGraph _statisticGraph;
 	private Deployer _deployer;
 	private ServletContext _servletContext;
+	private boolean _jmxAvailable;
 	
 	public void init(FilterConfig config) throws ServletException
 	{
 		initConnection();
 		_servletContext = config.getServletContext();
-		if (isJmxEnabled())
+		if (_jmxAvailable)
 		{
 			try
 			{
@@ -131,7 +132,6 @@ public class ConsoleFilter implements Filter
 				_logger.warn("Failed to start statistic graph", e);
 			}
 			_deployer = new Deployer(_mbsc);
-			
 		}
 	}
 	
@@ -169,11 +169,7 @@ public class ConsoleFilter implements Filter
 			throw new IllegalStateException("Unable to get MBeanServer", t);
 		}
 
-	}
-	
-	public boolean isJmxEnabled()
-	{
-		return _mbsc != null;
+		_jmxAvailable = _mbsc != null;
 	}
 
 	public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse,
@@ -188,7 +184,7 @@ public class ConsoleFilter implements Filter
 		if (command.indexOf(';') != -1)
 			command = command.substring(0, command.indexOf(';') - 1);
 				
-		if (!isJmxEnabled())
+		if (!_jmxAvailable)
 		{
 			response.sendError(503 ,"JMX is not enabled, unable to use cipango console. Please start Cipango with:\n" +
 			"\tjava -jar start.jar --ini=start-cipango.ini --pre=etc/cipango-jmx.xml");
@@ -327,10 +323,6 @@ public class ConsoleFilter implements Filter
 			else if (doResource(command, response))
 			{
 				forward = false;
-			}
-			else if (currentPage != null && currentPage.isDynamic())
-			{
-				request.setAttribute(Attributes.CONTENT, new OamPrinter(_mbsc, request, currentPage.getObjectName()));
 			}
 			else
 			{

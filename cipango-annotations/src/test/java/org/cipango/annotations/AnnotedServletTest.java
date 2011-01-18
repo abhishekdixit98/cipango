@@ -20,9 +20,11 @@ import java.util.List;
 import junit.framework.TestCase;
 
 import org.cipango.annotations.resources.AnnotedServlet;
+import org.cipango.plus.webapp.Configuration;
 import org.cipango.servlet.SipServletHandler;
 import org.cipango.servlet.SipServletHolder;
 import org.cipango.sipapp.SipAppContext;
+import org.cipango.sipapp.SipXmlProcessor;
 import org.eclipse.jetty.annotations.AnnotationParser;
 import org.eclipse.jetty.plus.annotation.Injection;
 import org.eclipse.jetty.plus.annotation.InjectionCollection;
@@ -33,14 +35,21 @@ import org.eclipse.jetty.webapp.WebAppContext;
 
 public class AnnotedServletTest extends TestCase
 {
-	private SipAppContext _context;
+	private SipAppContext _sac;
+	private SipXmlProcessor _processor;
 	
 	@Override
 	protected void setUp() throws Exception
 	{
 		super.setUp();
-		_context = new SipAppContext();
-		_context.setSecurityHandler(new ConstraintSecurityHandler());
+		_sac = new SipAppContext();
+		_sac.setSecurityHandler(new ConstraintSecurityHandler());
+		_sac.setServletHandler(new org.cipango.plus.servlet.SipServletHandler());
+		_processor = new SipXmlProcessor(_sac);
+		_sac.setAttribute(SipXmlProcessor.SIP_PROCESSOR, _processor);
+		
+		Configuration plusConfig = new Configuration();
+		plusConfig.preConfigure(_sac);
 	}
 	
 	public void testAnnotedServlet() throws Exception
@@ -65,29 +74,29 @@ public class AnnotedServletTest extends TestCase
     		{
     		}
         };
-        annotConfiguration.preConfigure(_context);
-        annotConfiguration.configure(_context);
-        _context.getSipMetaData().resolve(_context);
+        annotConfiguration.preConfigure(_sac);
+        annotConfiguration.configure(_sac);
         
-        assertEquals("org.cipango.kaleo", _context.getName());
-        assertEquals("Kaleo", _context.getDisplayName());
         
-        SipServletHandler handler = (SipServletHandler) _context.getServletHandler();
+        assertEquals("org.cipango.kaleo", _sac.getName());
+        assertEquals("Kaleo", _sac.getDisplayName());
+        
+        SipServletHandler handler = (SipServletHandler) _sac.getServletHandler();
         SipServletHolder[] holders = handler.getSipServlets();
         assertEquals(1, holders.length);
         assertEquals("AnnotedServlet", holders[0].getName());
-        assertEquals(-1, holders[0].getInitOrder());
+        assertFalse(holders[0].isInitOnStartup());
         
         assertEquals(holders[0], handler.getMainServlet());
         
-        InjectionCollection injectionCollection = (InjectionCollection) _context.getAttribute(InjectionCollection.INJECTION_COLLECTION);
+        InjectionCollection injectionCollection = (InjectionCollection) _sac.getAttribute(InjectionCollection.INJECTION_COLLECTION);
         List<Injection> injections = injectionCollection.getInjections(AnnotedServlet.class.getName());
-		// Value is set to 9 due to jetty issue at https://bugs.eclipse.org/bugs/show_bug.cgi?id=332796 assertEquals(3, injections.size());
+		assertEquals(3, injections.size());
 		Iterator<Injection> it  = injections.iterator();
 		while (it.hasNext())
 		{
 			Injection injection = it.next();
-			String name = injection.getTarget().getName();
+			String name = injection.getFieldName();
 			if (name.equals("sipFactory"))
 				assertEquals("sip/org.cipango.kaleo/SipFactory", injection.getJndiName());
 			else if (name.equals("timerService"))
@@ -98,7 +107,8 @@ public class AnnotedServletTest extends TestCase
 				fail("Unexpected name: " + name);
 		}
         
-        EventListener[] listeners = _context.getEventListeners();
+        _processor.initListeners();
+        EventListener[] listeners = _processor.getListeners();
         assertEquals(1, listeners.length);
         assertEquals(AnnotedServlet.class, listeners[0].getClass());
 	}

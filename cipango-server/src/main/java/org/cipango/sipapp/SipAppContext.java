@@ -69,6 +69,8 @@ import org.cipango.servlet.SipServletHandler;
 import org.cipango.servlet.SipServletHolder;
 import org.cipango.sip.NameAddr;
 import org.cipango.sip.ParameterableImpl;
+import org.cipango.sip.SipFields;
+import org.cipango.sip.SipHeaders;
 import org.cipango.sip.SipMethods;
 import org.cipango.sip.SipParams;
 import org.cipango.sip.SipURIImpl;
@@ -120,13 +122,13 @@ public class SipAppContext extends WebAppContext implements SipHandler
 
     private String _name;
     
-    private TimerListener[] _timerListeners = new TimerListener[0];
-    private SipApplicationSessionListener[] _appSessionListeners = new SipApplicationSessionListener[0];
-    private SipErrorListener[] _errorListeners = new SipErrorListener[0];
-    private SipApplicationSessionAttributeListener[] _appSessionAttributeListeners = new SipApplicationSessionAttributeListener[0];
-    private SipSessionListener[] _sessionListeners = new SipSessionListener[0];
-    private SipSessionAttributeListener[] _sessionAttributeListeners = new SipSessionAttributeListener[0];
-    private SipServletListener[] _servletListeners = new SipServletListener[0];
+    private TimerListener[] _timerListeners;
+    private SipApplicationSessionListener[] _appSessionListeners;
+    private SipErrorListener[] _errorListeners;
+    private SipApplicationSessionAttributeListener[] _appSessionAttributeListeners;
+    private SipSessionListener[] _sessionListeners;
+    private SipSessionAttributeListener[] _sessionAttributeListeners;
+    private SipServletListener[] _servletListeners;
 
     private int _sessionTimeout = -1;
     private int _proxyTimeout = -1;
@@ -135,7 +137,7 @@ public class SipAppContext extends WebAppContext implements SipHandler
     private Object _statsLock = new Object();
        
     private String _defaultsSipDescriptor=SIP_DEFAULTS_XML;
-    private final List<String> _overrideSipDescriptors = new ArrayList<String>();
+    private String _overrideSipDescriptor=null;
     
     private SipFactory _sipFactory = new Factory();
     private TimerService _timerService = new Timer();
@@ -143,9 +145,7 @@ public class SipAppContext extends WebAppContext implements SipHandler
     private Method _sipApplicationKeyMethod;
     
     private int _specVersion;
-    
-    private SipMetaData _sipMetaData = new SipMetaData();
-    
+
 	public SipAppContext() 
 	{
 		super();
@@ -224,9 +224,9 @@ public class SipAppContext extends WebAppContext implements SipHandler
 			{
 				for (SipServletHolder holder : holders)
 				{
-					if (holder.getServletInstance() != null && holder.getServletInstance() instanceof SipServlet)
+					if (holder.servlet() != null && holder.servlet() instanceof SipServlet)
 					{
-						fireServletInitialized((SipServlet) holder.getServletInstance());
+						fireServletInitialized((SipServlet) holder.servlet());
 					}
 				}
 			}
@@ -295,7 +295,6 @@ public class SipAppContext extends WebAppContext implements SipHandler
         return _proxyTimeout;
     }
     
-    @Override
     public void setEventListeners(EventListener[] eventListeners)
     {
         super.setEventListeners(eventListeners);
@@ -397,32 +396,13 @@ public class SipAppContext extends WebAppContext implements SipHandler
 		setAttribute(SipServlet.SUPPORTED, Collections.unmodifiableList(Arrays.asList(EXTENSIONS)));
 		setAttribute(SipServlet.SUPPORTED_RFCs, Collections.unmodifiableList(Arrays.asList(SUPPORTED_RFC)));
 		
-		
 		super.startContext();
-		      
+              
 		if (_name == null)
 			_name = getDefaultName();		
 		
 		if (_servletHandler != null && _servletHandler.isStarted())
-    	{
-    	    for (Decorator decorator : getDecorators())
-    	    {
-    	        if(getSipServletHandler().getSipServlets()!=null)
-    	            for (SipServletHolder holder:getSipServletHandler().getSipServlets())
-    	                decorator.decorateServletHolder(holder);
-    	    } 
-
             ((SipServletHandler) _servletHandler).initializeSip();
-    	}
-    }
-    
-    @Override
-    public void configure() throws Exception
-    {
-    	// We must execute code in this order: configure() resolve Metadata and super.super.startContext()
-    	super.configure();
-		//resolve the metadata
-        _sipMetaData.resolve(this);
     }
     
     public String getDefaultName()
@@ -455,11 +435,6 @@ public class SipAppContext extends WebAppContext implements SipHandler
 	{
 		if (hasSipServlets() && isAvailable())
 			getSipServer().applicationUndeployed(this);
-		
-		if (_sipMetaData != null)
-			_sipMetaData.clear();
-		_sipMetaData =new SipMetaData();
-		
 		super.doStop();
 	}
 	
@@ -500,58 +475,20 @@ public class SipAppContext extends WebAppContext implements SipHandler
 		return _defaultsSipDescriptor;
 	}
 	 
-    /**
+	/**
      * The override descriptor is a sip.xml format file that is applied to the context after the standard WEB-INF/sip.xml
-     * @param overrideDescriptor The overrideDescritpor to set.
-     * @deprecated use {@link #setOverrideDescriptors(List)}
      */
-    public void setOverrideSipDescriptor(String overrideDescriptor)
+    public void setOverrideSipDescriptor(String overrideSipDescriptor)
     {
-        _overrideSipDescriptors.clear();
-        _overrideSipDescriptors.add(overrideDescriptor);
-    }
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * The override descriptor is a sip.xml format file that is applied to the context after the standard WEB-INF/sip.xml
-     * @param overrideDescriptor The overrideDescriptors (file or URL) to set.
-     */
-    public void setOverrideSipDescriptors(List<String> overrideDescriptors)
-    {
-    	_overrideSipDescriptors.clear();
-    	_overrideSipDescriptors.addAll(overrideDescriptors);
-    }
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * The override descriptor is a sip.xml format file that is applied to the context after the standard WEB-INF/sip.xml
-     * @param overrideDescriptor The overrideDescriptor (file or URL) to add.
-     */
-    public void addOverrideSipDescriptor(String overrideDescriptor)
-    {
-    	_overrideSipDescriptors.add(overrideDescriptor);
+        _overrideSipDescriptor = overrideSipDescriptor;
     }
     
     /**
      * The override descriptor is a sip.xml format file that is applied to the context after the standard WEB-INF/sip.xml
-     * @return Returns the Override Descriptor.
-     * @deprecated use {@link #getOverrideDescriptors()}
      */
     public String getOverrideSipDescriptor()
     {
-        if (_overrideSipDescriptors.size()!=1)
-            return null;
-        return _overrideSipDescriptors.get(0);
-    }
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * The override descriptor is a sip.xml format file that is applied to the context after the standard WEB-INF/sip.xml
-     * @return Returns the Override Descriptor list
-     */
-    public List<String> getOverrideSipDescriptors()
-    {
-        return Collections.unmodifiableList(_overrideSipDescriptors);
+        return _overrideSipDescriptor;
     }
     
 	public void setSessionTimeout(int minutes) 
@@ -698,13 +635,7 @@ public class SipAppContext extends WebAppContext implements SipHandler
 	{
 		return (Server) getServer();
 	}
-	
-	public SipMetaData getSipMetaData()
-	{
-		return _sipMetaData;
-	}
-
-	    	
+    	
     public class Timer implements TimerService
     {
         public ServletTimer createTimer(SipApplicationSession session, long delay, boolean isPersistent, Serializable info) 
@@ -907,9 +838,8 @@ public class SipAppContext extends WebAppContext implements SipHandler
 		}
     }
     
-    public class Context extends WebAppContext.Context 
+    class Context extends WebAppContext.Context 
     {
-    	@Override
 		public RequestDispatcher getNamedDispatcher(String name)
         {
             if (_servletHandler != null)
@@ -921,12 +851,10 @@ public class SipAppContext extends WebAppContext implements SipHandler
             return super.getNamedDispatcher(name);
         }
         
-    	@Override
         public String getServerInfo()
         {
             return "cipango-2.0";
         }
-        
     }
     
     abstract class CLFireEvent<L extends EventListener, E>
@@ -972,5 +900,4 @@ public class SipAppContext extends WebAppContext implements SipHandler
 	    	}
     	}
     }
-    
 }
