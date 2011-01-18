@@ -13,25 +13,43 @@
 // ========================================================================
 package org.cipango.annotations;
 
+import java.util.Iterator;
 import java.util.List;
 
 import org.cipango.sipapp.SipAppContext;
-import org.eclipse.jetty.annotations.AbstractDiscoverableAnnotationHandler;
+import org.cipango.sipapp.SipXmlProcessor;
+import org.eclipse.jetty.annotations.AnnotationParser.AnnotationHandler;
 import org.eclipse.jetty.annotations.AnnotationParser.Value;
 import org.eclipse.jetty.util.log.Log;
 
-public class SipListenerAnnotationHandler extends AbstractDiscoverableAnnotationHandler
+public class SipListenerAnnotationHandler implements AnnotationHandler
 {
+	private SipAppContext _sac;
+	private SipXmlProcessor _processor;
 	
-	public SipListenerAnnotationHandler(SipAppContext context)
+	public SipListenerAnnotationHandler(SipAppContext context, SipXmlProcessor processor)
 	{
-		super(context);
+		_processor = processor;
+		_sac = context;
 	}
 	
 	public void handleClass(String className, int version, int access, String signature, String superName,
 			String[] interfaces, String annotation, List<Value> values)
 	{
-		addAnnotation(new SipListenerAnnotation((SipAppContext) _context, className));
+		
+		Iterator<Value> it = values.iterator();
+		while (it.hasNext())
+		{
+			Value value = it.next();
+			if ("applicationName".equals(value.getName()))
+			{
+				if (_sac.getName() != null && !_sac.getName().equals(value.getValue()))
+	    			throw new IllegalStateException("App-name in sip.xml: " + _sac.getName() 
+	    					+ " does not match with SipApplication annotation: " + value.getValue());
+				_sac.setName((String) value.getValue());
+			}
+		}
+		_processor.addListenerClass(className);
 	}
 
 	public void handleMethod(String className, String methodName, int access, String desc, String signature,
