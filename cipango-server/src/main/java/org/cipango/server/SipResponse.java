@@ -30,6 +30,8 @@ import javax.servlet.sip.ProxyBranch;
 import javax.servlet.sip.Rel100Exception;
 import javax.servlet.sip.SipServletRequest;
 import javax.servlet.sip.SipServletResponse;
+import javax.servlet.sip.SipURI;
+import javax.servlet.sip.URI;
 
 import org.cipango.server.session.SessionManager;
 import org.cipango.server.session.SessionManager.SessionScope;
@@ -82,7 +84,11 @@ public class SipResponse extends SipMessage implements SipServletResponse
 			_fields.copy(reqFields, SipHeaders.RECORD_ROUTE_BUFFER);
         
 		if (needsContact() && _session != null)
-			setContact(_session.getContact());
+		{
+			URI uri = request.getConnection().getConnector().getSipUri().clone();
+			uri.setParameter(ID.APP_SESSION_ID_PARAMETER, appSession().getAppId());
+			setContact(new NameAddr(uri));
+		}
         // TODO Server
 	}
 	
@@ -93,6 +99,9 @@ public class SipResponse extends SipMessage implements SipServletResponse
     {
 		if (!SipMethods.INVITE.equalsIgnoreCase(getMethod())) 
 			throw new IllegalStateException("Not INVITE method");
+		
+		if (isCommitted())
+			throw new IllegalStateException("Already committed");
         
         if (_status > 100 && _status < 200)
         {   // For Sip servlet 1.0 compliance
