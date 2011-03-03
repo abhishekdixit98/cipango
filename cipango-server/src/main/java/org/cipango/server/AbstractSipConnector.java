@@ -15,6 +15,7 @@
 package org.cipango.server;
 
 import java.io.IOException;
+import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.util.Arrays;
 
@@ -171,6 +172,14 @@ public abstract class AbstractSipConnector extends AbstractLifeCycle implements 
     public String getTransport() 
     {
         return SipConnectors.getName(getTransportOrdinal());
+    }
+    
+    public int getIpFamily()
+    {
+    	if (getAddr() instanceof Inet4Address)
+    		return SipConnectors.IPv4;
+    	else
+    		return SipConnectors.IPv6;
     }
     
     protected void updateURI()
