@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <artifactId>maven-archetype-bundles</artifactId>
+    <groupId>org.apache.maven.archetypes</groupId>
+    <version>4</version>
+  </parent>
+  <groupId>org.cipango</groupId>
+  <artifactId>maven-archetype-sipapp</artifactId>
+  <version>1.0</version>
+  <packaging>maven-archetype</packaging>
+  <name>Archetype : maven-archetype-sipapp</name>
+  <description>
+  Sample Sip Servlets Application Maven Archetype. 
+  To create a new SIP Servlet application with this archetype, use the command: 
+  mvn archetype:generate -DarchetypeCatalog=http://repository.cipango.org  -DarchetypeArtifactId=maven-archetype-sipapp -DarchetypeGroupId=org.cipango
+  </description>
+  
+  <distributionManagement>
+    <repository>
+      <id>ssh-repository</id>
+      <url>scpexe://repository.cipango.org/var/www/repository</url>
+    </repository>
+  </distributionManagement>
+  
+  <build>
+    <extensions>
+      <extension>
+        <groupId>org.apache.maven.wagon</groupId>
+        <artifactId>wagon-webdav</artifactId>
+        <version>1.0-beta-2</version>
+      </extension>
+      <extension>
+        <groupId>org.apache.maven.wagon</groupId>
+         <artifactId>wagon-ssh-external</artifactId>
+         <version>1.0-beta-6</version>
+      </extension>
+    </extensions>
+  </build>
+</project>
