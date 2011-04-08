@@ -16,7 +16,6 @@ package org.cipango.server;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -331,11 +330,6 @@ public class Server extends org.eclipse.jetty.server.Server implements SipHandle
 		return _statsStartedAt != -1;
 	}
 	
-	public long getStatsStartedAt()
-	{
-		return _statsStartedAt;
-	}
-	
 	public void allStatsReset()
 	{
 		statsReset();
@@ -384,7 +378,7 @@ public class Server extends org.eclipse.jetty.server.Server implements SipHandle
     public void dump(Appendable out,String indent) throws IOException
     {
         super.dump(out, indent);
-        dump(out,indent,TypeUtil.asList(_connectorManager.getConnectors()), Arrays.asList(_applicationRouter));    
+        dump(out,indent,TypeUtil.asList(_connectorManager.getConnectors()));    
     }
 	
 	@Override

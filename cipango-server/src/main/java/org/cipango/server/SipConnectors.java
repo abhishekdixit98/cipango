@@ -31,6 +31,9 @@ public abstract class SipConnectors
 	public static final int TCP_ORDINAL = 2;
 	public static final int TLS_ORDINAL = 3;
 	
+	public static final int IPv4 = 1;
+	public static final int IPv6 = 2;
+	
 	public static String getName(int ordinal) 
 	{
 		switch (ordinal) 

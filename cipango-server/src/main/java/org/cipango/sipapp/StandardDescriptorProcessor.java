@@ -81,6 +81,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
      */
     public void start(WebAppContext context, Descriptor descriptor)
     { 
+    	if (descriptor instanceof SipDescriptor)
+    		((SipAppContext) context).setSpecVersion(((SipDescriptor) descriptor).getVersion());
     }
     
     
@@ -297,7 +299,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
     
 	public void visitAppName(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
-    	((SipAppContext) context).getSipMetaData().setAppName(node.toString(false, true)); 
+    	((SipAppContext) context).setName(node.toString(false, true)); 
     }
     
 	public void visitServletSelection(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
