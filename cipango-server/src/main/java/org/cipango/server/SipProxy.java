@@ -496,10 +496,7 @@ public class SipProxy implements Proxy, ServerTransactionListener, Serializable
 	{
 		if (_tx.isCompleted())
 			throw new IllegalStateException("transaction completed");
-		
-		if (!uri.isSipURI() && getOriginalRequest().getHeader(SipHeaders.ROUTE) == null)
-			throw new IllegalArgumentException("Cannot route " + uri);
-		
+				
 		Branch branch = addTarget(uri);
 		if (branch != null)
 		{
