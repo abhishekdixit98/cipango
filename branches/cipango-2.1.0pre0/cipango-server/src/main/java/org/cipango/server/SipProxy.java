@@ -271,8 +271,11 @@ public class SipProxy implements Proxy, ServerTransactionListener, Serializable
 	 */
 	public void proxyTo(List<? extends URI> targets) 
     {
+		
 		for (URI uri : targets) 
 		{
+			if (!uri.isSipURI() && getOriginalRequest().getHeader(SipHeaders.ROUTE) == null)
+	 	 	 	throw new IllegalArgumentException("Cannot route " + uri);
 			addBranch(uri);
 		}
 		startProxy();
@@ -283,6 +286,8 @@ public class SipProxy implements Proxy, ServerTransactionListener, Serializable
 	 */
 	public void proxyTo(URI uri) 
     {
+		if (!uri.isSipURI() && getOriginalRequest().getHeader(SipHeaders.ROUTE) == null)
+ 	 	 	throw new IllegalArgumentException("Cannot route " + uri);
 		addBranch(uri);
 		startProxy();
 	}
@@ -496,10 +501,7 @@ public class SipProxy implements Proxy, ServerTransactionListener, Serializable
 	{
 		if (_tx.isCompleted())
 			throw new IllegalStateException("transaction completed");
-		
-		if (!uri.isSipURI() && getOriginalRequest().getHeader(SipHeaders.ROUTE) == null)
-			throw new IllegalArgumentException("Cannot route " + uri);
-		
+				
 		Branch branch = addTarget(uri);
 		if (branch != null)
 		{
