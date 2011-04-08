@@ -44,7 +44,6 @@ public class SipMetaData
     protected final List<DescriptorProcessor> _descriptorProcessors = new ArrayList<DescriptorProcessor>();
  
     private String _mainServletName;
-    private String _appName;
     
     private final List<String> _listeners = new ArrayList<String>();
    
@@ -107,10 +106,9 @@ public class SipMetaData
      * Resolve all servlet/filter/listener metadata from all sources: descriptors and annotations.
      * 
      */
-    public void resolve (WebAppContext appContext)
+    public void resolve (WebAppContext context)
     throws Exception
     {
-    	SipAppContext context = (SipAppContext) appContext;
         //Ensure origins is fresh
         
         for (DescriptorProcessor p:_descriptorProcessors)
@@ -127,29 +125,11 @@ public class SipMetaData
         if (_mainServletName != null)
         	((SipAppContext) context).getSipServletHandler().setMainServletName(_mainServletName);
         
-        int version = SipAppContext.VERSION_11;
-        if (_appName != null || getSipXml() == null)
-        	version = SipAppContext.VERSION_11;
-        else
-        	version = getSipXml().getVersion();
-        
-        context.setSpecVersion(version);
-        
-        if (context.getName() == null)
-        {
-	        if (_appName == null)
-	        	context.setName(context.getDefaultName());
-	        else
-	        	context.setName(_appName);
-        }
-        
-        initListeners(context);
+        initListeners((SipAppContext) context);
     }
     
     protected SipServletHolder getServlet(SipAppContext context, String className)
 	{
-    	if (context.getSipServletHandler().getSipServlets() == null)
-    		return null;
 		for (SipServletHolder holder : context.getSipServletHandler().getSipServlets())
 		{
 			if (className.equals(holder.getClassName()))
@@ -268,16 +248,6 @@ public class SipMetaData
 	public List<DescriptorProcessor> getDescriptorProcessors()
 	{
 		return _descriptorProcessors;
-	}
-
-	public String getAppName()
-	{
-		return _appName;
-	}
-
-	public void setAppName(String appName)
-	{
-		_appName = appName;
 	}
 	
 }

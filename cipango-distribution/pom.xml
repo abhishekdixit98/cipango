@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.cipango</groupId>
     <artifactId>cipango-project</artifactId>
-    <version>2.1-SNAPSHOT</version>
+    <version>2.1.0-r644</version>
   </parent>
   <artifactId>cipango-distribution</artifactId>
   <name>Cipango :: Distribution Assemblies</name>
@@ -85,6 +85,11 @@
                   <overWrite>false</overWrite>
                   <type>tar.gz</type>
                   <outputDirectory>target/jetty</outputDirectory>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.cipango</groupId>
+                  <artifactId>cipango-annotations</artifactId>
+                  <classifier>config</classifier>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.cipango</groupId>
