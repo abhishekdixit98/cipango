@@ -16,6 +16,7 @@ package org.cipango.server;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -32,6 +33,7 @@ import org.cipango.server.log.AccessLog;
 import org.cipango.sip.NameAddr;
 import org.cipango.sip.SipGenerator;
 import org.cipango.sip.SipHeaders;
+import org.cipango.sip.SipURIImpl;
 import org.cipango.sip.Via;
 import org.cipango.util.SystemUtil;
 import org.eclipse.jetty.io.Buffer;
@@ -129,6 +131,12 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
         //return (Address) findTransport(type, null).getContact().clone();
     }
     
+    public Address getContact(int type, InetAddress addr)
+    {
+        SipConnector sc = findConnector(type, addr);
+        return new NameAddr((URI) sc.getSipUri().clone());
+    }
+    
     
     protected void doStart() throws Exception
     {
@@ -193,10 +201,12 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
     
     public SipConnector findConnector(int type, InetAddress addr)
     {
+    	int ipFamilly = (addr instanceof Inet4Address) ? SipConnectors.IPv4 : SipConnectors.IPv6;
+    	
         for (int i = 0; i < _connectors.length; i++) 
         {
             SipConnector t = _connectors[i];
-            if (t.getTransportOrdinal() == type) 
+            if (t.getTransportOrdinal() == type && (addr == null || t.getIpFamily() == ipFamilly)) 
                 return t;
         }
         return _connectors[0];
@@ -291,13 +301,10 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
         for (int i = 0; i < _connectors.length; i++)
         {
             SipConnector connector = _connectors[i];
-            
-            String connectorHost = connector.getSipUri().getHost();
-            
             boolean samePort = connector.getPort() == sipUri.getPort() || sipUri.getPort() == -1;
             if (samePort)
             {
-	            if ((connectorHost.equals(host) || connector.getAddr().getHostAddress().equals(host))) 
+	            if ((connector.getHost().equals(host) || connector.getAddr().getHostAddress().equals(host))) 
 	            {
 	            	if (sipUri.getPort() != -1)
 	            		return true;
@@ -339,20 +346,43 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
     	SipConnector connector = findConnector(transport, address);
     	
         Via via = request.getTopVia();
-        
-        Via connectorVia = connector.getVia();
-        via.setTransport(connectorVia.getTransport());
-        
-        String host = connectorVia.getHost();
+        via.setTransport(SipConnectors.getName(connector.getTransportOrdinal()));
+        String host = connector.getAddr().getHostAddress();
+        if (host.contains(":") && !host.contains("["))
+    		host = "[" + host + "]";
         via.setHost(host);
-        via.setPort(connectorVia.getPort());
+        via.setPort(connector.getPort());
                 
         // TODO > 1300
 
         SipConnection connection = connector.getConnection(address, port);
+        updateContact(request, connection);
+        
         send(request, connection);
         
         return connection;
+    }
+    
+    private void updateContact(SipMessage message, SipConnection connection)
+    {
+    	if (message.session() != null && message.session().isUA() && message.needsContact())
+    	{
+    		SipURI rightUri = (SipURI) connection.getConnector().getSipUri();
+    		Address contact = (Address) message.getFields().getAddress(SipHeaders.CONTACT).clone();
+			if (contact != null)
+			{
+				SipURI uri = (SipURI) contact.getURI();
+				uri.setHost(rightUri.getHost());
+				uri.setPort(rightUri.getPort());
+				if (rightUri.getTransportParam() != null)
+					uri.setTransportParam(rightUri.getTransportParam());	
+				else
+					uri.removeParameter(SipURIImpl.TRANSPORT_PARAM);
+			}
+			else
+				contact = new NameAddr(rightUri.clone());
+			message.getFields().setAddress(SipHeaders.CONTACT, contact);
+    	}
     }
     
     public void sendResponse(SipResponse response) throws IOException

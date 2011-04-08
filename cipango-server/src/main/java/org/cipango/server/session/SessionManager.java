@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
 import javax.servlet.sip.SipSession;
@@ -33,6 +32,9 @@ import org.cipango.server.ID;
 import org.cipango.server.Server;
 import org.cipango.server.SipRequest;
 import org.cipango.server.SipResponse;
+import org.cipango.server.session.AppSession;
+import org.cipango.server.session.CallSession;
+import org.cipango.server.session.Session;
 import org.cipango.server.transaction.ClientTransaction;
 import org.cipango.server.transaction.ServerTransaction;
 import org.cipango.server.transaction.Transaction;
@@ -40,9 +42,9 @@ import org.cipango.sipapp.SipAppContext;
 import org.cipango.util.TimerList;
 import org.cipango.util.TimerQueue;
 import org.cipango.util.TimerTask;
+
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.statistic.CounterStatistic;
 
 /**
  * Holds and manages all SIP related sessions.
@@ -66,8 +68,9 @@ public class SessionManager extends AbstractLifeCycle
     private Server _server;
 	
     // statistics 
-    private AtomicLong _statsStartedAt = new AtomicLong(-1);
-    private CounterStatistic _sessionsStats = new CounterStatistic();
+    private long _statsStartedAt = -1;
+    private int _maxCalls;
+    private int _minCalls;
     private int _callsThreshold = 0;
     	
     public SessionManager()
@@ -123,11 +126,15 @@ public class SessionManager extends AbstractLifeCycle
     			
     			_callSessions.put(callSession.getId(), callSession);
     			
-    			if (_statsStartedAt.get() > 0)
-					_sessionsStats.increment();
-    			
-    			if (_callsThreshold > 0 && getCalls() == _callsThreshold)
-    				Events.fire(Events.CALLS_THRESHOLD_READCHED, "Calls threashlod reached: " + getCalls());
+    			if (_statsStartedAt > 0 || _callsThreshold > 0)
+    			{
+    				int nbCalls = getCalls();
+    				
+    				if (_statsStartedAt > 0 && nbCalls > _maxCalls)
+    					_maxCalls = nbCalls;
+    				if (_callsThreshold > 0 && nbCalls == _callsThreshold)
+    					Events.fire(Events.CALLS_THRESHOLD_READCHED, "Calls threashlod reached: " + nbCalls);
+    			}
     		}
     	}
     	return new SessionScope(callSession._lock.tryLock() ? callSession : null);
@@ -175,9 +182,7 @@ public class SessionManager extends AbstractLifeCycle
 	        	}
 	        	if (callSession.isDone())
 	        	{
-	        		boolean removed = removeSession(callSession);
-	        		if (removed && _statsStartedAt.get() > 0)
-	        			_sessionsStats.decrement();
+	        		removeSession(callSession);
 	        	}
 	        	else
 	        	{
@@ -191,18 +196,18 @@ public class SessionManager extends AbstractLifeCycle
     	}
     }
     
-    /**
-     * @return <code>true</code> if callSession contains the session.
-     */
-    protected boolean removeSession(CSession callSession)
+    protected void removeSession(CSession callSession)
     {
     	if (Log.isDebugEnabled())
 			Log.debug("CallSession " + callSession.getId() + " is done.");
 		
 		synchronized (_callSessions)
     	{
-    		return _callSessions.remove(callSession.getId()) != null;
+    		_callSessions.remove(callSession.getId());
     	}
+		int nbCalls = getCalls();
+		if (nbCalls < _minCalls)
+			_minCalls = nbCalls;
     }
     
     protected CSession newCall(String id)
@@ -318,17 +323,17 @@ public class SessionManager extends AbstractLifeCycle
 	
     public int getCalls()
     {
-        return (int) _sessionsStats.getCurrent();
+        return _callSessions.size();
     }
     
     public int getMaxCalls()
     {
-        return (int) _sessionsStats.getMax();
+        return _maxCalls;
     }
-        
-    public long getTotalCalls()
+    
+    public int getMinCalls()
     {
-        return _sessionsStats.getTotal();
+    	return _minCalls;
     }
 
 	public int getCallsThreshold()
@@ -343,22 +348,23 @@ public class SessionManager extends AbstractLifeCycle
 	
     public void statsReset() 
     {
-        _statsStartedAt.set(_statsStartedAt.get() == -1 ? -1l : System.currentTimeMillis());
-        _sessionsStats.reset();
+        _statsStartedAt = _statsStartedAt == -1 ? -1 : System.currentTimeMillis();
+        _maxCalls = getCalls();
+        _minCalls  = getCalls();
     }
     
     public void setStatsOn(boolean on) 
     {
-        if (on && _statsStartedAt.get() != -1) 
+        if (on && _statsStartedAt != -1) 
             return;
         
         statsReset();
-        _statsStartedAt.set(on ? System.currentTimeMillis() : -1);
+        _statsStartedAt = on ? System.currentTimeMillis() : -1;
     }
     
 	public boolean isStatsOn() 
 	{
-		return _statsStartedAt.get() != -1;
+		return _statsStartedAt != -1;
 	}
 	
 	/**

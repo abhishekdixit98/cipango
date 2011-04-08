@@ -12,28 +12,26 @@
 // limitations under the License.
 // ========================================================================
 package org.cipango.diameter.io;
-import static junit.framework.Assert.assertEquals;
 
 import java.net.InetAddress;
 import java.util.Date;
 
+import junit.framework.TestCase;
+
 import org.cipango.diameter.base.Common;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
-import org.junit.Before;
-import org.junit.Test;
 
-public class DataFormatTest
+public class DataFormatTest extends TestCase
 {
 	private Buffer _buffer;
 	
-	@Before
-	public void setUp() 
+	@Override
+	protected void setUp() 
 	{
 		_buffer = new ByteArrayBuffer(1024);
 	}
 	
-	@Test
 	public void testOctetString() throws Exception
 	{
 		byte[] b = "cipango".getBytes();
@@ -42,7 +40,6 @@ public class DataFormatTest
 		assertEquals("cipango", new String(Common.__octetString.decode(_buffer)));
 	}
 	
-	@Test
 	public void testUtf8String() throws Exception
 	{
 		String s = "Û�fjRPsl0ˆ¤";
@@ -51,7 +48,6 @@ public class DataFormatTest
 		assertEquals(s, Common.__utf8String.decode(_buffer));
 	}
 	
-	@Test
 	public void testUnsigned32() throws Exception
 	{
 		int i = 123456789;
@@ -59,7 +55,6 @@ public class DataFormatTest
 		assertEquals(i, (int) Common.__unsigned32.decode(_buffer));
 	}
 	
-	@Test
 	public void testAddress() throws Exception
 	{
 		InetAddress address = InetAddress.getByName("127.0.0.1");
@@ -71,7 +66,6 @@ public class DataFormatTest
 		assertEquals(address, Common.__address.decode(_buffer));
 	}
 	
-	@Test
 	public void testDate() throws Exception
 	{
 		Date date = new Date();

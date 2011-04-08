@@ -42,7 +42,7 @@ import org.snmp4j.smi.OID;
 import org.snmp4j.smi.OctetString;
 import org.snmp4j.smi.VariableBinding;
 
-public class CipangoMib implements Mib, NotificationListener
+public class CipangoMib implements MOGroup, NotificationListener
 {
 
 	public static final OID 
@@ -55,8 +55,8 @@ public class CipangoMib implements Mib, NotificationListener
 
 	
 	public static final ObjectName 
-		CONNECTOR_MANAGER = ObjectNameFactory.create("org.cipango.server:type=connectormanager,id=0"),
-		SERVER = ObjectNameFactory.create("org.cipango.server:type=server,id=0"),
+		CONNECTOR_MANAGER = ObjectNameFactory.create("org.cipango.sip:type=connectormanager,id=0"),
+		SERVER = ObjectNameFactory.create("org.cipango:type=server,id=0"),
 		JMX_EVENT_LOGGER = ObjectNameFactory.create("org.cipango.log:type=jmxeventlogger,id=0");
 	
 	private static final Object[][] CONNECTOR_MANAGER_ATTR =
@@ -71,11 +71,12 @@ public class CipangoMib implements Mib, NotificationListener
 	};
 
 	private List<MOScalar> _scalars = new ArrayList<MOScalar>();
-	private SnmpAgent _agent;
+	private NotificationOriginator _notificationOriginator;
 
-	public CipangoMib()
+	public CipangoMib(NotificationOriginator notificationOriginator)
 	{
 		super();
+		_notificationOriginator = notificationOriginator;
 		addJvmManagementMibInstrumentaton();
 	}
 
@@ -134,25 +135,20 @@ public class CipangoMib implements Mib, NotificationListener
 			switch (event)
 			{
 			case Events.START:
-				 _agent.getNotificationOriginator().notify(new OctetString(), SnmpConstants.coldStart,
+				 _notificationOriginator.notify(new OctetString(), SnmpConstants.coldStart,
 	                     new VariableBinding[0]);
 				break;
 			case Events.DEPLOY_FAIL:
 	
 				break;
 			case Events.CALLS_THRESHOLD_READCHED:
-				 _agent.getNotificationOriginator().notify(new OctetString(), OID_THRESHOLD_SESSIONS,
+				_notificationOriginator.notify(new OctetString(), OID_THRESHOLD_SESSIONS,
 	                      new VariableBinding[0]);
 				break;
 			default:
 				break;
 			}
 		}
-	}
-
-	public void setSnmpAgent(SnmpAgent agent)
-	{
-		_agent = agent;
 	}
 
 }

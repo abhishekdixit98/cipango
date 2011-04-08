@@ -17,7 +17,6 @@ package org.cipango.diameter.node;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -28,15 +27,13 @@ import org.cipango.diameter.app.DiameterContext;
 import org.cipango.diameter.base.Common;
 import org.cipango.diameter.base.Common.DisconnectCause;
 import org.cipango.diameter.bio.DiameterSocketConnector;
-import org.eclipse.jetty.util.component.AggregateLifeCycle;
-import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 
 /**
  *  A Diameter Peer is a Diameter Node to which a given Diameter Node
  *  has a direct transport connection.
  */
-public class Peer implements Dumpable
+public class Peer 
 {
 	private Node _node;
 	
@@ -539,17 +536,6 @@ public class Peer implements Dumpable
     {
     	_maxPendings.set(0);
     }
-    
-	public String dump()
-	{
-		return AggregateLifeCycle.dump(this);
-	}
-
-	public void dump(Appendable out, String indent) throws IOException
-	{
-		 out.append(String.valueOf(this)).append("\n");
-		 AggregateLifeCycle.dump(out,indent,Arrays.asList("port=" + _port, "address=" + _address));
-	}
     
     // peer states 
     

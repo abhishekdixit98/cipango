@@ -15,21 +15,16 @@ package org.cipango.snmp;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 import org.cipango.server.Server;
-import org.eclipse.jetty.util.component.AggregateLifeCycle;
-import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.snmp4j.TransportMapping;
 import org.snmp4j.agent.BaseAgent;
 import org.snmp4j.agent.CommandProcessor;
 import org.snmp4j.agent.DuplicateRegistrationException;
-import org.snmp4j.agent.MOGroup;
 import org.snmp4j.agent.mo.MOTableRow;
+import org.snmp4j.agent.mo.jmx.mibs.JvmManagementMib;
 import org.snmp4j.agent.mo.jmx.mibs.JvmManagementMibInst;
 import org.snmp4j.agent.mo.snmp.RowStatus;
 import org.snmp4j.agent.mo.snmp.SnmpCommunityMIB;
@@ -56,7 +51,7 @@ import org.snmp4j.smi.Variable;
 import org.snmp4j.transport.DefaultTcpTransportMapping;
 import org.snmp4j.transport.DefaultUdpTransportMapping;
 
-public class SnmpAgent extends BaseAgent implements LifeCycle, Dumpable
+public class SnmpAgent extends BaseAgent implements LifeCycle
 {
 
 	public static final OID NEXCOM_ENTREPRISE_OID = new OID("1.3.6.1.4.26588");
@@ -69,7 +64,8 @@ public class SnmpAgent extends BaseAgent implements LifeCycle, Dumpable
 	private SnmpAddress[] _trapReceivers;
 	private SnmpAddress[] _connectors;
 		
-	private List<MOGroup> _mibs = new ArrayList<MOGroup>();
+	private CipangoMib _cipangoMIB;
+	private JvmManagementMib _jvmManagementMIB;
 	private Server _server;
 
 
@@ -296,45 +292,30 @@ public class SnmpAgent extends BaseAgent implements LifeCycle, Dumpable
 	        }
 		}
 	}
-	
-	public void addMib(MOGroup mib)
-	{
-		if (!_mibs.contains(mib))
-			_mibs.add(mib);
-	}
 		
 	@Override
-	protected void registerSnmpMIBs()
+	protected void registerSnmpMIBs() 
 	{
-		super.registerSnmpMIBs();
-		try
-		{
-			_mibs.add(new CipangoMib());
-			_mibs.add(new JvmManagementMibInst(notificationOriginator));
-
-			for (MOGroup mib : _mibs)
-			{
-				mib.registerMOs(server, null);
-				if (mib instanceof Mib)
-					((Mib) mib).setSnmpAgent(this);
-			}
-
-		}
-		catch (DuplicateRegistrationException ex)
-		{
-			Log.warn("Unable to register MIBs", ex);
-		}
-	}
-
-	@Override
-	protected void unregisterSnmpMIBs()
-	{
-		super.unregisterSnmpMIBs();
-		for (MOGroup moGroup : _mibs)
-			moGroup.unregisterMOs(server, null);
-	}
+	    super.registerSnmpMIBs();
+	    try
+	    {
+	      _cipangoMIB = new CipangoMib(notificationOriginator);
+	      _cipangoMIB.registerMOs(server, null);
+	      
+	      _jvmManagementMIB = new JvmManagementMibInst(notificationOriginator);
+	      _jvmManagementMIB.registerMOs(server, null);
+	    }
+	    catch (DuplicateRegistrationException ex) {
+	      Log.warn("Unable to register MIBs", ex);
+	    }
+	  }
 	
-	
+	 protected void unregisterSnmpMIBs() 
+	 {
+		 super.unregisterSnmpMIBs();
+		 _cipangoMIB.unregisterMOs(server, null);
+		 _jvmManagementMIB.unregisterMOs(server, null);
+	 }
 
 	public void addLifeCycleListener(Listener arg0)
 	{
@@ -423,16 +404,5 @@ public class SnmpAgent extends BaseAgent implements LifeCycle, Dumpable
 	public void setServer(Server server)
 	{
 		_server = server;
-	}
-
-	public String dump()
-	{
-		return AggregateLifeCycle.dump(this);
-	}
-
-	public void dump(Appendable out, String indent) throws IOException
-	{
-		out.append(String.valueOf(this)).append("\n");
-		AggregateLifeCycle.dump(out,indent,Arrays.asList(_connectors), Arrays.asList(_trapReceivers));
 	}
 }

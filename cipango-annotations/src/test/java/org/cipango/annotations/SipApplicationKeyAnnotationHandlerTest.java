@@ -13,7 +13,8 @@
 // ========================================================================
 package org.cipango.annotations;
 
-import static junit.framework.Assert.*;
+import java.util.ArrayList;
+
 import javax.servlet.sip.SipServletRequest;
 import javax.servlet.sip.SipServletResponse;
 import javax.servlet.sip.annotation.SipApplicationKey;
@@ -23,57 +24,41 @@ import junit.framework.TestCase;
 import org.cipango.sipapp.SipAppContext;
 import org.eclipse.jetty.annotations.AnnotationParser;
 import org.eclipse.jetty.annotations.ClassNameResolver;
-import org.eclipse.jetty.webapp.DiscoveredAnnotation;
-import org.junit.Before;
-import org.junit.Test;
 
-public class SipApplicationKeyAnnotationHandlerTest
+public class SipApplicationKeyAnnotationHandlerTest extends TestCase
 {
-	private SipAppContext _context;
+	private SipAppContext _sac;
 	private AnnotationParser _parser;
-	private SipApplicationKeyAnnotationHandler _handler;
 
-	@Before
-	public void setUp() throws Exception
+	@Override
+	protected void setUp() throws Exception
 	{
-		_context = new SipAppContext();
+		super.setUp();
+		_sac = new SipAppContext();
 		_parser = new AnnotationParser();
-		_handler = new SipApplicationKeyAnnotationHandler(_context);
         _parser.registerAnnotationHandler("javax.servlet.sip.annotation.SipApplicationKey",
-        		_handler);
-	}
-
-	@Test
-	public void testApplicationKey() throws Exception
-	{	
-       parse(GoodApplicationKey.class);
-       assertNotNull(_context.getSipApplicationKeyMethod());
+        		new SipApplicationKeyAnnotationHandler(_sac));
 	}
 	
-	@SuppressWarnings("rawtypes")
-	private void parse(Class clazz) throws Exception
-	{
-		 _parser.parse(clazz.getName(), new SimpleResolver());
-		 for (DiscoveredAnnotation annotation : _handler.getAnnotationList())
-			 annotation.apply();
+	public void testApplicationKey() throws Exception
+	{	
+        _parser.parse(GoodApplicationKey.class.getName(), new SimpleResolver());
+        assertNotNull(_sac.getSipApplicationKeyMethod());
 	}
 
-	@Test
 	public void testNotPublic() throws Exception
 	{	
-        try { parse(BadApplicationKey.class); fail();} catch (IllegalStateException e) {}
+        try { _parser.parse(BadApplicationKey.class.getName(), new SimpleResolver()); fail();} catch (IllegalStateException e) {}
 	}
-
-	@Test
+	
 	public void testBadReturnType() throws Exception
 	{	
-		 try { parse(BadApplicationKey2.class); fail();} catch (IllegalStateException e) {}
+		 try { _parser.parse(BadApplicationKey2.class.getName(), new SimpleResolver()); fail();} catch (IllegalStateException e) {}
 	}
-
-	@Test
+	
 	public void testBadArgument() throws Exception
 	{	
-		 try { parse(BadApplicationKey3.class); fail();} catch (IllegalStateException e) {}
+		 try { _parser.parse(BadApplicationKey3.class.getName(), new SimpleResolver()); fail();} catch (IllegalStateException e) {}
 	}
 	
 

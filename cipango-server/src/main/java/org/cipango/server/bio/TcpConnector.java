@@ -148,6 +148,7 @@ public class TcpConnector extends AbstractSipConnector //implements Buffers
 		TcpConnection connection = new TcpConnection(socket);
 		addConnection(socket.getInetAddress(), socket.getPort(), connection);
 		connection.dispatch();
+		
 	}
 	
 	protected void addConnection(InetAddress host, int port, TcpConnection connection)
@@ -157,7 +158,8 @@ public class TcpConnector extends AbstractSipConnector //implements Buffers
 			_connections.put(key(host, port), connection);
 		}
 	}
-
+	
+	
 	protected ServerSocket getServerSocket()
 	{
 		return _serverSocket;
@@ -224,6 +226,7 @@ public class TcpConnector extends AbstractSipConnector //implements Buffers
 			return cnx;
 		}
 	}
+	
 	
 	protected TcpConnection newConnection(InetAddress addr, int port) throws IOException
 	{

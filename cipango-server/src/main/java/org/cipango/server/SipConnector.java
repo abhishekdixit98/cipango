@@ -31,8 +31,6 @@ public interface SipConnector extends LifeCycle
     String getHost();
 	InetAddress getAddr();
 	int getPort();
-	
-	String getExternalHost();
 
 	Object getConnection();
 	int getLocalPort();
@@ -59,4 +57,11 @@ public interface SipConnector extends LifeCycle
     long getNbParseError();
     void setStatsOn(boolean on);
     void statsReset();
+    
+    /**
+     * Returns the IP family
+     * @see SipConnectors#IPv4
+     * @see SipConnectors#IPv6
+     */
+    int getIpFamily();
 }

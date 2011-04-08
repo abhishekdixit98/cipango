@@ -551,8 +551,7 @@ public class Session implements SessionIf
 	{
 		try
 		{
-			if (isValid())
-				_appSession.getContext().handle(response);
+			_appSession.getContext().handle(response);
 		}
 		catch (Throwable t)
 		{
@@ -885,8 +884,8 @@ public class Session implements SessionIf
 		{
 			SipFields fields = request.getFields();
 			
-			fields.setAddress(SipHeaders.FROM_BUFFER, (Address) _localParty.clone());
-			fields.setAddress(SipHeaders.TO_BUFFER, (Address) _remoteParty.clone());
+			fields.setAddress(SipHeaders.FROM_BUFFER, _localParty);
+			fields.setAddress(SipHeaders.TO_BUFFER, _remoteParty);
 			
 			if (_remoteTarget != null)
 				request.setRequestURI((URI) _remoteTarget.clone());

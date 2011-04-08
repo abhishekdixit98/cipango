@@ -16,7 +16,6 @@ package org.cipango.server;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -27,23 +26,20 @@ import javax.servlet.sip.SipURI;
 import javax.servlet.sip.ar.SipApplicationRouter;
 import javax.servlet.sip.ar.SipApplicationRouterInfo;
 
-import org.cipango.log.event.Events;
 import org.cipango.server.ar.ApplicationRouterLoader;
 import org.cipango.server.ar.RouterInfoUtil;
 import org.cipango.server.handler.SipContextHandlerCollection;
 import org.cipango.server.session.SessionManager;
+import org.cipango.log.event.Events;
+import org.cipango.server.transaction.ClientTransaction;
+import org.cipango.server.transaction.ClientTransactionListener;
 import org.cipango.server.transaction.TransactionManager;
 import org.cipango.sip.SipURIImpl;
 import org.cipango.sipapp.SipAppContext;
-import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.util.MultiException;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.util.thread.ThreadPool;
+import org.eclipse.jetty.util.thread.*;
+import org.eclipse.jetty.util.MultiException;
 
 /**
  * Cipango SIP/HTTP Server.
@@ -83,6 +79,13 @@ public class Server extends org.eclipse.jetty.server.Server implements SipHandle
 		
 		if (_sipThreadPool == null) 
 			setSipThreadPool(new QueuedThreadPool());
+
+		try
+		{
+			if (_sipThreadPool instanceof LifeCycle)
+				((LifeCycle) _sipThreadPool).start();
+		}
+		catch (Throwable t) { mex.add(t); }
 		
 		if (_sessionManager == null)
 			setSessionManager(new SessionManager());
@@ -147,7 +150,14 @@ public class Server extends org.eclipse.jetty.server.Server implements SipHandle
 			super.doStop();
 		} 
         catch (Throwable e) { mex.add(e); }
-               
+        
+        try
+        {
+        	if (_sipThreadPool instanceof LifeCycle)
+        		((LifeCycle) _sipThreadPool).stop();
+        }
+        catch (Throwable e) { mex.add(e); }
+       
         mex.ifExceptionThrow();
     }
     
@@ -272,12 +282,8 @@ public class Server extends org.eclipse.jetty.server.Server implements SipHandle
 	
 	public void setSipThreadPool(ThreadPool sipThreadPool) 
 	{
-		if (_sipThreadPool!=null)
-            removeBean(_sipThreadPool);
-        getContainer().update(this, _sipThreadPool, sipThreadPool, "sipThreadPool",false);
-        _sipThreadPool = sipThreadPool;
-        if (_sipThreadPool !=null)
-            addBean(_sipThreadPool);
+		getContainer().update(this, _sipThreadPool, sipThreadPool, "sipThreadPool", true);
+		_sipThreadPool = sipThreadPool;
 	}
 	
 	public void setSessionManager(SessionManager sessionManager) 
@@ -331,26 +337,12 @@ public class Server extends org.eclipse.jetty.server.Server implements SipHandle
 		return _statsStartedAt != -1;
 	}
 	
-	public long getStatsStartedAt()
-	{
-		return _statsStartedAt;
-	}
-	
 	public void allStatsReset()
 	{
 		statsReset();
 		getSessionManager().statsReset();
 		getConnectorManager().statsReset();
 		getTransactionManager().statsReset();
-		if (_handler instanceof HandlerCollection)
-		{
-			Handler[] handlers = ((HandlerCollection) _handler).getChildHandlersByClass(SipAppContext.class);
-			if (handlers != null)
-			{
-				for (Handler handler : handlers)
-					((SipAppContext) handler).statsReset();
-			}
-		}
 	}
 	
 	public void setAllStatsOn(boolean on) 
@@ -379,13 +371,6 @@ public class Server extends org.eclipse.jetty.server.Server implements SipHandle
 	{
 		return __sipVersion;
 	}
-	
-    @Override
-    public void dump(Appendable out,String indent) throws IOException
-    {
-        super.dump(out, indent);
-        dump(out,indent,TypeUtil.asList(_connectorManager.getConnectors()), Arrays.asList(_applicationRouter));    
-    }
 	
 	@Override
 	public String toString()

@@ -202,7 +202,7 @@ public class AppSession implements AppSessionIf
 			getCallSession().removeSession(this);
 			
 			if (getContext() != null)
-				getContext().decrementSessions(System.currentTimeMillis() - _created);
+				getContext().updateNbSessions(false);
 			
 			SipApplicationSessionListener[] listeners = getContext().getSipApplicationSessionListeners();
 			if (listeners.length > 0)
@@ -621,7 +621,7 @@ public class AppSession implements AppSessionIf
 
 		_context = context;
 
-		_context.incrementSessions();
+		_context.updateNbSessions(true);
 		
 		if (_context.getSpecVersion() == SipAppContext.VERSION_10)
 			_invalidateWhenReady = false;

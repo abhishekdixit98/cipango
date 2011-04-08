@@ -15,8 +15,8 @@
 package org.cipango.server;
 
 import java.io.IOException;
+import java.net.Inet4Address;
 import java.net.InetAddress;
-import java.util.Arrays;
 
 import javax.servlet.sip.SipURI;
 
@@ -29,8 +29,6 @@ import org.cipango.sip.Via;
 import org.cipango.sip.SipParser.EventHandler;
 
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.component.AggregateLifeCycle;
-import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
@@ -38,7 +36,7 @@ import org.eclipse.jetty.io.BufferCache.CachedBuffer;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.ThreadPool;
 
-public abstract class AbstractSipConnector extends AbstractLifeCycle implements SipConnector, Dumpable
+public abstract class AbstractSipConnector extends AbstractLifeCycle implements SipConnector 
 {
     public static String __localhost;
     
@@ -58,9 +56,6 @@ public abstract class AbstractSipConnector extends AbstractLifeCycle implements 
     private int _port;
     private String _host;
     private String _name;
-    
-    private String _externalHost;
-    private int _externalPort = -1;
     
     private SipURI _sipUri;
     private Via _via;
@@ -127,21 +122,6 @@ public abstract class AbstractSipConnector extends AbstractLifeCycle implements 
         return _host;
     }
     
-    public void setExternalHost(String externalHost)
-    {
-    	if (isRunning())
-    		throw new IllegalStateException();
-    	
-    	_externalHost = externalHost;
-    	
-    	updateURI();
-    }
-    
-    public String getExternalHost()
-    {
-    	return _externalHost;
-    }
-    
     public void setName(String name) 
     {
     	if (isRunning())
@@ -173,12 +153,17 @@ public abstract class AbstractSipConnector extends AbstractLifeCycle implements 
         return SipConnectors.getName(getTransportOrdinal());
     }
     
+    public int getIpFamily()
+    {
+    	if (getAddr() instanceof Inet4Address)
+    		return SipConnectors.IPv4;
+    	else
+    		return SipConnectors.IPv6;
+    }
+    
     protected void updateURI()
     {
-    	String host = (_externalHost != null) ? _externalHost : _host;
-    	int port = (_externalPort != -1) ? _externalPort : _port;
-    	
-        _sipUri = new SipURIImpl(_name, host, port);
+        _sipUri = new SipURIImpl(_name, _host, _port);
     }
     
     protected void doStart() throws Exception 
@@ -189,8 +174,8 @@ public abstract class AbstractSipConnector extends AbstractLifeCycle implements 
         _via = new Via(
                 SipVersions.SIP_2_0,
                 getTransport().toUpperCase(),
-                _sipUri.getHost(),
-                _sipUri.getPort());
+                _host,
+                _port);
         
         if (_threadPool == null && getServer() != null)
         	_threadPool = getServer().getSipThreadPool();
@@ -310,7 +295,6 @@ public abstract class AbstractSipConnector extends AbstractLifeCycle implements 
         return _sipUri;
     }
     
-    @Override
     public String toString() 
     {
     	/*
@@ -357,20 +341,6 @@ public abstract class AbstractSipConnector extends AbstractLifeCycle implements 
 	{
 		return _connectionsOpenMax;
 	}
-	
-    public String dump()
-    {
-        return AggregateLifeCycle.dump(this);
-    }
-
-    public void dump(Appendable out, String indent) throws IOException
-    {
-        out.append(String.valueOf(this)).append("\n");
-        if (_externalHost != null)
-        	AggregateLifeCycle.dump(out,indent,Arrays.asList(new Object[]{"ExternalHost: " + _externalHost,
-        			"ExternalPort: " + _externalPort}));
-    }
-    
 	
     class Acceptor implements Runnable 
     {

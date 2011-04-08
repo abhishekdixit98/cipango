@@ -73,30 +73,20 @@ public class SipContextHandlerCollection extends ContextHandlerCollection implem
 	@Override
 	protected void doStart() throws Exception
 	{
-		if (_handler == null)
-		{
-			CallSessionHandler callSessionHandler = new CallSessionHandler();
-			SipSessionHandler sipSessionHandler = new SipSessionHandler();
-			
-			TransactionManager transactionManager = ((Server) getServer()).getTransactionManager();
-			callSessionHandler.setHandler(transactionManager);
-			
-			transactionManager.setHandler(sipSessionHandler);
-			
-			_handler = callSessionHandler;
-		}
-
+		CallSessionHandler callSessionHandler = new CallSessionHandler();
+		SipSessionHandler sipSessionHandler = new SipSessionHandler();
+		
+		TransactionManager transactionManager = ((Server) getServer()).getTransactionManager();
+		callSessionHandler.setHandler(transactionManager);
+		transactionManager.setHandler(sipSessionHandler);
+		
+		_handler = callSessionHandler;
 		_handler.setServer(getServer());
 		
 		if (_handler instanceof LifeCycle)
 			((LifeCycle) _handler).start();
 		super.doStart();
 	}
-	
-	 public void setHandler(SipHandler handler)
-	 {
-		 _handler = handler;
-	 }
 	
 	public SipAppContext[] getSipContexts()
 	{
@@ -248,13 +238,10 @@ public class SipContextHandlerCollection extends ContextHandlerCollection implem
 					
 					if (Log.isDebugEnabled())
 						Log.debug("application router returned application {} for initial request {}", applicationName, request.getMethod());
-					if (appContext == null && applicationName != null)
-						Log.debug("No application with name {} returned by application router could be found", applicationName, null);
 				}
 				
 				if (appContext == null)
 				{
-					
 					if (!request.isAck())
 					{
 						SipResponse response = new SipResponse(request, SipServletResponse.SC_NOT_FOUND, null);
