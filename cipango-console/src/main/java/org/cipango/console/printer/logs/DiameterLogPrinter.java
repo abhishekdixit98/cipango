@@ -164,7 +164,7 @@ public class DiameterLogPrinter extends AbstractLogPrinter
 			MessageLog log = new MessageLog(_messagesLogs[i]);
 			String info = log.getInfoLine().replaceFirst(log.getRemote(),
 					getFilterLink("remote", log.getRemote()));
-			out.write("<div class=\"info\">" + info + "</div>");
+			out.write("<div class=\"msg-info\">" + info + "</div>");
 			out.write("<pre class=\"message\">");
 			out.write(diameterToHtml(log));
 			out.write("</pre>");
