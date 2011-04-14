@@ -26,29 +26,60 @@ public class Lookup
 	private Record _record;
 	private Name _toSearch;
 	private ResolverManager _resolverManager;
+	private List<Name> _searchList;
 	private Cache _cache;
 	private int _iterations = 0;
 	
-	public Lookup(ResolverManager resolverManager, Cache cache, Record record)
+	public Lookup(ResolverManager resolverManager, Cache cache, Record record, List<Name> searchList)
 	{
 		_resolverManager = resolverManager;
 		_record = record;
 		_cache = cache;
+		_searchList = searchList;
 	}
 	
 	public List<Record> resolve() throws IOException, UnknownHostException
 	{
-		List<Record> records = getFromCache();
+		IOException e = null;
+		try
+		{
+			return resolve(_record);
+		}
+		catch (IOException e1) 
+		{
+			e = e1;
+			for (Name suffix : _searchList)
+			{
+				Record record = _record.getType().newRecord();
+				Name newName = _record.getName().clone();
+				newName.append(suffix);
+				record.setName(newName);
+				record.setDnsClass(_record.getDnsClass());
+				try 
+				{
+					return resolve(record);
+				}
+				catch (IOException e2) 
+				{
+				}
+			}
+		}
+		
+		throw e;
+	}
+	
+	public List<Record> resolve(Record record) throws IOException, UnknownHostException
+	{
+		_toSearch = null;
+		List<Record> records = getFromCache(record);
 		
 		while (records.isEmpty())
 		{			
-			Record record;
-			if (_toSearch == null)
-				record = _record;
-			else
+			if (_toSearch != null)
 			{
-				record = _record.getType().newRecord();
+				record = record.getType().newRecord();
 				record.setName(_toSearch);
+				record.setDnsClass(_record.getDnsClass());
 			}
 		
 			DnsMessage query = new DnsMessage(record);
@@ -69,19 +100,19 @@ public class Lookup
 			
 			_cache.addRecordSet(query, answer);
 			
-			records = getFromCache();
+			records = getFromCache(record);
 		}
 		return records;
 	}
 	
-	private List<Record> getFromCache() throws IOException
+	private List<Record> getFromCache(Record record) throws IOException
 	{
-		List<Record> records = _cache.getRecords(_record.getName(), _record.getType());
-		while (records.size() == 1 && records.get(0).getType() == Type.CNAME && _record.getType() != Type.CNAME)
+		List<Record> records = _cache.getRecords(record.getName(), record.getType());
+		while (records.size() == 1 && records.get(0).getType() == Type.CNAME && record.getType() != Type.CNAME)
 		{
 			incrementIteration();
 			_toSearch = ((CnameRecord) records.get(0)).getCname();
-			records = _cache.getRecords(_toSearch, _record.getType());
+			records = _cache.getRecords(_toSearch, record.getType());
 		}
 		return records;
 	}

@@ -25,6 +25,7 @@ import java.util.concurrent.ConcurrentMap;
 import org.cipango.dns.record.AdditionalName;
 import org.cipango.dns.record.Record;
 import org.cipango.dns.record.SoaRecord;
+import org.eclipse.jetty.util.log.Log;
 
 public class Cache
 {
@@ -48,7 +49,7 @@ public class Cache
 				records = records2;
 		}
 		
-		System.out.println("cache.add: " + record + " on " + records);
+		Log.debug("cache.add: " + record + " on " + records);
 		synchronized (records)
 		{
 			records.add(new Element(record));
@@ -71,12 +72,11 @@ public class Cache
 		int ttl = DEFAULT_NEGATIVE_TTL;
 		for (Record record2 : answer.getAuthoritySection())
 		{
-			System.out.println(record2);
 			if (record2 instanceof SoaRecord)
 				ttl = ((SoaRecord) record2).getTtl();
 		}
 		
-		System.out.println("Negative cache.add: " + record + " on " + records + " with ttl " + ttl);
+		Log.debug("Negative cache.add: " + record + " on " + records + " with ttl " + ttl);
 		synchronized (records)
 		{
 			records.add(new Element(record, ttl, true));

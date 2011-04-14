@@ -15,7 +15,7 @@ package org.cipango.dns;
 
 
 
-public class Name
+public class Name implements Cloneable
 {
 	public static final int MAX_LABEL_SIZE = 63;
 	public static final int MAX_NAME_SIZE = 255;
@@ -38,6 +38,14 @@ public class Name
 			_label = name;
 		if (_label.length() > MAX_LABEL_SIZE)
 			throw new IllegalArgumentException("Label: " + _label +  " is too long");
+	}
+
+	public void append(Name suffix)
+	{
+		Name name = this;
+		while (name.hasChild())
+			name = name.getChild();
+		name.setChild(suffix);
 	}
 	
 	public Name getChild()
@@ -93,5 +101,23 @@ public class Name
 			return name.hasChild() && _child.equals(name.getChild());
 		else
 			return !name.hasChild();
+	}
+	
+	@Override
+	public Name clone()
+	{
+		Name name;
+		try
+		{
+			name = (Name) super.clone();
+		}
+		catch (CloneNotSupportedException e)
+		{
+			throw new UnsupportedOperationException();
+		}
+		name._child = null;
+		if (_child != null)
+			name.setChild(_child.clone());
+		return name;
 	}
 }

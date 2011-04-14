@@ -37,11 +37,17 @@ public class ResolverManager extends AbstractLifeCycle
 			sun.net.dns.ResolverConfiguration resolverConfiguration = sun.net.dns.ResolverConfiguration.open();
 			@SuppressWarnings({ "unchecked" })
 			List<String> servers = resolverConfiguration.nameservers();
+			int attemps = resolverConfiguration.options().attempts();
+			int retrans = resolverConfiguration.options().retrans();
 			
 			for (String server: servers)
 			{
 				Resolver resolver = new Resolver();
 				resolver.setHost(server);
+				if (attemps != -1)
+					resolver.setAttemps(attemps);
+				if (retrans != -1)
+					resolver.setTimeout(retrans);
 				addResolver(resolver);
 			}
 		}

@@ -30,21 +30,22 @@ public class DnsService extends AbstractLifeCycle
 {
 	private ResolverManager _resolverManager = new ResolverManager();
 	private Cache _cache;
-	
+	private List<Name> _searchList = new ArrayList<Name>(); 
 	
 	@Override
 	protected void doStart() throws Exception
 	{
 		_resolverManager.start();
 		
+		if (_searchList.isEmpty())
+		{
+			sun.net.dns.ResolverConfiguration resolverConfiguration = sun.net.dns.ResolverConfiguration.open();
+			for (Object name : resolverConfiguration.searchlist())
+				_searchList.add(new Name((String) name));
+		}
+		
 		if (_cache == null)
 			_cache = new Cache();
-	}
-
-	public String getHostByAddr(byte[] addr) throws UnknownHostException
-	{
-		// TODO Auto-generated method stub
-		return null;
 	}
 
 	public List<InetAddress> lookupIpv4HostAddr(String name) throws UnknownHostException
@@ -91,7 +92,7 @@ public class DnsService extends AbstractLifeCycle
 	
 	public List<Record> lookup(Record record) throws IOException
 	{
-		return new Lookup(_resolverManager, _cache, record).resolve();
+		return new Lookup(_resolverManager, _cache, record, _searchList).resolve();
 								
 	}
 
@@ -113,6 +114,16 @@ public class DnsService extends AbstractLifeCycle
 	public void setCache(Cache cache)
 	{
 		_cache = cache;
+	}
+
+	public List<Name> getSearchList()
+	{
+		return _searchList;
+	}
+
+	public void setSearchList(List<Name> searchList)
+	{
+		_searchList = searchList;
 	}
 
 	
