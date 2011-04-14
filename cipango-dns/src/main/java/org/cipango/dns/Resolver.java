@@ -25,7 +25,7 @@ public class Resolver
 	public static final int DEFAULT_PORT = 53;
 	public static final int DEFAULT_TIMEOUT = 5000;
 	
-	private DnsConnector _connector;
+	private ResolverManager _resolverManager;
 	private InetAddress _host;
 	private int _port = DEFAULT_PORT;
 	private long _timeout = DEFAULT_TIMEOUT;
@@ -35,7 +35,7 @@ public class Resolver
 	
 	public DnsMessage resolve(DnsMessage query) throws IOException
 	{
-		DnsConnection c = _connector.newConnection(_host, _port);
+		DnsConnection c = _resolverManager.getDefaultConnector().newConnection(_host, _port);
 		SocketTimeoutException e = null;
 		for (int i = -1; i < _maxRetries; i++)
 		{
@@ -60,22 +60,6 @@ public class Resolver
 		throw e;
 		
 	}
-
-
-
-	public DnsConnector getConnector()
-	{
-		return _connector;
-	}
-
-
-
-	public void setConnector(DnsConnector connector)
-	{
-		_connector = connector;
-	}
-
-
 
 	public InetAddress getHost()
 	{
@@ -132,5 +116,19 @@ public class Resolver
 	public void setMaxRetries(int nbRetries)
 	{
 		_maxRetries = nbRetries;
+	}
+
+
+
+	public ResolverManager getResolverManager()
+	{
+		return _resolverManager;
+	}
+
+
+
+	public void setResolverManager(ResolverManager resolverManager)
+	{
+		_resolverManager = resolverManager;
 	}
 }

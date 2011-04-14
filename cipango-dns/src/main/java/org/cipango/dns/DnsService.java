@@ -19,7 +19,6 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.cipango.dns.bio.UdpConnector;
 import org.cipango.dns.record.ARecord;
 import org.cipango.dns.record.AaaaRecord;
 import org.cipango.dns.record.Record;
@@ -29,28 +28,14 @@ import org.eclipse.jetty.util.log.Log;
 
 public class DnsService extends AbstractLifeCycle
 {
-	private Resolver _resolver;
+	private ResolverManager _resolverManager = new ResolverManager();
 	private Cache _cache;
 	
 	
 	@Override
 	protected void doStart() throws Exception
 	{
-		if (_resolver == null)
-			_resolver = new Resolver();
-			
-		if (_resolver.getHost() == null)
-		{
-			sun.net.dns.ResolverConfiguration resolverConfiguration = sun.net.dns.ResolverConfiguration.open();
-			@SuppressWarnings("rawtypes")
-			List servers = resolverConfiguration.nameservers();
-			
-			if (!servers.isEmpty())
-				_resolver.setHost((String) servers.get(0));
-		}
-		
-		if (_resolver.getConnector() == null)
-			_resolver.setConnector(new UdpConnector());
+		_resolverManager.start();
 		
 		if (_cache == null)
 			_cache = new Cache();
@@ -106,8 +91,28 @@ public class DnsService extends AbstractLifeCycle
 	
 	public List<Record> lookup(Record record) throws IOException
 	{
-		return new Lookup(_resolver, _cache, record).resolve();
+		return new Lookup(_resolverManager, _cache, record).resolve();
 								
+	}
+
+	public ResolverManager getResolverManager()
+	{
+		return _resolverManager;
+	}
+
+	public void setResolverManager(ResolverManager resolverManager)
+	{
+		_resolverManager = resolverManager;
+	}
+
+	public Cache getCache()
+	{
+		return _cache;
+	}
+
+	public void setCache(Cache cache)
+	{
+		_cache = cache;
 	}
 
 	

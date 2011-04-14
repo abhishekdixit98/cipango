@@ -110,6 +110,7 @@ public class HeaderSection
 	private int _answerRecords;
 	private int _authorityRecords;
 	private int _additionalRecords;
+	private boolean _response = false;
 	
 	public enum OpCode 
 	{
@@ -134,7 +135,7 @@ public class HeaderSection
 	{
 		BufferUtil.put16(buffer, _id);
 		int flags = 0;
-		if (!getMessage().getAnswerSection().isEmpty())
+		if (_response)
 		{
 			flags |= RESPONSE_FLAG;
 			if (_authoritativeAnswer)
@@ -166,16 +167,16 @@ public class HeaderSection
 	{
 		_id = BufferUtil.get16(buffer);
 		int flags = BufferUtil.get16(buffer);
-		boolean isResponse = ((flags & RESPONSE_FLAG) == RESPONSE_FLAG);
+		_response = ((flags & RESPONSE_FLAG) == RESPONSE_FLAG);
 		
 		_opCode = OpCode.get((flags >> 11) & 0xF);
 		
-		_authoritativeAnswer = isResponse && ((flags & AUTHORITATIVE_ANSWER_FLAG) == AUTHORITATIVE_ANSWER_FLAG);
+		_authoritativeAnswer = _response && ((flags & AUTHORITATIVE_ANSWER_FLAG) == AUTHORITATIVE_ANSWER_FLAG);
 		_truncated = ((flags & TRUNCATION_FLAG) == TRUNCATION_FLAG);
 		_recursionDesired = ((flags & RECURSION_DESIRED_FLAG) == RECURSION_DESIRED_FLAG);
 		_recursionAvailable = ((flags & RECURSION_AVAILABLE_FLAG) == RECURSION_AVAILABLE_FLAG);
 		
-		if (isResponse)
+		if (_response)
 			_responseCode = ResponseCode.get(flags & 0xF);
 		
 		_questionRecords = BufferUtil.get16(buffer);
@@ -287,5 +288,15 @@ public class HeaderSection
 			sb.append("Query ").append(_id);
 		sb.append('\n');
 		return sb;
+	}
+
+	public boolean isResponse()
+	{
+		return _response;
+	}
+
+	public void setResponse(boolean response)
+	{
+		_response = response;
 	}
 }

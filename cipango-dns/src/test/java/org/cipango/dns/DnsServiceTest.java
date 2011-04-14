@@ -52,7 +52,7 @@ public class DnsServiceTest
 	@Test (expected = UnknownHostException.class)
 	public void testInvalidHost() throws Exception
 	{
-		_dnsService.lookupIpv4HostAddr("host.bad");
+		_dnsService.lookupIpv4HostAddr("host.bad.cipango.org");
 	}
 	
 	@Test
@@ -126,6 +126,21 @@ public class DnsServiceTest
 		PtrRecord ptr = (PtrRecord) records.get(0);
 		assertEquals("46-105-46-188.ovh.net", ptr.getPrtdName().toString());
 		//System.out.println(records);
+	}
+	
+	@Test
+	public void testBadResolver() throws Exception
+	{
+		Resolver badResolver = new Resolver();
+		badResolver.setHost("127.0.0.1");
+		badResolver.setPort(45877);
+		badResolver.setTimeout(1500);
+		badResolver.setMaxRetries(1);
+		_dnsService.getResolverManager().addResolver(0, badResolver);
+		List<InetAddress> addr = _dnsService.lookupIpv4HostAddr("www.cipango.org");
+		assertNotNull(addr);
+		assertEquals(1, addr.size());
+		assertEquals(IPV4_ADDR, addr.get(0).getHostAddress());
 	}
 	
 }
