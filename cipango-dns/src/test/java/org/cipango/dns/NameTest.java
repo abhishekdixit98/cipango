@@ -49,4 +49,17 @@ public class NameTest
 	{
 		new Name("bigName.123456789.123456789.123456789.123456789.123456789.123456789.123456789.123456789.123456789.123456789.123456789.123456789.123456789.123456789.123456789.123456789.123456789.123456789.123456789.123456789.123456789.123456789.123456789.123456789.123456789.org");
 	}
+	
+	@Test
+	public void testAppend()
+	{
+		Name name = new Name("jira");
+		name.append(new Name("cipango.org"));
+		assertEquals("jira.cipango.org", name.toString());
+		
+		name = new Name("www.l");
+		name.append(new Name("cipango.org"));
+		assertEquals("www.l.cipango.org", name.toString());
+		
+	}
 }

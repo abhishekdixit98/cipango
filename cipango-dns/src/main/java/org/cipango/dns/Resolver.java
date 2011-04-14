@@ -23,13 +23,13 @@ import org.eclipse.jetty.util.log.Log;
 public class Resolver
 {
 	public static final int DEFAULT_PORT = 53;
-	public static final int DEFAULT_TIMEOUT = 5000;
+	public static final int DEFAULT_TIMEOUT = 1000;
 	
 	private ResolverManager _resolverManager;
 	private InetAddress _host;
 	private int _port = DEFAULT_PORT;
 	private long _timeout = DEFAULT_TIMEOUT;
-	private int _maxRetries = 0;
+	private int _attemps = 2;
 	
 	
 	
@@ -37,12 +37,13 @@ public class Resolver
 	{
 		DnsConnection c = _resolverManager.getDefaultConnector().newConnection(_host, _port);
 		SocketTimeoutException e = null;
-		for (int i = -1; i < _maxRetries; i++)
+		long timeout = _timeout;
+		for (int i = 0; i < _attemps; i++)
 		{
 			try
 			{
 				c.send(query);
-				long end = System.currentTimeMillis() + _timeout;
+				long end = System.currentTimeMillis() + timeout;
 				DnsMessage answer;
 				while (true)
 				{
@@ -53,8 +54,10 @@ public class Resolver
 						return answer;
 				}
 			}
-			catch (SocketTimeoutException e1) {
+			catch (SocketTimeoutException e1)
+			{
 				e = e1;
+				timeout *= 2;
 			}
 		}
 		throw e;
@@ -106,16 +109,16 @@ public class Resolver
 
 
 
-	public int getMaxRetries()
+	public int getAttemps()
 	{
-		return _maxRetries;
+		return _attemps;
 	}
 
 
 
-	public void setMaxRetries(int nbRetries)
+	public void setAttemps(int attemps)
 	{
-		_maxRetries = nbRetries;
+		_attemps = attemps;
 	}
 
 
