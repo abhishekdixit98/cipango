@@ -27,6 +27,7 @@ import org.cipango.dns.record.AaaaRecord;
 import org.cipango.dns.record.NaptrRecord;
 import org.cipango.dns.record.NsRecord;
 import org.cipango.dns.record.Record;
+import org.cipango.dns.record.SoaRecord;
 import org.cipango.dns.record.SrvRecord;
 import org.cipango.dns.section.HeaderSection;
 import org.cipango.dns.section.HeaderSection.OpCode;
@@ -64,6 +65,7 @@ public class ParsingTest
 		testEncode("/responseAAAA.dat");
 		testEncode("/responseSrv.dat");
 		testEncode("/responseNaptr.dat");
+		testEncode("/responseNameError.dat");
 	}
 	
 
@@ -87,6 +89,7 @@ public class ParsingTest
 		Buffer buffer = new ByteArrayBuffer(512);
 		message.encode(buffer);
 		byte[] encoded = buffer.asArray();
+		//System.out.println(message);
 		
 		DnsMessage message2 = new DnsMessage();
 		message2.decode(new ByteArrayBuffer(encoded));
@@ -150,6 +153,25 @@ public class ParsingTest
 		assertEquals(DnsClass.IN, record.getDnsClass());
 		assertEquals(0x01152B, record.getTtl());
 		assertEquals(InetAddress.getByName("213.186.33.102"), ((ARecord) record).getAddress());
+	}
+	
+	@Test
+	public void testParsingNameError() throws Exception
+	{		
+		DnsMessage message = getMessage("/responseNameError.dat");
+		HeaderSection header = message.getHeaderSection();
+		assertEquals(ResponseCode.NAME_ERROR, header.getResponseCode());
+		assertEquals(0, message.getAnswerSection().size());
+		assertEquals(1, message.getAuthoritySection().size());
+		SoaRecord soaRecord = (SoaRecord) message.getAuthoritySection().get(0);
+		assertEquals("cipango.org", soaRecord.getName().toString());
+		assertEquals("dns.ovh.net", soaRecord.getPrimaryNameServer().toString());
+		assertEquals("tech.ovh.net", soaRecord.getMailbox().toString());
+		assertEquals(2011041207, soaRecord.getSerial());
+		assertEquals(86400, soaRecord.getRefresh());
+		assertEquals(3600, soaRecord.getRetry());
+		assertEquals(3600000, soaRecord.getExpires());
+		assertEquals(86400, soaRecord.getMinimumTtl());
 	}
 	
 	@Test

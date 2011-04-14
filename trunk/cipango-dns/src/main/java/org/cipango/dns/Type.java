@@ -23,6 +23,7 @@ import org.cipango.dns.record.NaptrRecord;
 import org.cipango.dns.record.NsRecord;
 import org.cipango.dns.record.PtrRecord;
 import org.cipango.dns.record.Record;
+import org.cipango.dns.record.SoaRecord;
 import org.cipango.dns.record.SrvRecord;
 import org.cipango.dns.util.BufferUtil;
 import org.eclipse.jetty.io.Buffer;
@@ -56,7 +57,7 @@ public enum Type
 	/**
 	 * marks the start of a zone of authority
 	 */
-	SOA(6),
+	SOA(6, SoaRecord.class),
 	/**
 	 * a mailbox domain name (EXPERIMENTAL)
 	 */

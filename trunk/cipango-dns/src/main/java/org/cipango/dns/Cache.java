@@ -13,6 +13,7 @@
 // ========================================================================
 package org.cipango.dns;
 
+import java.rmi.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -23,9 +24,11 @@ import java.util.concurrent.ConcurrentMap;
 
 import org.cipango.dns.record.AdditionalName;
 import org.cipango.dns.record.Record;
+import org.cipango.dns.record.SoaRecord;
 
 public class Cache
 {
+	public static final int DEFAULT_NEGATIVE_TTL = 3600;
 	
 	private ConcurrentMap<Name, List<Element>> _cache = new ConcurrentHashMap<Name, List<Element>>();
 	
@@ -45,11 +48,38 @@ public class Cache
 				records = records2;
 		}
 		
-		_cache.putIfAbsent(record.getName(), new ArrayList<Element>());
 		System.out.println("cache.add: " + record + " on " + records);
 		synchronized (records)
 		{
 			records.add(new Element(record));
+		}
+	}
+	
+	public void addNegativeRecord(DnsMessage query, DnsMessage answer)
+	{
+		Record record = query.getQuestionSection().get(0);
+		List<Element> records = _cache.get(record.getName());
+		
+		if (records ==null)
+		{
+			records = new ArrayList<Element>();
+			List<Element> records2 = _cache.putIfAbsent(record.getName(), records);
+			if (records2 != null)	
+				records = records2;
+		}
+		
+		int ttl = DEFAULT_NEGATIVE_TTL;
+		for (Record record2 : answer.getAuthoritySection())
+		{
+			System.out.println(record2);
+			if (record2 instanceof SoaRecord)
+				ttl = ((SoaRecord) record2).getTtl();
+		}
+		
+		System.out.println("Negative cache.add: " + record + " on " + records + " with ttl " + ttl);
+		synchronized (records)
+		{
+			records.add(new Element(record, ttl, true));
 		}
 	}
 	
@@ -82,31 +112,35 @@ public class Cache
 	
 	
 	@SuppressWarnings("unchecked")
-	public List<Record> getRecords(Name name, Type type)
+	public List<Record> getRecords(Name name, Type type) throws UnknownHostException
 	{
 		List<Element> records = _cache.get(name);
-		if (records == null)
-			return Collections.EMPTY_LIST;
-		List<Record> list = new ArrayList<Record>();
-		synchronized (records)
+		if (records != null)
 		{
-			Iterator<Element> it = records.iterator();
-			while (it.hasNext())
+			List<Record> list = new ArrayList<Record>();
+			synchronized (records)
 			{
-				Element element = it.next();
-				if (element.isExpired())
-					it.remove();
-				else if (element.get().getType() == type)
+				Iterator<Element> it = records.iterator();
+				while (it.hasNext())
 				{
-					list.add(element.get());
-				}
-				else if (element.get().getType() == Type.CNAME)
-				{
-					list.add(element.get());
+					Element element = it.next();
+					if (element.isExpired())
+						it.remove();
+					else if (element.get().getType() == type)
+					{
+						if (element.isNegative())
+							throw new UnknownHostException(name.toString());
+						list.add(element.get());
+					}
+					else if (element.get().getType() == Type.CNAME)
+					{
+						list.add(element.get());
+					}
 				}
 			}
+			return list;
 		}
-		return list;
+		return Collections.EMPTY_LIST;
 	}
 	
 	
@@ -114,11 +148,19 @@ public class Cache
 	{
 		private Record _record;
 		private Long _expires;
+		private boolean _negative;
 		
 		public Element(Record record)
 		{
 			_record = record;
 			_expires = System.currentTimeMillis() + record.getTtl() * 1000;
+		}
+		
+		public Element(Record record, long ttl, boolean negative)
+		{
+			_record = record;
+			_expires = System.currentTimeMillis() + ttl * 1000;
+			_negative = negative;
 		}
 		
 		public boolean isExpired()
@@ -134,6 +176,11 @@ public class Cache
 		public String toString()
 		{
 			return _record.toString() + "@" + new Date(_expires);
+		}
+
+		public boolean isNegative()
+		{
+			return _negative;
 		}
 	}
 }

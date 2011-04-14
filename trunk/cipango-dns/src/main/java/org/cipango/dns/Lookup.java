@@ -25,13 +25,13 @@ public class Lookup
 {
 	private Record _record;
 	private Name _toSearch;
-	private Resolver _resolver;
+	private ResolverManager _resolverManager;
 	private Cache _cache;
 	private int _iterations = 0;
 	
-	public Lookup(Resolver resolver, Cache cache, Record record)
+	public Lookup(ResolverManager resolverManager, Cache cache, Record record)
 	{
-		_resolver = resolver;
+		_resolverManager = resolverManager;
 		_record = record;
 		_cache = cache;
 	}
@@ -52,11 +52,18 @@ public class Lookup
 			}
 		
 			DnsMessage query = new DnsMessage(record);
-			DnsMessage answer = _resolver.resolve(query);
+			DnsMessage answer = _resolverManager.resolve(query);
 			incrementIteration();
 			
-			if (answer.getHeaderSection().getResponseCode() != ResponseCode.NO_ERROR)
+			ResponseCode responseCode = answer.getHeaderSection().getResponseCode();
+			if (responseCode == ResponseCode.NAME_ERROR)
+			{
+				_cache.addNegativeRecord(query, answer);
+				throw new UnknownHostException(_record.getName().toString());
+			} 
+			else if (responseCode != ResponseCode.NO_ERROR)
 				throw new IOException("Got negative answer: " + answer.getHeaderSection().getResponseCode());
+			
 			if (answer.getAnswerSection().isEmpty())
 				throw new UnknownHostException(_record.getName().toString());
 			
