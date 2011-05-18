@@ -165,6 +165,7 @@
     <module>cipango-callflow</module>
     <module>cipango-distribution</module>
     <module>cipango-maven-plugin</module>
+    <module>cipango-embedded</module>
   </modules>
 
   <dependencyManagement>
