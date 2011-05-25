@@ -109,6 +109,8 @@ public class SipAppContext extends WebAppContext implements SipHandler
 		"6026"	// Correct Transaction Handling for 2xx Responses to Session Initiation Protocol (SIP) INVITE Requests
 
 	};
+	
+	public static final String EXTERNAL_INTERFACES = "org.cipango.externalOutboundInterfaces";
     
     /*
     public final CLFireEvent<SipErrorListener, SipErrorEvent> _noAck = new CLFireEvent<SipErrorListener, SipErrorEvent>()
@@ -213,7 +215,7 @@ public class SipAppContext extends WebAppContext implements SipHandler
 	}
 	
 	public void initialized()
-	{
+	{	
 		ClassLoader oldClassLoader = null;
 		Thread currentThread = null;
 		
@@ -226,6 +228,7 @@ public class SipAppContext extends WebAppContext implements SipHandler
 		try
 		{
 			List<SipURI> outbounds = new ArrayList<SipURI>();
+			List<SipURI> externals = new ArrayList<SipURI>();
 
 			SipConnector[] connectors = getSipServer().getConnectorManager().getConnectors();
 			
@@ -236,9 +239,12 @@ public class SipAppContext extends WebAppContext implements SipHandler
 					SipURI uri = new SipURIImpl(null, connector.getAddr().getHostAddress(), connector.getLocalPort());
 					if (!outbounds.contains(uri))
 						outbounds.add(new ReadOnlySipURI(uri));
+					if (!externals.contains(connector.getSipUri()))
+						externals.add(new ReadOnlySipURI(connector.getSipUri()));
 				}
 			}
 			setAttribute(SipServlet.OUTBOUND_INTERFACES, Collections.unmodifiableList(outbounds));
+			setAttribute(EXTERNAL_INTERFACES, Collections.unmodifiableList(externals));
 			
 			SipServletHolder[] holders = getSipServletHandler().getSipServlets();
 			if (holders != null)
