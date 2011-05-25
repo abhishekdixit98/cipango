@@ -214,7 +214,7 @@ public class SipAppContext extends WebAppContext implements SipHandler
 		}
 	}
 	
-	public void initialized()
+	public void serverStarted()
 	{	
 		ClassLoader oldClassLoader = null;
 		Thread currentThread = null;
@@ -456,14 +456,14 @@ public class SipAppContext extends WebAppContext implements SipHandler
         			+ ": " + getUnavailableException().getMessage());
     	}
     	else if (hasSipServlets())
-    		getSipServer().applicationDeployed(this);
+    		getSipServer().applicationStarted(this);
     }
     
 	@Override
 	protected void doStop() throws Exception
 	{
 		if (hasSipServlets() && isAvailable())
-			getSipServer().applicationUndeployed(this);
+			getSipServer().applicationStopped(this);
 		
 		if (_sipMetaData != null)
 			_sipMetaData.clear();

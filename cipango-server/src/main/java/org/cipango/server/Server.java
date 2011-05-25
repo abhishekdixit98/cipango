@@ -96,7 +96,6 @@ public class Server extends org.eclipse.jetty.server.Server implements SipHandle
 		if (_applicationRouter == null)
 			setApplicationRouter(ApplicationRouterLoader.loadApplicationRouter());
 
-		
 		try 
 		{
 			_applicationRouter.init();
@@ -117,7 +116,7 @@ public class Server extends org.eclipse.jetty.server.Server implements SipHandle
 			if (contexts != null)
 			{
 				for (SipAppContext context : contexts)
-					context.initialized();
+					context.serverStarted();
 			}
 		}
 		catch (Throwable t) { mex.add(t); }
@@ -163,22 +162,19 @@ public class Server extends org.eclipse.jetty.server.Server implements SipHandle
 		return _applicationRouter;
 	}
 	
-    public void applicationDeployed(SipAppContext context)
+    public void applicationStarted(SipAppContext context)
     {
     	if (isStarted())
+    	{
     		_applicationRouter.applicationDeployed(Collections.singletonList(context.getName()));
+    		context.serverStarted();
+    	}
     }
     
-    public void applicationUndeployed(SipAppContext context)
+    public void applicationStopped(SipAppContext context)
     {
     	if (isStarted())
     		_applicationRouter.applicationUndeployed(Collections.singletonList(context.getName()));
-    }
-    
-    public void servletInitialized(SipAppContext context, SipServlet servlet)
-    {
-    	if (isStarted())
-    		context.fireServletInitialized(servlet);
     }
     
     public void customizeRequest(SipRequest request) throws IOException
