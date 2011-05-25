@@ -174,12 +174,6 @@ public class SipServletHandler extends ServletHandler implements SipHandler
         }
         super.setServer(server);
     }
-
-    
-	protected void servletInitialized(SipServlet servlet)
-	{
-		((Server) getServer()).servletInitialized(_context, servlet);
-	}
 	
     public SipServletHolder getDefaultServlet()
     {
