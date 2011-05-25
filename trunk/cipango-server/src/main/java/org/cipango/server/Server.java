@@ -165,7 +165,10 @@ public class Server extends org.eclipse.jetty.server.Server implements SipHandle
     public void applicationStarted(SipAppContext context)
     {
     	if (isStarted())
+    	{
     		_applicationRouter.applicationDeployed(Collections.singletonList(context.getName()));
+    		context.serverStarted();
+    	}
     }
     
     public void applicationStopped(SipAppContext context)
