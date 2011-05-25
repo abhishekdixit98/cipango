@@ -225,6 +225,21 @@ public class SipAppContext extends WebAppContext implements SipHandler
 		}
 		try
 		{
+			List<SipURI> outbounds = new ArrayList<SipURI>();
+
+			SipConnector[] connectors = getSipServer().getConnectorManager().getConnectors();
+			
+			if (connectors != null)
+			{
+				for (SipConnector connector : connectors) 
+				{
+					SipURI uri = new SipURIImpl(null, connector.getAddr().getHostAddress(), connector.getLocalPort());
+					if (!outbounds.contains(uri))
+						outbounds.add(new ReadOnlySipURI(uri));
+				}
+			}
+			setAttribute(SipServlet.OUTBOUND_INTERFACES, Collections.unmodifiableList(outbounds));
+			
 			SipServletHolder[] holders = getSipServletHandler().getSipServlets();
 			if (holders != null)
 			{
@@ -385,21 +400,6 @@ public class SipAppContext extends WebAppContext implements SipHandler
 		setAttribute(SipServlet.SIP_FACTORY, getSipFactory());
 		setAttribute(SipServlet.TIMER_SERVICE, getTimerService());
 		setAttribute(SipServlet.SIP_SESSIONS_UTIL, getSipSessionsUtil());
-		
-		List<SipURI> outbounds = new ArrayList<SipURI>();
-
-		SipConnector[] connectors = getSipServer().getConnectorManager().getConnectors();
-		
-		if (connectors != null)
-		{
-			for (SipConnector connector : connectors) 
-			{
-				SipURI uri = connector.getSipUri();
-				if (!outbounds.contains(uri))
-					outbounds.add(new ReadOnlySipURI(uri));
-			}
-		}
-		setAttribute(SipServlet.OUTBOUND_INTERFACES, Collections.unmodifiableList(outbounds));
 		setAttribute(SipServlet.SUPPORTED, Collections.unmodifiableList(Arrays.asList(EXTENSIONS)));
 		setAttribute(SipServlet.SUPPORTED_RFCs, Collections.unmodifiableList(Arrays.asList(SUPPORTED_RFC)));
 		

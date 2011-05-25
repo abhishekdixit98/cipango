@@ -40,21 +40,6 @@ import org.eclipse.jetty.util.thread.ThreadPool;
 
 public abstract class AbstractSipConnector extends AbstractLifeCycle implements SipConnector, Dumpable
 {
-    public static String __localhost;
-    
-    static
-    {
-        try
-        {
-            __localhost = InetAddress.getLocalHost().getHostAddress();
-        }
-        catch (Exception e)
-        {
-            Log.ignore(e);
-            __localhost = "127.0.0.1";
-        }
-    }
-    
     private int _port;
     private String _host;
     private String _name;
@@ -63,7 +48,6 @@ public abstract class AbstractSipConnector extends AbstractLifeCycle implements 
     private int _externalPort = -1;
     
     private SipURI _sipUri;
-    private Via _via;
     
     private int _acceptors = 1;
     private Thread[] _acceptorThread;
@@ -71,8 +55,6 @@ public abstract class AbstractSipConnector extends AbstractLifeCycle implements 
     private SipHandler _handler;
     private Server _server;
     private ThreadPool _threadPool;
-
-    private boolean _transportParam = false;
     
     protected Object _statsLock = new Object();
     protected transient long _statsStartedAt = -1;
@@ -82,10 +64,6 @@ public abstract class AbstractSipConnector extends AbstractLifeCycle implements 
    
     public AbstractSipConnector() 
     {
-        _port = getDefaultPort();
-        setHost( __localhost);
-        
-        updateURI();
     }
     
     public void setPort(int port) 
@@ -93,12 +71,7 @@ public abstract class AbstractSipConnector extends AbstractLifeCycle implements 
     	if (isRunning())
     		throw new IllegalStateException("running");
     	
-    	if (port == -1)
-    		port = getDefaultPort();
-    	
         _port = port;
-        
-        updateURI();
     }
     
     public int getPort() 
@@ -110,16 +83,11 @@ public abstract class AbstractSipConnector extends AbstractLifeCycle implements 
     {
     	if (isRunning())
     		throw new IllegalStateException();
-    	
-    	if (host == null)
-    		host = __localhost;
-    	
+
     	if (host.contains(":") && !host.contains("["))
     		_host = "[" + host + "]";
     	else
             _host = host;
-        
-        updateURI();
     }
     
     public String getHost() 
@@ -133,8 +101,6 @@ public abstract class AbstractSipConnector extends AbstractLifeCycle implements 
     		throw new IllegalStateException();
     	
     	_externalHost = externalHost;
-    	
-    	updateURI();
     }
     
     public String getExternalHost()
@@ -147,8 +113,6 @@ public abstract class AbstractSipConnector extends AbstractLifeCycle implements 
     	if (isRunning())
     		throw new IllegalStateException();
         _name = name;
-        
-        updateURI();
     }
     
     public String getName() 
@@ -156,41 +120,32 @@ public abstract class AbstractSipConnector extends AbstractLifeCycle implements 
         return _name;
     }
     
-    public Via getVia() 
-    {
-        return _via;
-    }
-
-    public void setTransportParam(boolean b) 
-    {
-    	if (isRunning())
-    		throw new IllegalStateException();
-    	_transportParam = b;
-    }
-    
     public String getTransport() 
     {
         return SipConnectors.getName(getTransportOrdinal());
     }
     
-    protected void updateURI()
-    {
-    	String host = (_externalHost != null) ? _externalHost : _host;
-    	int port = (_externalPort != -1) ? _externalPort : _port;
-    	
-        _sipUri = new SipURIImpl(_name, host, port);
-    }
-    
     protected void doStart() throws Exception 
     {
-         if (_transportParam)
-             _sipUri.setTransportParam(getTransport().toLowerCase());
-        
-        _via = new Via(
-                SipVersions.SIP_2_0,
-                getTransport().toUpperCase(),
-                _sipUri.getHost(),
-                _sipUri.getPort());
+    	if (_port <= 0)
+    		_port = getDefaultPort();
+    	
+    	if (_host == null)
+    	{
+    		try
+    		{
+    			_host = InetAddress.getLocalHost().getHostAddress();
+    		}
+    		catch (Exception e)
+    		{
+    			Log.ignore(e);
+    			_host = "127.0.0.1";
+    		}
+    	}
+    	
+    	_sipUri = new SipURIImpl(_name,
+    			_externalHost != null ? _externalHost : _host, 
+    			_externalPort != -1 ? _externalPort : _port);
         
         if (_threadPool == null && getServer() != null)
         	_threadPool = getServer().getSipThreadPool();

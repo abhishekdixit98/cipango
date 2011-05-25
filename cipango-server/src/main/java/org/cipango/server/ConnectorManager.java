@@ -117,11 +117,6 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
     	return _server;
     }
     
-    public Via getVia(int type, InetAddress address)
-    {
-        return (Via) findConnector(type, address).getVia().clone();
-    }
-    
     public Address getContact(int type)
     {
         SipConnector sc = findConnector(type, null);
@@ -340,14 +335,11 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
     	
         Via via = request.getTopVia();
         
-        Via connectorVia = connector.getVia();
-        via.setTransport(connectorVia.getTransport());
-        
-        String host = connectorVia.getHost();
-        via.setHost(host);
-        via.setPort(connectorVia.getPort());
+        via.setTransport(connector.getTransport());
+        via.setHost(connector.getSipUri().getHost());
+        via.setPort(connector.getSipUri().getPort());
                 
-        // TODO > 1300
+        // TODO mtu
 
         SipConnection connection = connector.getConnection(address, port);
         send(request, connection);
