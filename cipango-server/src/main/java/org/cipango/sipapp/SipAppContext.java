@@ -458,9 +458,6 @@ public class SipAppContext extends WebAppContext implements SipHandler
     	else if (hasSipServlets())
     	{
     		getServer().applicationStarted(this);
-    		
-    		if (getServer().isStarted())
-    			serverStarted();
     	}
     }
     
