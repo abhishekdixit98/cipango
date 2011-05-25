@@ -97,7 +97,7 @@ public abstract class AbstractSipConnector extends AbstractLifeCycle implements 
     
     public void setExternalHost(String externalHost)
     {
-    	if (isRunning())
+    	if (isStarted())
     		throw new IllegalStateException();
     	
     	_externalHost = externalHost;
@@ -106,6 +106,19 @@ public abstract class AbstractSipConnector extends AbstractLifeCycle implements 
     public String getExternalHost()
     {
     	return _externalHost;
+    }
+    
+    public void setExternalPort(int port)
+    {
+    	if (isStarted())
+    		throw new IllegalStateException();
+    	
+    	_externalPort = port;
+    }
+    
+    public int getExternalPort()
+    {
+    	return _externalPort;
     }
     
     public void setName(String name) 
