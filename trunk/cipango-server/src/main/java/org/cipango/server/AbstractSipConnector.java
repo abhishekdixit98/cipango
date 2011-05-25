@@ -84,7 +84,7 @@ public abstract class AbstractSipConnector extends AbstractLifeCycle implements 
     	if (isRunning())
     		throw new IllegalStateException();
 
-    	if (host.contains(":") && !host.contains("["))
+    	if (host != null && host.contains(":") && !host.contains("["))
     		_host = "[" + host + "]";
     	else
             _host = host;
