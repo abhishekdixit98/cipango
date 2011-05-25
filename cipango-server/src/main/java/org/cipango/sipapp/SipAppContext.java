@@ -230,7 +230,7 @@ public class SipAppContext extends WebAppContext implements SipHandler
 			List<SipURI> outbounds = new ArrayList<SipURI>();
 			List<SipURI> externals = new ArrayList<SipURI>();
 
-			SipConnector[] connectors = getSipServer().getConnectorManager().getConnectors();
+			SipConnector[] connectors = getServer().getConnectorManager().getConnectors();
 			
 			if (connectors != null)
 			{
@@ -456,14 +456,19 @@ public class SipAppContext extends WebAppContext implements SipHandler
         			+ ": " + getUnavailableException().getMessage());
     	}
     	else if (hasSipServlets())
-    		getSipServer().applicationStarted(this);
+    	{
+    		getServer().applicationStarted(this);
+    		
+    		if (getServer().isStarted())
+    			serverStarted();
+    	}
     }
     
 	@Override
 	protected void doStop() throws Exception
 	{
 		if (hasSipServlets() && isAvailable())
-			getSipServer().applicationStopped(this);
+			getServer().applicationStopped(this);
 		
 		if (_sipMetaData != null)
 			_sipMetaData.clear();
@@ -767,7 +772,8 @@ public class SipAppContext extends WebAppContext implements SipHandler
 		_specVersion = specVersion;
 	}
 	
-	public Server getSipServer()
+	@Override
+	public Server getServer()
 	{
 		return (Server) getServer();
 	}
@@ -902,7 +908,7 @@ public class SipAppContext extends WebAppContext implements SipHandler
         
         public SipApplicationSession createApplicationSession()
         {
-        	Server server = getSipServer();
+        	Server server = getServer();
         	
         	SessionScope scope = server.getSessionManager().openScope(ID.newCallId());
 	        try
@@ -945,7 +951,7 @@ public class SipAppContext extends WebAppContext implements SipHandler
 			
 			String id = applicationSessionId.substring(0, i);
 			
-			CallSession callSession = getSipServer().getSessionManager().get(id);
+			CallSession callSession = getServer().getSessionManager().get(id);
 			if (callSession == null)
 				return null;
 			
@@ -963,7 +969,7 @@ public class SipAppContext extends WebAppContext implements SipHandler
 			
 			String id = ID.getIdFromKey(getName(), key);
 
-			SessionScope tx = getSipServer().getSessionManager().openScope(id);
+			SessionScope tx = getServer().getSessionManager().openScope(id);
 			try
 			{
 				AppSession appSession = tx.getCallSession().getAppSession(id);
