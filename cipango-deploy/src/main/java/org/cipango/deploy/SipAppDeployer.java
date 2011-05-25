@@ -17,15 +17,15 @@ package org.cipango.deploy;
 import java.util.ArrayList;
 
 import org.cipango.sipapp.SipAppContext;
-
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.deploy.WebAppDeployer;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.resource.Resource;
 
+@SuppressWarnings("deprecation")
 public class SipAppDeployer extends WebAppDeployer 
 {
     private ArrayList<SipAppContext> _deployed;
@@ -47,7 +47,7 @@ public class SipAppDeployer extends WebAppDeployer
         _defaultsSipDescriptor = defaultsDescriptor;
     }
     
-    @Override
+	@Override
     public void scan() throws Exception
     {
     	MultiException mex = new MultiException();
@@ -157,7 +157,7 @@ public class SipAppDeployer extends WebAppDeployer
 	            _deployed.add(sac);
 	            
 	            if (getContexts().isStarted())
-	                getContexts().start();
+	                sac.start();
         	} 
         	catch (Throwable e) 
         	{
