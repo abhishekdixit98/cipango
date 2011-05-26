@@ -772,7 +772,7 @@ public class SipAppContext extends WebAppContext implements SipHandler
 	@Override
 	public Server getServer()
 	{
-		return (Server) getServer();
+		return (Server) super.getServer();
 	}
 	
 	public SipMetaData getSipMetaData()
