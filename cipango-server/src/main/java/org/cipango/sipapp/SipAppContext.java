@@ -521,7 +521,7 @@ public class SipAppContext extends WebAppContext implements SipHandler
     
     public void statsReset()
     {
-    	_sessionsStats.reset();
+    	_sessionsStats.reset(getSessions());
     	_sessionTimeStats.reset();
     }
 

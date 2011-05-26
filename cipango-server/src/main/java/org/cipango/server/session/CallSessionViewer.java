@@ -142,9 +142,9 @@ public class CallSessionViewer
 	
 	public List<String> getCallIds()
 	{
-		synchronized (_sessionManager._callSessions)
+		synchronized (_sessionManager._sessions)
 		{
-			return new ArrayList<String>(_sessionManager._callSessions.keySet());
+			return new ArrayList<String>(_sessionManager._sessions.keySet());
 		}
 	}
 }
