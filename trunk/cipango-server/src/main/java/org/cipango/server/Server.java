@@ -352,8 +352,7 @@ public class Server extends org.eclipse.jetty.server.Server implements SipHandle
 	public void setAllStatsOn(boolean on) 
 	{
 		setStatsOn(on);
-		if (getSessionManager() != null)
-			getSessionManager().setStatsOn(on);
+		
 		getConnectorManager().setStatsOn(on);		
 		getTransactionManager().setStatsOn(on);
 	}
@@ -361,7 +360,6 @@ public class Server extends org.eclipse.jetty.server.Server implements SipHandle
 	public boolean isAllStatsOn() 
 	{
 		return isStatsOn()
-			&& getSessionManager().isStatsOn()
 			&& getConnectorManager().isStatsOn()
 			&& getTransactionManager().getStatsOn();
 	}

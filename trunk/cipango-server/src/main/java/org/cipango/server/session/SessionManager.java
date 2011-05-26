@@ -14,6 +14,8 @@
 
 package org.cipango.server.session;
 
+import static java.lang.Math.round;
+
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -23,7 +25,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
 import javax.servlet.sip.SipSession;
@@ -43,6 +44,7 @@ import org.cipango.util.TimerTask;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
+import org.eclipse.jetty.util.statistic.SampleStatistic;
 
 /**
  * Holds and manages all SIP related sessions.
@@ -56,7 +58,7 @@ import org.eclipse.jetty.util.statistic.CounterStatistic;
  */
 public class SessionManager extends AbstractLifeCycle
 {   
-    protected Map<String, CSession> _callSessions = new HashMap<String, CSession>(1024);
+    protected Map<String, CSession> _sessions = new HashMap<String, CSession>(1024);
     protected TimerQueue<CSession> _queue = new TimerQueue<CSession>(1024);
     
     private Thread _scheduler;
@@ -66,8 +68,9 @@ public class SessionManager extends AbstractLifeCycle
     private Server _server;
 	
     // statistics 
-    private AtomicLong _statsStartedAt = new AtomicLong(-1);
     private CounterStatistic _sessionsStats = new CounterStatistic();
+    private SampleStatistic _sessionTimeStats = new SampleStatistic();
+    
     private int _callsThreshold = 0;
     	
     public SessionManager()
@@ -97,7 +100,7 @@ public class SessionManager extends AbstractLifeCycle
     	if (_scheduler != null)
     		_scheduler.interrupt();
     	
-    	_callSessions.clear();
+    	_sessions.clear();
     }
     
     public void setPriorityOffset(int priorityOffset)
@@ -114,20 +117,19 @@ public class SessionManager extends AbstractLifeCycle
     {
     	CSession callSession = null;
     	
-    	synchronized (_callSessions)
+    	synchronized (_sessions)
     	{
-    		callSession =  _callSessions.get(id);
+    		callSession =  _sessions.get(id);
     		if (callSession == null)
     		{
-    			callSession = newCall(id);
+    			callSession = newSession(id);
     			
-    			_callSessions.put(callSession.getId(), callSession);
+    			_sessions.put(callSession.getId(), callSession);
     			
-    			if (_statsStartedAt.get() > 0)
-					_sessionsStats.increment();
+				_sessionsStats.increment();
     			
-    			if (_callsThreshold > 0 && getCalls() == _callsThreshold)
-    				Events.fire(Events.CALLS_THRESHOLD_READCHED, "Calls threashlod reached: " + getCalls());
+    			if (_callsThreshold > 0 && getCallSessions() == _callsThreshold)
+    				Events.fire(Events.CALLS_THRESHOLD_READCHED, "Calls threshold reached: " + getCallSessions());
     		}
     	}
     	return new SessionScope(callSession._lock.tryLock() ? callSession : null);
@@ -176,8 +178,11 @@ public class SessionManager extends AbstractLifeCycle
 	        	if (callSession.isDone())
 	        	{
 	        		boolean removed = removeSession(callSession);
-	        		if (removed && _statsStartedAt.get() > 0)
+	        		if (removed)
+	        		{
 	        			_sessionsStats.decrement();
+	                    _sessionTimeStats.set(round((System.currentTimeMillis() - callSession.getCreationTime())/1000.0));
+	        		}
 	        	}
 	        	else
 	        	{
@@ -199,22 +204,22 @@ public class SessionManager extends AbstractLifeCycle
     	if (Log.isDebugEnabled())
 			Log.debug("CallSession " + callSession.getId() + " is done.");
 		
-		synchronized (_callSessions)
+		synchronized (_sessions)
     	{
-    		return _callSessions.remove(callSession.getId()) != null;
+    		return _sessions.remove(callSession.getId()) != null;
     	}
     }
     
-    protected CSession newCall(String id)
+    protected CSession newSession(String id)
     {
     	return new CSession(id);
     }
     
     public CallSession get(String callId)
     {
-    	synchronized (_callSessions)
+    	synchronized (_sessions)
     	{
-			return (CallSession) _callSessions.get(callId);
+			return (CallSession) _sessions.get(callId);
 		}
     }
     
@@ -316,17 +321,23 @@ public class SessionManager extends AbstractLifeCycle
 	
 	// ------ statistics --------
 	
-    public int getCalls()
-    {
+	public void statsReset()
+	{
+		_sessionsStats.reset(getCallSessions());
+		_sessionTimeStats.reset();
+	}
+	
+	public int getCallSessions()
+	{
         return (int) _sessionsStats.getCurrent();
     }
     
-    public int getMaxCalls()
+    public int getCallSessionsMax()
     {
         return (int) _sessionsStats.getMax();
     }
         
-    public long getTotalCalls()
+    public long getCallSessionsTotal()
     {
         return _sessionsStats.getTotal();
     }
@@ -339,26 +350,6 @@ public class SessionManager extends AbstractLifeCycle
 	public void setCallsThreshold(int callsThreshold)
 	{
 		_callsThreshold = callsThreshold;
-	}
-	
-    public void statsReset() 
-    {
-        _statsStartedAt.set(_statsStartedAt.get() == -1 ? -1l : System.currentTimeMillis());
-        _sessionsStats.reset();
-    }
-    
-    public void setStatsOn(boolean on) 
-    {
-        if (on && _statsStartedAt.get() != -1) 
-            return;
-        
-        statsReset();
-        _statsStartedAt.set(on ? System.currentTimeMillis() : -1);
-    }
-    
-	public boolean isStatsOn() 
-	{
-		return _statsStartedAt.get() != -1;
 	}
 	
 	/**
@@ -450,6 +441,7 @@ public class SessionManager extends AbstractLifeCycle
     public class CSession extends TimerQueue.Node implements CallSession
     {
     	protected String _id;
+    	protected final long _created;
     	
     	protected TimerList _timers = new TimerList();
     	
@@ -462,11 +454,17 @@ public class SessionManager extends AbstractLifeCycle
     	public CSession(String id)
     	{
     		_id = id;
+    		_created = System.currentTimeMillis();
     	}
     	
     	public String getId()
     	{
     		return _id;
+    	}
+    	
+    	public long getCreationTime()
+    	{
+    		return _created;
     	}
     	
     	public Server getServer()
