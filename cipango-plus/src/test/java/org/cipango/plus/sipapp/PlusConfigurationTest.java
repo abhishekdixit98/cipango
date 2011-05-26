@@ -17,11 +17,11 @@ import java.util.Arrays;
 
 import javax.naming.InitialContext;
 
+import org.cipango.server.Server;
 import org.cipango.servlet.SipServletHandler;
 import org.cipango.sipapp.SipAppContext;
 import org.cipango.sipapp.SipXmlConfiguration;
 import org.eclipse.jetty.plus.webapp.EnvConfiguration;
-import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.WebAppClassLoader;
 import org.junit.Assert;
