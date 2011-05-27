@@ -20,6 +20,7 @@ import org.jrobin.core.RrdDb;
 import org.jrobin.core.RrdDbPool;
 import org.jrobin.core.RrdDef;
 import org.jrobin.core.RrdDefTemplate;
+import org.jrobin.core.RrdException;
 import org.jrobin.core.Sample;
 import org.jrobin.graph.RrdGraph;
 import org.jrobin.graph.RrdGraphDef;
@@ -45,32 +46,32 @@ public class StatisticGraph
 										// needed at startup
 
 	private StatisticGraphTask _task;
-	private RrdDbPool _rrdPool = RrdDbPool.getInstance();
+	private RrdDbPool _rrdPool;
 	private String _rrdPath;
 	private MBeanServerConnection _connection;
 	private String _dataFileName;
 	private ObjectName _sessionManger;
-	
+
 	private Timer _statTimer = new Timer("Statistics timer");
 	private static Runtime __runtime = Runtime.getRuntime();
 
 	private Logger _logger = Log.getLogger("console");
-	
+
 	private boolean _started = false;
-	
-	public StatisticGraph(MBeanServerConnection connection) throws AttributeNotFoundException, InstanceNotFoundException, MBeanException, ReflectionException, IOException
+
+	public StatisticGraph(MBeanServerConnection connection) throws AttributeNotFoundException,
+			InstanceNotFoundException, MBeanException, ReflectionException, IOException, RrdException
 	{
 		_connection = connection;
 		_sessionManger = (ObjectName) _connection.getAttribute(ConsoleFilter.SERVER, "sessionManager");
+		_rrdPool = RrdDbPool.getInstance();
 	}
 
 	/**
-	 * Sets the refresh period for statistics in seconds. If the period has
-	 * changed, write statictics immediatly and reschedule the timer with
-	 * <code>statRefreshPeriod</code>.
+	 * Sets the refresh period for statistics in seconds. If the period has changed, write
+	 * statictics immediatly and reschedule the timer with <code>statRefreshPeriod</code>.
 	 * 
-	 * @param statRefreshPeriod
-	 *            The statistics refresh period in seconds or <code>-1</code> to
+	 * @param statRefreshPeriod The statistics refresh period in seconds or <code>-1</code> to
 	 *            disabled refresh.
 	 */
 	public void setRefreshPeriod(long statRefreshPeriod)
@@ -90,8 +91,7 @@ public class StatisticGraph
 			{
 				// The first schedule should be at the beginning of the next
 				// minute
-				_statTimer.schedule(_task, _refreshPeriod * 1000,
-						_refreshPeriod * 1000);
+				_statTimer.schedule(_task, _refreshPeriod * 1000, _refreshPeriod * 1000);
 			}
 		}
 	}
@@ -109,8 +109,10 @@ public class StatisticGraph
 			sample.setValue("usedMemory", totalMemory - __runtime.freeMemory());
 			if (_connection.isRegistered(ConsoleFilter.CONNECTOR_MANAGER))
 			{
-				sample.setValue("incomingMessages", (Long) _connection.getAttribute(ConsoleFilter.CONNECTOR_MANAGER, "messagesReceived"));
-				sample.setValue("outgoingMessages", (Long) _connection.getAttribute(ConsoleFilter.CONNECTOR_MANAGER, "messagesSent"));
+				sample.setValue("incomingMessages",
+						(Long) _connection.getAttribute(ConsoleFilter.CONNECTOR_MANAGER, "messagesReceived"));
+				sample.setValue("outgoingMessages",
+						(Long) _connection.getAttribute(ConsoleFilter.CONNECTOR_MANAGER, "messagesSent"));
 			}
 			sample.update();
 			_rrdPool.release(rrdDb);
@@ -121,8 +123,7 @@ public class StatisticGraph
 		}
 	}
 
-	public byte[] createGraphAsPng(Date start, Date end,
-			RrdGraphDefTemplate graphTemplate)
+	public byte[] createGraphAsPng(Date start, Date end, RrdGraphDefTemplate graphTemplate)
 	{
 		try
 		{
@@ -133,8 +134,8 @@ public class StatisticGraph
 			graphTemplate.setVariable("rrd", _rrdPath);
 			// create graph finally
 			RrdGraphDef gDef = graphTemplate.getRrdGraphDef();
-			RrdGraph graph = new RrdGraph(gDef, true);
-			return graph.getPNGBytes(717, 300);
+			RrdGraph graph = new RrdGraph(gDef);
+			return graph.getRrdGraphInfo().getBytes();
 		}
 		catch (Exception e)
 		{
@@ -149,13 +150,11 @@ public class StatisticGraph
 	}
 
 	/**
-	 * Create a graph beginnig <code>deltaStart</code> seconds before now and
-	 * ending <code>deltaStop</code> seconds before now.
+	 * Create a graph beginnig <code>deltaStart</code> seconds before now and ending
+	 * <code>deltaStop</code> seconds before now.
 	 * 
-	 * @param deltaStart
-	 *            number of seconds before now for graph start.
-	 * @param deltaEnd
-	 *            number of seconds before now for graph end.
+	 * @param deltaStart number of seconds before now for graph start.
+	 * @param deltaEnd number of seconds before now for graph end.
 	 * @return The PNG image.
 	 */
 	public byte[] createGraphAsPng(long deltaStart, long deltaStop, String type)
@@ -174,8 +173,7 @@ public class StatisticGraph
 	public byte[] createGraphAsPng(long time, String type)
 	{
 		long start = System.currentTimeMillis() - time * 1000;
-		return createGraphAsPng(new Date(start), new Date(System
-				.currentTimeMillis()), type);
+		return createGraphAsPng(new Date(start), new Date(System.currentTimeMillis()), type);
 	}
 
 	public void setDataFileName(String name)
@@ -191,22 +189,18 @@ public class StatisticGraph
 		{
 			if (_dataFileName == null)
 				_dataFileName = System.getProperty("jetty.home", ".") + "/logs/statistics.rdd";
-			RrdDb.setLockMode(RrdDb.NO_LOCKS);
 
 			File rrdFile = new File(_dataFileName);
 			_rrdPath = rrdFile.getAbsolutePath();
 
 			if (!rrdFile.exists())
 			{
-				InputStream templateIs = getClass().getResourceAsStream(
-						RDD_TEMPLATE_FILE_NAME);
+				InputStream templateIs = getClass().getResourceAsStream(RDD_TEMPLATE_FILE_NAME);
 
-				RrdDefTemplate defTemplate = new RrdDefTemplate(
-						new InputSource(templateIs));
+				RrdDefTemplate defTemplate = new RrdDefTemplate(new InputSource(templateIs));
 
 				defTemplate.setVariable("path", _rrdPath);
-				defTemplate.setVariable("start", new Date(System
-						.currentTimeMillis()));
+				defTemplate.setVariable("start", new Date(System.currentTimeMillis()));
 				RrdDef rrdDef = defTemplate.getRrdDef();
 
 				RrdDb rrdDb = _rrdPool.requestRrdDb(rrdDef);
@@ -214,18 +208,12 @@ public class StatisticGraph
 				_rrdPool.release(rrdDb);
 			}
 
-			InputStream templateGraph = getClass().getResourceAsStream(
-					RDD_CALLS_GRAPH_TEMPLATE);
-			_callGraphTemplate = new RrdGraphDefTemplate(new InputSource(
-					templateGraph));
-			templateGraph = getClass().getResourceAsStream(
-					RDD_MEMORY_GRAPH_TEMPLATE);
-			_memoryGraphTemplate = new RrdGraphDefTemplate(new InputSource(
-					templateGraph));
-			templateGraph = getClass().getResourceAsStream(
-					RDD_MESSAGES_GRAPH_TEMPLATE);
-			_messagesGraphTemplate = new RrdGraphDefTemplate(new InputSource(
-					templateGraph));
+			InputStream templateGraph = getClass().getResourceAsStream(RDD_CALLS_GRAPH_TEMPLATE);
+			_callGraphTemplate = new RrdGraphDefTemplate(new InputSource(templateGraph));
+			templateGraph = getClass().getResourceAsStream(RDD_MEMORY_GRAPH_TEMPLATE);
+			_memoryGraphTemplate = new RrdGraphDefTemplate(new InputSource(templateGraph));
+			templateGraph = getClass().getResourceAsStream(RDD_MESSAGES_GRAPH_TEMPLATE);
+			_messagesGraphTemplate = new RrdGraphDefTemplate(new InputSource(templateGraph));
 
 			// updateDb();
 
@@ -239,7 +227,7 @@ public class StatisticGraph
 			_logger.warn("Unable to create RRD", e);
 		}
 	}
-	
+
 	public boolean isStarted()
 	{
 		return _started;

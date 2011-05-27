@@ -7,11 +7,10 @@
      </span>
      <options>
          <title>Current Call Sessions</title>
-         <grid_range>
-             <lower>0</lower>
-             <upper>U</upper>
-             <rigid>false</rigid>
-         </grid_range>
+         <image_format>png</image_format>
+         <min_value>0</min_value>
+         <width>717</width>
+         <height>300</height>
      </options>
      <datasources>
          <def>
@@ -25,17 +24,17 @@
          <line>
              <datasource>calls</datasource>
              <color>#FF0000</color>
-             <legend>Call Sessions</legend>
+             <legend>call sessions\r</legend>
          </line>
          <gprint>
            <datasource>calls</datasource>
            <cf>MAX</cf>
-           <format>max call sessions = @3@s</format>
+           <format>max call sessions = %7.3f</format>
          </gprint>
          <gprint>
            <datasource>calls</datasource>
-           <cf>Average</cf>
-           <format>avg call sessions = @3@s@r</format>
+           <cf>AVERAGE</cf>
+           <format>avg call sessions = %7.3f\r</format>
          </gprint>
      </graph>
 </rrd_graph_def>
