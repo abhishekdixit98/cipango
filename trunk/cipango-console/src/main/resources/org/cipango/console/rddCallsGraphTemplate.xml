@@ -6,7 +6,7 @@
          <end>${end}</end>
      </span>
      <options>
-         <title>Running calls</title>
+         <title>Current Call Sessions</title>
          <grid_range>
              <lower>0</lower>
              <upper>U</upper>
@@ -25,17 +25,17 @@
          <line>
              <datasource>calls</datasource>
              <color>#FF0000</color>
-             <legend>Calls</legend>
+             <legend>Call Sessions</legend>
          </line>
          <gprint>
            <datasource>calls</datasource>
            <cf>MAX</cf>
-           <format>max calls = @3@s</format>
+           <format>max call sessions = @3@s</format>
          </gprint>
          <gprint>
            <datasource>calls</datasource>
            <cf>Average</cf>
-           <format>avg calls = @3@s@r</format>
+           <format>avg call sessions = @3@s@r</format>
          </gprint>
      </graph>
 </rrd_graph_def>
