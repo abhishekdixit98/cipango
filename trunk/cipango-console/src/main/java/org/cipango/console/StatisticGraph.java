@@ -102,7 +102,7 @@ public class StatisticGraph
 		{
 			RrdDb rrdDb = _rrdPool.requestRrdDb(_rrdPath);
 			Sample sample = rrdDb.createSample();
-			sample.setValue("calls", (Integer) _connection.getAttribute(_sessionManger, "calls"));
+			sample.setValue("calls", (Integer) _connection.getAttribute(_sessionManger, "callSessions"));
 			long totalMemory = __runtime.totalMemory();
 			sample.setValue("maxMemory", __runtime.maxMemory());
 			sample.setValue("totalMemory", totalMemory);
