@@ -128,15 +128,7 @@ public class SipStatisticPrinter extends MultiplePrinter implements HtmlPrinter
 			if (index != -1)
 				header.setName(header.getName().substring(0, index));
 		}
-		add(new SetPrinter(table));
-		
-		table = new Table(_connection, contexts, "sip.applicationSessions.time");
-		for (Header header : table.getHeaders())
-		{
-			int index = header.getName().indexOf("amount of time in seconds a Sip application session remained valid");
-			if (index != -1)
-				header.setName(header.getName().substring(0, index));
-		}
+
 		for (Row row : table)
 		{
 			for (Value value : row.getValues())
@@ -159,8 +151,8 @@ public class SipStatisticPrinter extends MultiplePrinter implements HtmlPrinter
 
 	public void print(Writer out) throws Exception
 	{
-		super.print(out);
 		printActions(out);
+		super.print(out);
 		printStatisticGraphs(out);
 	}
 

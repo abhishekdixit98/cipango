@@ -65,6 +65,8 @@
             </New>
           </Arg>
         </Call>
+        
+        <Set name="statsOn">true</Set>
       </New>
     </Arg>
   </Call>
@@ -92,5 +94,6 @@
     </Arg>
   </Call>
   -->
+  
 
 </Configure>
