@@ -44,7 +44,7 @@ import org.eclipse.jetty.util.thread.ThreadPool;
 
 /**
  * Cipango SIP/HTTP Server.
- * It extends Jetty HTTP Server to add SIP capabilities.
+ * It extends Jetty HTTP {@link org.eclipse.jetty.server.Server} to add SIP capabilities.
  */
 public class Server extends org.eclipse.jetty.server.Server implements SipHandler
 {
@@ -76,7 +76,6 @@ public class Server extends org.eclipse.jetty.server.Server implements SipHandle
 	protected void doStart() throws Exception 
     {
 		Log.info("cipango-" + __sipVersion);
-		//SipGenerator.setServerVersion(__sipVersion);
 
 		MultiException mex = new MultiException();
 		
@@ -312,7 +311,7 @@ public class Server extends org.eclipse.jetty.server.Server implements SipHandle
 	
 	public void setAllStatsOn(boolean on) 
 	{
-		getConnectorManager().setStatsOn(on);		
+		getConnectorManager().setStatsOn(on);
 		getTransactionManager().setStatsOn(on);
 	}
 	
