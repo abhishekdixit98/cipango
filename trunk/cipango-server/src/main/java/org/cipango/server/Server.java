@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.List;
 
 import javax.servlet.ServletException;
-import javax.servlet.sip.SipServlet;
 import javax.servlet.sip.SipServletMessage;
 import javax.servlet.sip.SipURI;
 import javax.servlet.sip.ar.SipApplicationRouter;
@@ -61,11 +60,6 @@ public class Server extends org.eclipse.jetty.server.Server implements SipHandle
     
     private SessionManager _sessionManager;    
     private SipApplicationRouter _applicationRouter;
-
-    private long _statsStartedAt = -1;
-    private Object _statsLock = new Object();
-    
-    private long _messages;
     
     public Server()
     {
@@ -241,14 +235,6 @@ public class Server extends org.eclipse.jetty.server.Server implements SipHandle
 	
     public void handle(SipServletMessage message) throws IOException, ServletException
     {
-		if (isStatsOn())
-		{
-			synchronized (_statsLock)
-			{
-				_messages++;
-			}
-		}
-    	
 		((SipHandler) getHandler()).handle(message); 
 	}
 	
@@ -303,38 +289,8 @@ public class Server extends org.eclipse.jetty.server.Server implements SipHandle
 		return _sessionManager;
 	}
 	
-	public void statsReset()
-	{
-		synchronized (_statsLock)
-		{
-			_statsStartedAt = _statsStartedAt == -1 ? -1 : System.currentTimeMillis();
-			_messages = 0;
-		}
-	}
-	
-	public void setStatsOn(boolean on) 
-	{
-        if (on && _statsStartedAt != -1) 
-        	return;
-        
-        Log.info("Statistics set to " + on);
-        statsReset();
-        _statsStartedAt = on ? System.currentTimeMillis() : -1;
-    }
-	
-	public boolean isStatsOn() 
-    {
-		return _statsStartedAt != -1;
-	}
-	
-	public long getStatsStartedAt()
-	{
-		return _statsStartedAt;
-	}
-	
 	public void allStatsReset()
 	{
-		statsReset();
 		getSessionManager().statsReset();
 		getConnectorManager().statsReset();
 		getTransactionManager().statsReset();
@@ -351,22 +307,14 @@ public class Server extends org.eclipse.jetty.server.Server implements SipHandle
 	
 	public void setAllStatsOn(boolean on) 
 	{
-		setStatsOn(on);
-		
 		getConnectorManager().setStatsOn(on);		
 		getTransactionManager().setStatsOn(on);
 	}
 	
 	public boolean isAllStatsOn() 
 	{
-		return isStatsOn()
-			&& getConnectorManager().getStatsOn()
+		return getConnectorManager().getStatsOn()
 			&& getTransactionManager().getStatsOn();
-	}
-	
-	public long getMessages()
-	{
-		return _messages;
 	}
 
 	public static String getSipVersion()
