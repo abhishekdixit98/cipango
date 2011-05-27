@@ -185,12 +185,15 @@ public class SipStatisticPrinter extends MultiplePrinter implements HtmlPrinter
 		if (_statisticGraph != null)
 		{
 
-			out.write("<h2>Statistic Graph</h2>\n");
+			out.write("<h2>Statistics Graph</h2>\n");
 
 			if (_statisticGraph.isStarted())
-			{						
+			{			
+				out.write("Statistics Graphs are activated: ");
+				STOP_GRAPH.print(out);
+				
 				out.write("<form method=\"post\" action=\"" + MenuPrinter.STATISTICS_SIP.getName() + "\">\n"
-						+ "Statistic graph should show to the " 
+						+ "Display Statistics Graphs for: " 
 						+ "<SELECT name=\"time\">");
 				for (int i = 0; i < STATS_TIME_VALUE.length; i++)
 				{
@@ -204,15 +207,17 @@ public class SipStatisticPrinter extends MultiplePrinter implements HtmlPrinter
 				out.write("<input type=\"hidden\" name=\"" + Parameters.ACTION + "\" value=\"" + CHANGE_TIME_GRAPH.getParameter() + "\">");
 				out.write("<input type=\"submit\" name=\"submit\" value=\"change\"/></form>\n");
 
-				printGraph(out, "Calls", "calls");
+				printGraph(out, "Call Sessions", "calls");
 				printGraph(out, "JVM Memory", "memory");
-				printGraph(out, "SIP messages", "messages");
+				printGraph(out, "SIP Messages", "messages");
 				out.write("<br/>\n");
 				
-				STOP_GRAPH.print(out);
 			}
 			else
+			{
+				out.write("Statistics Graphs are deactivated: ");
 				START_GRAPH.print(out);
+			}
 		}
 	}
 
