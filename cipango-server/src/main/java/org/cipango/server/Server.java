@@ -360,7 +360,7 @@ public class Server extends org.eclipse.jetty.server.Server implements SipHandle
 	public boolean isAllStatsOn() 
 	{
 		return isStatsOn()
-			&& getConnectorManager().isStatsOn()
+			&& getConnectorManager().getStatsOn()
 			&& getTransactionManager().getStatsOn();
 	}
 	

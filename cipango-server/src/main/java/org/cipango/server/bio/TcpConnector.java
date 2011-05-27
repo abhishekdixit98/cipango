@@ -237,26 +237,11 @@ public class TcpConnector extends AbstractSipConnector //implements Buffers
 	
 	public void connectionOpened(TcpConnection connection)
 	{
-		if (_statsStartedAt >= 0)
-		{
-			synchronized (_statsLock)
-			{
-				_connectionsOpen++;
-				if (_connectionsOpen > _connectionsOpenMax)
-					_connectionsOpenMax = _connectionsOpen;
-			}
-		}
+		
 	}
 	
 	public void connectionClosed(TcpConnection connection) 
 	{
-		if (_statsStartedAt >= 0)
-		{
-			synchronized (_statsLock)
-			{
-				_connectionsOpen--;
-			}
-		}
 		synchronized (_connections) 
 		{
 			_connections.remove(connection.getRemoteAddr() + ":" + connection.getRemotePort());

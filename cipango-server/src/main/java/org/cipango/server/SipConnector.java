@@ -85,6 +85,9 @@ public interface SipConnector extends LifeCycle
     //void send(Buffer buffer, SipEndpoint endpoint) throws IOException;
     
     long getNbParseError();
+    
+    
     void setStatsOn(boolean on);
+    //boolean getStatsOn();
     void statsReset();
 }
