@@ -34,12 +34,10 @@ import org.cipango.server.session.SessionManager;
 import org.cipango.server.transaction.TransactionManager;
 import org.cipango.sip.SipURIImpl;
 import org.cipango.sipapp.SipAppContext;
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
@@ -50,8 +48,15 @@ import org.eclipse.jetty.util.thread.ThreadPool;
  */
 public class Server extends org.eclipse.jetty.server.Server implements SipHandler
 {
-	private static String __sipVersion = (Server.class.getPackage() != null && Server.class.getPackage().getImplementationVersion() != null)
-    	?Server.class.getPackage().getImplementationVersion() : "1.0.x";
+	private static final String __sipVersion;
+	
+	static 
+	{
+		if (Server.class.getPackage() != null && Server.class.getPackage().getImplementationVersion() != null)
+			__sipVersion = Server.class.getPackage().getImplementationVersion();
+		else
+			__sipVersion = System.getProperty("cipango.version", "2.x.y-SNAPSHOT");
+	}
     	
 	private ThreadPool _sipThreadPool;
     
