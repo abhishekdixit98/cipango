@@ -6,11 +6,10 @@
      <options>
          <title>SIP Messages</title>
          <vertical_label>msg/s</vertical_label>
-         <grid_range>
-             <lower>0</lower>
-             <upper>U</upper>
-             <rigid>false</rigid>
-         </grid_range>
+         <image_format>png</image_format>
+         <min_value>0</min_value>
+         <width>717</width>
+         <height>300</height>
      </options>
      <datasources>
          <def>
@@ -30,32 +29,32 @@
        <line>
          <datasource>incomingMessages</datasource>
          <color>#FF0000</color>
-         <legend>Received SIP messages@r</legend>
+         <legend>received sip messages\r</legend>
        </line>
        <gprint>
 	       <datasource>incomingMessages</datasource>
 	       <cf>MAX</cf>
-	       <format>max received = @3@smsg/s</format>
+	       <format>max received = %7.3f msg/s</format>
 	     </gprint>
 	     <gprint>
 	       <datasource>incomingMessages</datasource>
-	       <cf>Average</cf>
-	       <format>avg received = @3@smsg/s@r</format>
+	       <cf>AVERAGE</cf>
+	       <format>avg received = %7.3f msg/s\r</format>
 	     </gprint>
 	     <line>
          <datasource>outgoingMessages</datasource>
          <color>#00FF00</color>
-         <legend>Sent SIP messages@r</legend>
+         <legend>sent sip messages\r</legend>
        </line>
        <gprint>
 	       <datasource>outgoingMessages</datasource>
 	       <cf>MAX</cf>
-	       <format>max sent = @3@smsg/s</format>
+	       <format>max sent = %7.3f msg/s</format>
 	     </gprint>
 	     <gprint>
 	       <datasource>outgoingMessages</datasource>
-	       <cf>Average</cf>
-	       <format>avg sent = @3@smsg/s@r</format>
+	       <cf>AVERAGE</cf>
+	       <format>avg sent = %7.3f msg/s\r</format>
 	     </gprint>
      </graph>
 </rrd_graph_def>
