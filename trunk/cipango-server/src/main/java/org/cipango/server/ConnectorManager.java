@@ -20,6 +20,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.concurrent.atomic.AtomicLong;
 
 import javax.servlet.ServletException;
 import javax.servlet.sip.Address;
@@ -42,6 +43,7 @@ import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.statistic.CounterStatistic;
 
 public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipHandler
 {
@@ -58,10 +60,10 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
     
     private AccessLog _accessLog;
     
-    private transient long _statsStartedAt = -1;
-    private Object _statsLock = new Object();
-    private transient long _messagesReceived;
-    private transient long _messagesSent;
+    private final AtomicLong _statsStartedAt = new AtomicLong(-1);
+    private final CounterStatistic _receivedStats = new CounterStatistic();
+    private final CounterStatistic _sentStats = new CounterStatistic();
+    
     private transient long _nbParseErrors;
     
     private ArrayList<Buffer> _buffers;
@@ -199,22 +201,18 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
     
     public void messageReceived()
     {
-    	if (_statsStartedAt == -1) 
+    	if (_statsStartedAt.get() == -1) 
     		return;
-    	synchronized (_statsLock)
-        {
-            _messagesReceived++;
-        }
+    	
+    	_receivedStats.increment();
     }
     
     public void messageSent()
     {
-    	if (_statsStartedAt == -1)
+    	if (_statsStartedAt.get() == -1)
     		return;
-         synchronized (_statsLock)
-         {
-             _messagesSent++;
-         }
+    	
+        _sentStats.increment();
     }
         
     public void handle(SipServletMessage message) throws IOException, ServletException
@@ -249,12 +247,9 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
 
             getServer().handle(msg);
 		}
-		else if (_statsStartedAt != -1)
+		else if (_statsStartedAt.get() != -1)
 		{
-			synchronized (_statsLock)
-			{
-				_nbParseErrors++;
-			}
+			_nbParseErrors++;
 		}  
     }
     
@@ -563,12 +558,12 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
     
     public long getMessagesReceived() 
     {
-        return _messagesReceived;
+        return _receivedStats.getTotal();
     }
     
     public long getMessagesSent() 
     {
-        return _messagesSent;
+        return _sentStats.getTotal();
     }
     
 	public long getNbParseError()
@@ -583,31 +578,40 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
     
     public void statsReset() 
     {
-        synchronized (_statsLock) 
+    	updateNotEqual(_statsStartedAt, -1, System.currentTimeMillis());
+    	
+    	_receivedStats.reset();
+    	_sentStats.reset();
+    	
+        _nbParseErrors = 0;
+        for (int i = 0; _connectors != null && i <_connectors.length; i++)
         {
-            _statsStartedAt = _statsStartedAt == -1 ? -1 : System.currentTimeMillis();
-            _messagesReceived = _messagesSent = 0;
-            _nbParseErrors = 0;
-            for (int i = 0; _connectors != null && i <_connectors.length; i++)
-            {
-				 _connectors[i].statsReset();
-			}
-        }
+			 _connectors[i].statsReset();
+		}
     }
     
     public void setStatsOn(boolean on) 
     {
-        if (on && _statsStartedAt != -1) 
+        if (on && _statsStartedAt.get() != -1) 
             return;
+        
+        Log.debug("Statistics on = " + on + " for " + this);
+        
         statsReset();
-        _statsStartedAt = on ? System.currentTimeMillis() : -1;
+        _statsStartedAt.set(on ? System.currentTimeMillis() : -1);
     }
     
-    public boolean isStatsOn() 
+    public boolean getStatsOn()
     {
-        return  _statsStartedAt != -1;
+    	return _statsStartedAt.get() != -1;
     }
-
+    
+    public long getStatsOnMs()
+    {
+    	long start = _statsStartedAt.get();
+    	return (start != -1) ? (System.currentTimeMillis() - start) : 0;
+    }
+    
 	public boolean preValidateMessage(SipMessage message)
 	{
 		boolean valid = true;
@@ -698,7 +702,18 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
 	{
 		return _accessLog;
 	}
-
+	
+	private void updateNotEqual(AtomicLong valueHolder, long compare, long value)
+	{
+        long oldValue = valueHolder.get();
+        while (compare != oldValue)
+        {
+            if (valueHolder.compareAndSet(oldValue,value))
+                break;
+            oldValue = valueHolder.get();
+        }
+    }
+	 
 	public Buffer getBuffer() {
 		// TODO Auto-generated method stub
 		return null;

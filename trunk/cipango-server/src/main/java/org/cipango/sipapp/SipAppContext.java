@@ -519,6 +519,9 @@ public class SipAppContext extends WebAppContext implements SipHandler
         return _sessionTimeStats.getMax();
     }
     
+    /**
+     * Reset statistics values
+     */
     public void statsReset()
     {
     	_sessionsStats.reset(getSessions());

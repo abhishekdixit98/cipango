@@ -24,9 +24,6 @@ import org.cipango.io.SipBuffer;
 import org.cipango.sip.SipHeaders;
 import org.cipango.sip.SipParser;
 import org.cipango.sip.SipURIImpl;
-import org.cipango.sip.SipVersions;
-import org.cipango.sip.Via;
-import org.cipango.sip.SipParser.EventHandler;
 
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
@@ -58,8 +55,6 @@ public abstract class AbstractSipConnector extends AbstractLifeCycle implements 
     
     protected Object _statsLock = new Object();
     protected transient long _statsStartedAt = -1;
-    protected transient long _connectionsOpen;
-    protected transient long _connectionsOpenMax;
     protected transient long _nbParseErrors;
    
     public AbstractSipConnector() 
@@ -303,8 +298,6 @@ public abstract class AbstractSipConnector extends AbstractLifeCycle implements 
 	{
 		_statsStartedAt = _statsStartedAt == -1 ? -1 : System.currentTimeMillis();
 		_nbParseErrors = 0;
-		_connectionsOpen = 0;
-		_connectionsOpenMax = 0;
 	}
 	
 	public void setStatsOn(boolean on) 
@@ -316,16 +309,6 @@ public abstract class AbstractSipConnector extends AbstractLifeCycle implements 
         _statsStartedAt = on ? System.currentTimeMillis() : -1;
     }
 
-	public long getConnectionsOpen()
-	{
-		return _connectionsOpen;
-	}
-
-	public long getConnectionsOpenMax()
-	{
-		return _connectionsOpenMax;
-	}
-	
     public String dump()
     {
         return AggregateLifeCycle.dump(this);
