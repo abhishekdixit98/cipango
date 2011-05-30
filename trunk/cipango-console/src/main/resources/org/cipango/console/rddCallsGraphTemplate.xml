@@ -24,17 +24,22 @@
          <line>
              <datasource>calls</datasource>
              <color>#FF0000</color>
-             <legend>call sessions\r</legend>
+             <legend>call sessions</legend>
          </line>
          <gprint>
            <datasource>calls</datasource>
            <cf>MAX</cf>
-           <format>max call sessions = %7.3f</format>
+           <format>max = %7.2f</format>
          </gprint>
          <gprint>
            <datasource>calls</datasource>
            <cf>AVERAGE</cf>
-           <format>avg call sessions = %7.3f\r</format>
+           <format>avg = %7.2f</format>
+         </gprint>
+         <gprint>
+           <datasource>calls</datasource>
+           <cf>LAST</cf>
+           <format>current = %7.2f\r</format>
          </gprint>
      </graph>
 </rrd_graph_def>
