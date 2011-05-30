@@ -27,7 +27,7 @@ public abstract class Record
 {	
 	private int _ttl;
 	private Name _name;
-	private DnsClass _class;
+	private DnsClass _class = DnsClass.IN;
 	
 	public abstract Type getType();
 	

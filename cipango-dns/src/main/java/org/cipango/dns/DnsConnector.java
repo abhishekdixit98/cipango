@@ -18,9 +18,7 @@ import java.net.InetAddress;
 
 
 public interface DnsConnector
-{	
-	Object getTransport();
-	
+{		
 	void setHost(String host);
 	String getHost();
 	

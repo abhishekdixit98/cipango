@@ -40,13 +40,11 @@ public class SrvRecord extends Record implements AdditionalName
 	public SrvRecord(Name name)
 	{
 		setName(name);
-		setDnsClass(DnsClass.IN);
 	}
 
 	public SrvRecord(String service, String protocol, String host)
 	{
 		setName(new Name("_" + service + "._" + protocol + "." + host));
-		setDnsClass(DnsClass.IN);
 	}
 
 	@Override

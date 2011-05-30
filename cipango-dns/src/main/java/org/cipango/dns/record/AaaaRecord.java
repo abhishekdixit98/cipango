@@ -33,7 +33,6 @@ public class AaaaRecord extends Record
 	public AaaaRecord(String name)
 	{
 		setName(new Name(name));
-		setDnsClass(DnsClass.IN);
 	}
 	
 	@Override

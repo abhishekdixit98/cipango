@@ -13,42 +13,50 @@
 // ========================================================================
 package org.cipango.dns;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.log.Log;
 
 public abstract class AbstractConnector extends AbstractLifeCycle implements DnsConnector
 {
-	private String _host;
+	private InetAddress _host;
 	private int _port;
 	
-	public Object getTransport()
-	{
-		// TODO Auto-generated method stub
-		return null;
-	}
-
 	public String getHost()
+	{
+		if (_host == null)
+			return null;
+		return _host.getHostName();
+	}
+	
+	public InetAddress getHostAddr()
 	{
 		return _host;
 	}
 
-
-
 	public void setHost(String host)
 	{
-		_host = host;
+		try
+		{
+			_host = InetAddress.getByName(host);
+		}
+		catch (UnknownHostException e) 
+		{
+			Log.debug(e);
+		}
 	}
-
-
 
 	public int getPort()
 	{
 		return _port;
 	}
 
-
-
 	public void setPort(int port)
 	{
+		if (port < 0 || port > 65536)
+			throw new IllegalArgumentException("Invalid port: " + port);
 		_port = port;
 	}
 

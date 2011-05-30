@@ -72,7 +72,6 @@ public class PtrRecord extends Record
 			}
 		}
 		setName(name);
-		setDnsClass(DnsClass.IN);
 	}
 	
 	@Override

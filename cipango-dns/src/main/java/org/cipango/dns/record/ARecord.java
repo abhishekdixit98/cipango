@@ -33,7 +33,6 @@ public class ARecord extends Record
 	public ARecord(String name)
 	{
 		setName(new Name(name));
-		setDnsClass(DnsClass.IN);
 	}
 	
 	@Override

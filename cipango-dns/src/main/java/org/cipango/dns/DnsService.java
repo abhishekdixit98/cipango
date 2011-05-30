@@ -15,27 +15,54 @@ package org.cipango.dns;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.cipango.dns.bio.UdpConnector;
 import org.cipango.dns.record.ARecord;
 import org.cipango.dns.record.AaaaRecord;
 import org.cipango.dns.record.Record;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 
 
-public class DnsService extends AbstractLifeCycle
+public class DnsService extends AbstractLifeCycle implements DnsClient
 {
-	private ResolverManager _resolverManager = new ResolverManager();
 	private Cache _cache;
 	private List<Name> _searchList = new ArrayList<Name>(); 
+	private Resolver[] _resolvers;
+	private DnsConnector[] _connectors;
+	private Server _server;
 	
 	@Override
 	protected void doStart() throws Exception
 	{
-		_resolverManager.start();
+		if (_resolvers == null || _resolvers.length == 0)
+		{
+			sun.net.dns.ResolverConfiguration resolverConfiguration = sun.net.dns.ResolverConfiguration.open();
+			@SuppressWarnings({ "unchecked" })
+			List<String> servers = resolverConfiguration.nameservers();
+			int attemps = resolverConfiguration.options().attempts();
+			int retrans = resolverConfiguration.options().retrans();
+			
+			for (String server: servers)
+			{
+				Resolver resolver = new Resolver();
+				resolver.setHost(server);
+				if (attemps != -1)
+					resolver.setAttemps(attemps);
+				if (retrans != -1)
+					resolver.setTimeout(retrans);
+				addResolver(resolver);
+			}
+		}
+		
+		if (_connectors == null || _connectors.length == 0)
+			addConnector(new UdpConnector());
 		
 		if (_searchList.isEmpty())
 		{
@@ -64,6 +91,7 @@ public class DnsService extends AbstractLifeCycle
 		{
 			if (e instanceof UnknownHostException)
 				throw (UnknownHostException) e;
+			e.printStackTrace();
 			Log.debug(e);
 			throw new UnknownHostException(name);
 		}
@@ -92,18 +120,8 @@ public class DnsService extends AbstractLifeCycle
 	
 	public List<Record> lookup(Record record) throws IOException
 	{
-		return new Lookup(_resolverManager, _cache, record, _searchList).resolve();
+		return new Lookup(this, record).resolve();
 								
-	}
-
-	public ResolverManager getResolverManager()
-	{
-		return _resolverManager;
-	}
-
-	public void setResolverManager(ResolverManager resolverManager)
-	{
-		_resolverManager = resolverManager;
 	}
 
 	public Cache getCache()
@@ -124,6 +142,78 @@ public class DnsService extends AbstractLifeCycle
 	public void setSearchList(List<Name> searchList)
 	{
 		_searchList = searchList;
+	}
+	
+	public DnsMessage resolve(DnsMessage query) throws IOException
+	{
+		SocketTimeoutException e = null;
+		for (Resolver resolver : _resolvers)
+		{
+			try
+			{
+				return resolver.resolve(query);
+			}
+			catch (SocketTimeoutException e1) {
+				e = e1;
+			}
+		}
+		if (e == null)
+			throw new IOException("No resovler");
+		else
+			throw e;
+	}
+		
+	public void addResolver(Resolver resolver)
+	{
+		setResolvers((Resolver[]) LazyList.addToArray(getResolvers(), resolver, Resolver.class));
+	}
+	
+	public void addConnector(DnsConnector connector)
+	{
+		setConnectors((DnsConnector[]) LazyList.addToArray(getConnectors(), connector, DnsConnector.class));
+	}
+	
+	public DnsConnector getDefaultConnector()
+	{
+		if (_connectors == null || _connectors.length == 0)
+    		return null;
+    	return _connectors[0];
+	}
+
+	public Resolver[] getResolvers()
+	{
+		return _resolvers;
+	}
+
+	public DnsConnector[] getConnectors()
+	{
+		return _connectors;
+	}
+
+	public Server getServer()
+	{
+		return _server;
+	}
+
+	public void setServer(Server server)
+	{
+		_server = server;
+	}
+
+	public void setConnectors(DnsConnector[] connectors)
+	{
+		 if (_server != null)
+	        _server.getContainer().update(this, _connectors, connectors, "connectors");
+		_connectors = connectors;
+	}
+
+	public void setResolvers(Resolver[] resolvers)
+	{
+		 if (_server != null)
+		        _server.getContainer().update(this, _resolvers, resolvers, "resolvers");
+		 for (int i = 0; i < resolvers.length; i++)
+			 resolvers[i].setDnsClient(this);
+		_resolvers = resolvers;
 	}
 
 	
