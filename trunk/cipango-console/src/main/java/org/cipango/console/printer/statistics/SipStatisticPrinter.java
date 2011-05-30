@@ -79,25 +79,7 @@ public class SipStatisticPrinter extends MultiplePrinter implements HtmlPrinter
 			getStatisticGraph().stop();
 		}	
 	});
-	
-	public static final Action ENABLE_STATS = Action.add(new Action(MenuPrinter.STATISTICS_SIP, "enable-statistics")
-	{
-		@Override
-		public void doProcess(HttpServletRequest request) throws Exception
-		{
-			getConnection().setAttribute(ConsoleFilter.SERVER, new Attribute("allStatsOn", Boolean.TRUE));
-		}	
-	});
-	
-	public static final Action DISABLE_STATS = Action.add(new Action(MenuPrinter.STATISTICS_SIP, "disable-statistics")
-	{
-		@Override
-		public void doProcess(HttpServletRequest request) throws Exception
-		{
-			getConnection().setAttribute(ConsoleFilter.SERVER, new Attribute("allStatsOn", Boolean.FALSE));
-		}	
-	});
-	
+		
 	public static final Action RESET_STATS = Action.add(new Action(MenuPrinter.STATISTICS_SIP, "reset-statistics")
 	{
 		@Override
@@ -158,18 +140,10 @@ public class SipStatisticPrinter extends MultiplePrinter implements HtmlPrinter
 
 	private void printActions(Writer out) throws Exception
 	{
-		Boolean on = (Boolean) _connection.getAttribute(ConsoleFilter.SERVER, "allStatsOn");
-		if (on.booleanValue())
-		{
-			out.write("Statistics are started since ");
-			Long start = (Long)  _connection.getAttribute(ConsoleFilter.SERVER, "statsStartedAt");
-			out.write(PrinterUtil.getDuration(System.currentTimeMillis() - start) + ".<br/>");
-			DISABLE_STATS.print(out);
-			out.write("&nbsp;&nbsp;&nbsp;");
-			RESET_STATS.print(out);
-		}
-		else
-			ENABLE_STATS.print(out);
+		out.write("Statistics are started since ");
+		Long start = (Long)  _connection.getAttribute(ConsoleFilter.SERVER, "statsStartedAt");
+		out.write(PrinterUtil.getDuration(System.currentTimeMillis() - start) + ".<br/>");
+		RESET_STATS.print(out);
 	}
 
 	private void printStatisticGraphs(Writer out) throws Exception

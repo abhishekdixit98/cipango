@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 import javax.servlet.ServletException;
 import javax.servlet.sip.SipServletMessage;
@@ -65,6 +66,8 @@ public class Server extends org.eclipse.jetty.server.Server implements SipHandle
     
     private SessionManager _sessionManager;    
     private SipApplicationRouter _applicationRouter;
+
+    private final AtomicLong _statsStartedAt = new AtomicLong(System.currentTimeMillis());
     
     public Server()
     {
@@ -295,6 +298,7 @@ public class Server extends org.eclipse.jetty.server.Server implements SipHandle
 	
 	public void allStatsReset()
 	{
+		_statsStartedAt.set(System.currentTimeMillis());
 		getSessionManager().statsReset();
 		getConnectorManager().statsReset();
 		getTransactionManager().statsReset();
@@ -309,18 +313,11 @@ public class Server extends org.eclipse.jetty.server.Server implements SipHandle
 		}
 	}
 	
-	public void setAllStatsOn(boolean on) 
+	public long getStatsStartedAt()
 	{
-		getConnectorManager().setStatsOn(on);
-		getTransactionManager().setStatsOn(on);
+		return _statsStartedAt.get();
 	}
 	
-	public boolean isAllStatsOn() 
-	{
-		return getConnectorManager().getStatsOn()
-			&& getTransactionManager().getStatsOn();
-	}
-
 	public static String getSipVersion()
 	{
 		return __sipVersion;
