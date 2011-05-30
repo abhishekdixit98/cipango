@@ -60,7 +60,6 @@ public class NaptrRecord extends Record implements AdditionalName
 	public NaptrRecord(String name)
 	{
 		setName(new Name(name));
-		setDnsClass(DnsClass.IN);
 	}
 	
 	@Override

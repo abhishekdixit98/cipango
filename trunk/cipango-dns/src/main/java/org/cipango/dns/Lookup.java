@@ -1,4 +1,5 @@
 // ========================================================================
+
 // Copyright 2011 NEXCOM Systems
 // ------------------------------------------------------------------------
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,17 +26,13 @@ public class Lookup
 {
 	private Record _record;
 	private Name _toSearch;
-	private ResolverManager _resolverManager;
-	private List<Name> _searchList;
-	private Cache _cache;
+	private DnsClient _dnsClient;
 	private int _iterations = 0;
 	
-	public Lookup(ResolverManager resolverManager, Cache cache, Record record, List<Name> searchList)
+	public Lookup(DnsClient client, Record record)
 	{
-		_resolverManager = resolverManager;
+		_dnsClient = client;
 		_record = record;
-		_cache = cache;
-		_searchList = searchList;
 	}
 	
 	public List<Record> resolve() throws IOException, UnknownHostException
@@ -48,7 +45,7 @@ public class Lookup
 		catch (IOException e1) 
 		{
 			e = e1;
-			for (Name suffix : _searchList)
+			for (Name suffix : _dnsClient.getSearchList())
 			{
 				Record record = _record.getType().newRecord();
 				Name newName = _record.getName().clone();
@@ -83,13 +80,13 @@ public class Lookup
 			}
 		
 			DnsMessage query = new DnsMessage(record);
-			DnsMessage answer = _resolverManager.resolve(query);
+			DnsMessage answer = _dnsClient.resolve(query);
 			incrementIteration();
 			
 			ResponseCode responseCode = answer.getHeaderSection().getResponseCode();
 			if (responseCode == ResponseCode.NAME_ERROR)
 			{
-				_cache.addNegativeRecord(query, answer);
+				_dnsClient.getCache().addNegativeRecord(query, answer);
 				throw new UnknownHostException(_record.getName().toString());
 			} 
 			else if (responseCode != ResponseCode.NO_ERROR)
@@ -98,7 +95,7 @@ public class Lookup
 			if (answer.getAnswerSection().isEmpty())
 				throw new UnknownHostException(_record.getName().toString());
 			
-			_cache.addRecordSet(query, answer);
+			_dnsClient.getCache().addRecordSet(query, answer);
 			
 			records = getFromCache(record);
 		}
@@ -107,12 +104,12 @@ public class Lookup
 	
 	private List<Record> getFromCache(Record record) throws IOException
 	{
-		List<Record> records = _cache.getRecords(record.getName(), record.getType());
+		List<Record> records = _dnsClient.getCache().getRecords(record.getName(), record.getType());
 		while (records.size() == 1 && records.get(0).getType() == Type.CNAME && record.getType() != Type.CNAME)
 		{
 			incrementIteration();
 			_toSearch = ((CnameRecord) records.get(0)).getCname();
-			records = _cache.getRecords(_toSearch, record.getType());
+			records = _dnsClient.getCache().getRecords(_toSearch, record.getType());
 		}
 		return records;
 	}

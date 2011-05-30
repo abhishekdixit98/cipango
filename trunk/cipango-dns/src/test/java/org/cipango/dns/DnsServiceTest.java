@@ -13,7 +13,8 @@
 // ========================================================================
 package org.cipango.dns;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -136,7 +137,10 @@ public class DnsServiceTest
 		badResolver.setPort(45877);
 		badResolver.setTimeout(500);
 		badResolver.setAttemps(2);
-		_dnsService.getResolverManager().addResolver(0, badResolver);
+		Resolver[] resolvers = new Resolver[2];
+		resolvers[0] = badResolver;
+		resolvers[1] = _dnsService.getResolvers()[0];
+		_dnsService.setResolvers(resolvers);
 		List<InetAddress> addr = _dnsService.lookupIpv4HostAddr("www.cipango.org");
 		assertNotNull(addr);
 		assertEquals(1, addr.size());
@@ -154,6 +158,30 @@ public class DnsServiceTest
 		assertNotNull(addr);
 		assertEquals(1, addr.size());
 		assertEquals(IPV4_ADDR, addr.get(0).getHostAddress());
-	}
+	}	
 	
+	@Test
+	public void testConnector() throws Exception
+	{
+		_dnsService.getDefaultConnector().setPort(10053);
+		new Thread()
+		{
+			public void run()
+			{
+				try
+				{
+					for (int i = 0; i < 100; i++)
+						_dnsService.lookupIpv4HostAddr(i + "jira.cipango.org");
+				}
+				catch (UnknownHostException e)
+				{
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		}.start();
+		//Thread.sleep(500);
+		for (int i = 0; i < 100; i++)
+			_dnsService.lookupIpv4HostAddr(i + "fisheye.cipango.org");
+	}
 }

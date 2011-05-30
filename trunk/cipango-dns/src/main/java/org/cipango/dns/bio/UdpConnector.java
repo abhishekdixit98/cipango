@@ -36,11 +36,11 @@ public class UdpConnector extends AbstractConnector
 	
 	public DatagramSocket newDatagramSocket() throws SocketException
 	{
-		return new DatagramSocket();
+		return new DatagramSocket(getPort(), getHostAddr());
 	}
 
 	
-	class Connection implements DnsConnection
+	public class Connection implements DnsConnection
 	{
 		private InetAddress _remoteAddr;
 		private int _remotePort;
@@ -69,7 +69,13 @@ public class UdpConnector extends AbstractConnector
 			_socket.receive(packet);
 			DnsMessage message = new DnsMessage();
 			message.decode(new ByteArrayBuffer(packet.getData()));
+			_socket.close();
 			return message;
+		}
+		
+		public DatagramSocket getSocket()
+		{
+			return _socket;
 		}
 		
 	}
