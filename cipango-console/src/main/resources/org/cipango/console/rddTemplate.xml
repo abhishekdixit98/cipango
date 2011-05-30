@@ -3,47 +3,47 @@
      <!-- not mandatory -->
      <start>${start}</start>
      <!-- not mandatory -->
-     <step>20</step>
+     <step>10</step>
      <!-- at least one datasource must be supplied -->
      <datasource>
          <name>calls</name>
          <type>GAUGE</type>
-         <heartbeat>20</heartbeat>
+         <heartbeat>10</heartbeat>
          <min>0</min>
          <max>U</max>
      </datasource>
      <datasource>
          <name>maxMemory</name>
          <type>GAUGE</type>
-         <heartbeat>20</heartbeat>
+         <heartbeat>10</heartbeat>
          <min>0</min>
          <max>U</max>
      </datasource>
      <datasource>
          <name>usedMemory</name>
          <type>GAUGE</type>
-         <heartbeat>20</heartbeat>
+         <heartbeat>10</heartbeat>
          <min>0</min>
          <max>U</max>
      </datasource>
      <datasource>
          <name>totalMemory</name>
          <type>GAUGE</type>
-         <heartbeat>20</heartbeat>
+         <heartbeat>10</heartbeat>
          <min>0</min>
          <max>U</max>
      </datasource>
      <datasource>
          <name>incomingMessages</name>
          <type>COUNTER</type>
-         <heartbeat>20</heartbeat>
+         <heartbeat>10</heartbeat>
          <min>0</min>
          <max>U</max>
      </datasource>
      <datasource>
          <name>outgoingMessages</name>
          <type>COUNTER</type>
-         <heartbeat>20</heartbeat>
+         <heartbeat>10</heartbeat>
          <min>0</min>
          <max>U</max>
      </datasource>
@@ -51,16 +51,16 @@
      <archive>
          <cf>AVERAGE</cf>
          <xff>0.5</xff>
-         <!-- 20s -->
+         <!-- 10s -->
          <steps>1</steps>
          <!-- 4 hours -->
-         <rows>720</rows>
+         <rows>1440</rows>
      </archive>
      <archive>
          <cf>AVERAGE</cf>
          <xff>0.5</xff>
          <!-- 5 minutes -->
-         <steps>15</steps>
+         <steps>30</steps>
          <!-- two days -->
          <rows>576</rows>
      </archive>
@@ -68,7 +68,7 @@
          <cf>AVERAGE</cf>
          <xff>0.5</xff>
          <!-- 1 hour -->
-         <steps>180</steps>
+         <steps>360</steps>
          <!-- two weeks -->
          <rows>316</rows>
      </archive>
@@ -76,7 +76,7 @@
          <cf>MAX</cf>
          <xff>0.5</xff>
          <!-- 1 minute -->
-         <steps>3</steps>
+         <steps>6</steps>
          <!-- 4 hours -->
          <rows>240</rows>
      </archive>
@@ -84,7 +84,7 @@
          <cf>MAX</cf>
          <xff>0.5</xff>
          <!-- 15 minutes -->
-         <steps>45</steps>
+         <steps>90</steps>
          <!-- two days -->
          <rows>192</rows>
      </archive>
@@ -92,7 +92,7 @@
          <cf>MAX</cf>
          <xff>0.5</xff>
          <!-- 1 hour -->
-         <steps>180</steps>
+         <steps>360</steps>
          <!-- two weeks -->
          <rows>316</rows>
      </archive>

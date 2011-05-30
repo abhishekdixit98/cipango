@@ -7,9 +7,10 @@
          <title>SIP Messages</title>
          <vertical_label>msg/s</vertical_label>
          <image_format>png</image_format>
-         <min_value>0</min_value>
          <width>717</width>
          <height>300</height>
+         <min_value>-U</min_value>
+  
      </options>
      <datasources>
          <def>
@@ -24,37 +25,52 @@
              <source>outgoingMessages</source>
              <cf>AVERAGE</cf>
          </def>
+         <cdef>
+             <name>sent</name>
+             <rpn>outgoingMessages,-1,*</rpn>
+         </cdef>
      </datasources>
      <graph>
-       <line>
+       <area>
          <datasource>incomingMessages</datasource>
-         <color>#FF0000</color>
-         <legend>received sip messages\r</legend>
-       </line>
+         <color>#00CC00</color>
+         <legend>received sip messages</legend>
+       </area>
        <gprint>
-	       <datasource>incomingMessages</datasource>
-	       <cf>MAX</cf>
-	       <format>max received = %7.3f msg/s</format>
-	     </gprint>
-	     <gprint>
-	       <datasource>incomingMessages</datasource>
-	       <cf>AVERAGE</cf>
-	       <format>avg received = %7.3f msg/s\r</format>
-	     </gprint>
-	     <line>
-         <datasource>outgoingMessages</datasource>
-         <color>#00FF00</color>
-         <legend>sent sip messages\r</legend>
-       </line>
-       <gprint>
-	       <datasource>outgoingMessages</datasource>
-	       <cf>MAX</cf>
-	       <format>max sent = %7.3f msg/s</format>
-	     </gprint>
-	     <gprint>
-	       <datasource>outgoingMessages</datasource>
-	       <cf>AVERAGE</cf>
-	       <format>avg sent = %7.3f msg/s\r</format>
-	     </gprint>
+		  <datasource>incomingMessages</datasource>
+		  <cf>MAX</cf>
+		  <format>max = %7.2f msg/s</format>
+		</gprint>
+		<gprint>
+		  <datasource>incomingMessages</datasource>
+		  <cf>AVERAGE</cf>
+		  <format>avg = %7.2f msg/s</format>
+		</gprint>
+	    <gprint>
+	      <datasource>incomingMessages</datasource>
+	      <cf>LAST</cf>
+	      <format>current = %7.2f msg/s\r</format>
+	    </gprint>
+         
+	    <area>
+          <datasource>sent</datasource>
+          <color>#0000FF</color>
+          <legend>sent sip messages</legend>
+        </area>
+        <gprint>
+	      <datasource>outgoingMessages</datasource>
+	      <cf>MAX</cf>
+	      <format>max = %7.2f msg/s</format>
+	    </gprint>
+	    <gprint>
+	      <datasource>outgoingMessages</datasource>
+	      <cf>AVERAGE</cf>
+	      <format>avg = %7.2f msg/s</format>
+	    </gprint>
+        <gprint>
+          <datasource>outgoingMessages</datasource>
+          <cf>LAST</cf>
+          <format>current = %7.2f msg/s\r</format>
+        </gprint>
      </graph>
 </rrd_graph_def>

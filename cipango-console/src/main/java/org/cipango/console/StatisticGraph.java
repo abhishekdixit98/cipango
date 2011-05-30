@@ -89,10 +89,29 @@ public class StatisticGraph
 
 			if (_refreshPeriod != -1)
 			{
-				// The first schedule should be at the beginning of the next
-				// minute
 				_statTimer.schedule(_task, _refreshPeriod * 1000, _refreshPeriod * 1000);
 			}
+		}
+	}
+	
+	public void reset()
+	{
+		try
+		{
+			RrdDb rrdDb = _rrdPool.requestRrdDb(_rrdPath);
+			Sample sample = rrdDb.createSample();
+			sample.setValue("calls", (Integer) _connection.getAttribute(_sessionManger, "callSessions"));
+			long totalMemory = __runtime.totalMemory();
+			sample.setValue("maxMemory", __runtime.maxMemory());
+			sample.setValue("totalMemory", totalMemory);
+			sample.setValue("usedMemory", totalMemory - __runtime.freeMemory());
+			// No values are set for incomingMessages, outgoingMessages to reset these counters.
+			sample.update();
+			_rrdPool.release(rrdDb);
+		}
+		catch (Exception e)
+		{
+			_logger.warn("Unable to set statistics", e);
 		}
 	}
 
@@ -143,27 +162,7 @@ public class StatisticGraph
 			return null;
 		}
 	}
-
-	public byte[] createGraphAsPng(Date start, Date end, String type)
-	{
-		return createGraphAsPng(start, end, getTemplate(type));
-	}
-
-	/**
-	 * Create a graph beginnig <code>deltaStart</code> seconds before now and ending
-	 * <code>deltaStop</code> seconds before now.
-	 * 
-	 * @param deltaStart number of seconds before now for graph start.
-	 * @param deltaEnd number of seconds before now for graph end.
-	 * @return The PNG image.
-	 */
-	public byte[] createGraphAsPng(long deltaStart, long deltaStop, String type)
-	{
-		long start = System.currentTimeMillis() - deltaStart * 1000;
-		long stop = System.currentTimeMillis() - deltaStop * 1000;
-		return createGraphAsPng(new Date(start), new Date(stop), type);
-	}
-
+	
 	/**
 	 * Create a graph of the last <code>time</code> seconds.
 	 * 
@@ -173,7 +172,8 @@ public class StatisticGraph
 	public byte[] createGraphAsPng(long time, String type)
 	{
 		long start = System.currentTimeMillis() - time * 1000;
-		return createGraphAsPng(new Date(start), new Date(System.currentTimeMillis()), type);
+		long end = System.currentTimeMillis() - 5000; // Remove last 5 seconds due to bug with Jrobin LAST function
+		return createGraphAsPng(new Date(start), new Date(end), getTemplate(type));
 	}
 
 	public void setDataFileName(String name)
@@ -215,7 +215,7 @@ public class StatisticGraph
 			templateGraph = getClass().getResourceAsStream(RDD_MESSAGES_GRAPH_TEMPLATE);
 			_messagesGraphTemplate = new RrdGraphDefTemplate(new InputSource(templateGraph));
 
-			// updateDb();
+			updateDb();
 
 			RrdDb rrdDb = _rrdPool.requestRrdDb(_rrdPath);
 			setRefreshPeriod(rrdDb.getRrdDef().getStep());

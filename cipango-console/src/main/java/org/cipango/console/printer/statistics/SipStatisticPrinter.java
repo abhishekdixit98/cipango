@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.io.Writer;
 import java.text.DecimalFormat;
 
-import javax.management.Attribute;
 import javax.management.MBeanServerConnection;
 import javax.management.ObjectName;
 import javax.servlet.http.HttpServletRequest;
@@ -85,6 +84,7 @@ public class SipStatisticPrinter extends MultiplePrinter implements HtmlPrinter
 		@Override
 		public void doProcess(HttpServletRequest request) throws Exception
 		{
+			getStatisticGraph().reset();
 			getConnection().invoke(ConsoleFilter.SERVER, "allStatsReset", null, null);
 		}	
 	});

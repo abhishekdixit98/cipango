@@ -46,45 +46,58 @@
           <color>#99FF66</color>
           <legend/>
        </stack>
+       
        <line>
+           <datasource>max</datasource>
+           <color>#0000FF</color>
+           <legend>max memory</legend>
+       </line>      
+       <gprint>
+          <datasource>max</datasource>
+           <cf>AVERAGE</cf>
+           <format> = %7.2f %Sb\r</format>
+       </gprint>
+         
+	   <line>
            <datasource>used</datasource>
            <color>#FF0000</color>
            <legend>used memory</legend>
        </line>
-       <line>
+       <gprint>
+           <datasource>used</datasource>
+           <cf>MAX</cf>
+           <format>max = %7.2f %Sb  </format>
+       </gprint>
+	   <gprint>
+	       <datasource>used</datasource>
+	       <cf>AVERAGE</cf>
+	       <format>avg = %7.2f %Sb</format>
+	   </gprint>
+	   <gprint>
+           <datasource>used</datasource>
+           <cf>LAST</cf>
+           <format>current = %7.2f %Sb\r</format>
+       </gprint>
+       
+	   <line>
            <datasource>total</datasource>
            <color>#006600</color>
            <legend>total memory</legend>
        </line>
-       <line>
-           <datasource>max</datasource>
-           <color>#0000FF</color>
-           <legend>max memory\r</legend>
-       </line>      
-        <gprint>
-           <datasource>max</datasource>
-           <cf>AVERAGE</cf>
-           <format>max memory = %7.2f %Sb</format>
-         </gprint>
-	     <gprint>
-	       <datasource>used</datasource>
-	       <cf>MAX</cf>
-	       <format>max used memory = %7.2f %Sb  </format>
-	     </gprint>
-	     <gprint>
-	       <datasource>used</datasource>
-	       <cf>AVERAGE</cf>
-	       <format>avg used memory = %7.2f %Sb\r</format>
-	     </gprint>
-	     <gprint>
+	   <gprint>
 	       <datasource>total</datasource>
 	       <cf>MAX</cf>
-	       <format>max total memory = %7.2f %Sb</format>
-	     </gprint>
-	     <gprint>
+	       <format>max = %7.2f %Sb</format>
+	   </gprint>
+	   <gprint>
 	       <datasource>total</datasource>
 	       <cf>AVERAGE</cf>
-	       <format>avg total memory = %7.2f %Sb\r</format>
-	     </gprint>
+	       <format>avg = %7.2f %Sb</format>
+	   </gprint>
+       <gprint>
+           <datasource>total</datasource>
+           <cf>LAST</cf>
+           <format>current = %7.2f %Sb\r</format>
+       </gprint>
      </graph>
 </rrd_graph_def>

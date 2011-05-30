@@ -20,6 +20,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.concurrent.atomic.AtomicLong;
 
 import javax.servlet.ServletException;
 import javax.servlet.sip.Address;
@@ -42,7 +43,6 @@ import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.statistic.CounterStatistic;
 
 public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipHandler
 {
@@ -59,8 +59,8 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
     
     private AccessLog _accessLog;
     
-    private final CounterStatistic _receivedStats = new CounterStatistic();
-    private final CounterStatistic _sentStats = new CounterStatistic();
+    private final AtomicLong _receivedStats = new AtomicLong();
+    private final AtomicLong _sentStats = new AtomicLong();
     
     private transient long _nbParseErrors;
     
@@ -199,12 +199,12 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
     
     public void messageReceived()
     {
-    	_receivedStats.increment();
+    	_receivedStats.incrementAndGet();
     }
     
     public void messageSent()
     {
-        _sentStats.increment();
+        _sentStats.incrementAndGet();
     }
         
     public void handle(SipServletMessage message) throws IOException, ServletException
@@ -550,12 +550,12 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
     
     public long getMessagesReceived() 
     {
-        return _receivedStats.getTotal();
+        return _receivedStats.get();
     }
     
     public long getMessagesSent() 
     {
-        return _sentStats.getTotal();
+        return _sentStats.get();
     }
     
 	public long getNbParseError()
@@ -570,8 +570,8 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
     
     public void statsReset() 
     {
-    	_receivedStats.reset();
-    	_sentStats.reset();
+    	_receivedStats.set(0);
+    	_sentStats.set(0);
     	
         _nbParseErrors = 0;
         for (int i = 0; _connectors != null && i <_connectors.length; i++)
