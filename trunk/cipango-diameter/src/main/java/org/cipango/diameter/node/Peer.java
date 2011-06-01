@@ -808,10 +808,12 @@ public class Peer implements Dumpable
 		@Override
 		public synchronized void rcvDPR(DiameterRequest dpr)
 		{
-			try {
+			try 
+			{
 				DiameterAnswer dpa = dpr.createAnswer(Common.DIAMETER_SUCCESS);
 				dpr.getConnection().write(dpa);
-			} catch (IOException e) {
+			} catch (IOException e)
+			{
 				Log.warn("Unable to send DPA");
 			}
 			
@@ -848,6 +850,22 @@ public class Peer implements Dumpable
 		{
 			setState(CLOSED);
 		}
+		
+		@Override
+		public synchronized void rcvDPR(DiameterRequest dpr)
+		{
+			try 
+			{
+				DiameterAnswer dpa = dpr.createAnswer(Common.DIAMETER_SUCCESS);
+				dpr.getConnection().write(dpa);
+			} catch (IOException e) 
+			{
+				Log.warn("Unable to send DPA");
+			}
+			
+			setState(CLOSED);
+			_rConnection = _iConnection = null;
+		}	
 	};
 	
 	class Pending implements Runnable

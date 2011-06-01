@@ -247,7 +247,53 @@ public class Node extends AbstractLifeCycle implements DiameterHandler, Dumpable
 	protected void doStop() throws Exception 
 	{	
 		MultiException mex = new MultiException();
-
+		
+		synchronized (this)
+		{
+			if (_peers != null)
+			{
+				for (Peer peer : _peers)
+				{
+					try 
+					{
+						peer.stop(); 
+					}
+					catch (Exception e) 
+					{ 
+						Log.warn("failed to stop peer: " + peer, e);
+					}
+				}
+				
+				// Wait at most 1 seconds for DPA reception
+				try 
+				{
+					boolean allClosed = false;
+					int iter = 20;
+					while (iter-- > 0 && allClosed)
+					{
+						allClosed = true;
+						for (Peer peer : _peers)
+						{
+							if (!peer.isClosed())
+							{
+								allClosed = false;
+								Log.info("Wait 50ms for " + peer + " closing");
+								Thread.sleep(50);
+								break;
+							}
+						} 
+					}
+				} 
+				catch (Exception e) 
+				{
+					Log.ignore(e);
+				}
+			}
+		}	
+		
+		if (_scheduler != null)
+			_scheduler.shutdown();
+		
 		for (int i = 0; _connectors != null && i < _connectors.length; i++)
 		{
 			if (_connectors[i] instanceof LifeCycle) 	
@@ -262,6 +308,10 @@ public class Node extends AbstractLifeCycle implements DiameterHandler, Dumpable
 				}
 			}
 		}
+				
+		if (_router != null && _router instanceof LifeCycle)
+			((LifeCycle) _router).stop();
+		
 		mex.ifExceptionThrow();
 	}
 	
@@ -523,7 +573,9 @@ public class Node extends AbstractLifeCycle implements DiameterHandler, Dumpable
 	
 	public ScheduledFuture<?> schedule(Runnable runnable, long ms)
 	{
-		return _scheduler.schedule(runnable, ms, TimeUnit.MILLISECONDS);
+		if (isRunning())
+			return _scheduler.schedule(runnable, ms, TimeUnit.MILLISECONDS);
+		return null;
 	}
 	
 	public void scheduleReconnect(Peer peer)

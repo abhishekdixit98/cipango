@@ -66,9 +66,14 @@ public class NodeTest
 		
 		waitPeerOpened();
 		
+		Peer clientPeer = _server.getPeer("client");
+		assertNotNull(clientPeer);
+		assertTrue(clientPeer.isOpen());
+		
 		_peer.stop();
 		Thread.sleep(100);
 		assertTrue(_peer.isClosed());
+		assertTrue(clientPeer.isClosed());
 	}
 	
 	@Test
