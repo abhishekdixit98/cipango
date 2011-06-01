@@ -75,25 +75,33 @@
      <archive>
          <cf>MAX</cf>
          <xff>0.5</xff>
-         <!-- 1 minute -->
-         <steps>6</steps>
+         <!-- 20s -->
+         <steps>2</steps>
+         <!-- 5 minutes -->
+         <rows>15</rows>
+     </archive>
+     <archive>
+         <cf>MAX</cf>
+         <xff>0.5</xff>
+         <!-- 5 minutes -->
+         <steps>5</steps>
          <!-- 4 hours -->
-         <rows>240</rows>
+         <rows>48</rows>
      </archive>
      <archive>
          <cf>MAX</cf>
          <xff>0.5</xff>
-         <!-- 15 minutes -->
-         <steps>90</steps>
+         <!-- 30 minutes -->
+         <steps>180</steps>
          <!-- two days -->
-         <rows>192</rows>
+         <rows>96</rows>
      </archive>
      <archive>
          <cf>MAX</cf>
          <xff>0.5</xff>
-         <!-- 1 hour -->
-         <steps>360</steps>
+         <!-- 4 hours -->
+         <steps>1440</steps>
          <!-- two weeks -->
-         <rows>316</rows>
+         <rows>79</rows>
      </archive>
  </rrd_def>

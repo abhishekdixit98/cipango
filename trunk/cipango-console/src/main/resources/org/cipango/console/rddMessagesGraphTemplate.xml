@@ -20,10 +20,22 @@
              <cf>AVERAGE</cf>
          </def>
          <def>
+             <name>incoming-max</name>
+             <rrd>${rrd}</rrd>
+             <source>incomingMessages</source>
+             <cf>MAX</cf>
+         </def>
+         <def>
              <name>outgoingMessages</name>
              <rrd>${rrd}</rrd>
              <source>outgoingMessages</source>
              <cf>AVERAGE</cf>
+         </def>
+         <def>
+             <name>outgoing-max</name>
+             <rrd>${rrd}</rrd>
+             <source>outgoingMessages</source>
+             <cf>MAX</cf>
          </def>
          <cdef>
              <name>sent</name>
@@ -37,7 +49,7 @@
          <legend>received sip messages</legend>
        </area>
        <gprint>
-		  <datasource>incomingMessages</datasource>
+		  <datasource>incoming-max</datasource>
 		  <cf>MAX</cf>
 		  <format>max = %7.2f msg/s</format>
 		</gprint>
@@ -57,11 +69,11 @@
           <color>#0000FF</color>
           <legend>sent sip messages</legend>
         </area>
-        <gprint>
-	      <datasource>outgoingMessages</datasource>
-	      <cf>MAX</cf>
-	      <format>max = %7.2f msg/s</format>
-	    </gprint>
+	    <gprint>
+          <datasource>outgoing-max</datasource>
+          <cf>MAX</cf>
+          <format>max = %7.2f msg/s</format>
+        </gprint>
 	    <gprint>
 	      <datasource>outgoingMessages</datasource>
 	      <cf>AVERAGE</cf>
