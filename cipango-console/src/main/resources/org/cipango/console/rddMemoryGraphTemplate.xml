@@ -30,6 +30,18 @@
              <source>totalMemory</source>
              <cf>AVERAGE</cf>
          </def>
+         <def>
+             <name>used-max</name>
+             <rrd>${rrd}</rrd>
+             <source>usedMemory</source>
+             <cf>MAX</cf>
+         </def>
+         <def>
+             <name>total-max</name>
+             <rrd>${rrd}</rrd>
+             <source>totalMemory</source>
+             <cf>MAX</cf>
+         </def>
          <cdef>
              <name>available</name>
              <rpn>total,used,-</rpn>
@@ -64,7 +76,7 @@
            <legend>used memory</legend>
        </line>
        <gprint>
-           <datasource>used</datasource>
+           <datasource>used-max</datasource>
            <cf>MAX</cf>
            <format>max = %7.2f %Sb  </format>
        </gprint>
@@ -85,7 +97,7 @@
            <legend>total memory</legend>
        </line>
 	   <gprint>
-	       <datasource>total</datasource>
+	       <datasource>total-max</datasource>
 	       <cf>MAX</cf>
 	       <format>max = %7.2f %Sb</format>
 	   </gprint>

@@ -121,7 +121,9 @@ public class StatisticGraph
 		{
 			RrdDb rrdDb = _rrdPool.requestRrdDb(_rrdPath);
 			Sample sample = rrdDb.createSample();
-			sample.setValue("calls", (Integer) _connection.getAttribute(_sessionManger, "callSessions"));
+			if (_connection.isRegistered(_sessionManger))
+				sample.setValue("calls", (Integer) _connection.getAttribute(_sessionManger, "callSessions"));
+			
 			long totalMemory = __runtime.totalMemory();
 			sample.setValue("maxMemory", __runtime.maxMemory());
 			sample.setValue("totalMemory", totalMemory);
@@ -207,6 +209,8 @@ public class StatisticGraph
 				rrdDb.getRrdDef().getStep();
 				_rrdPool.release(rrdDb);
 			}
+			else
+				updateDb();
 
 			InputStream templateGraph = getClass().getResourceAsStream(RDD_CALLS_GRAPH_TEMPLATE);
 			_callGraphTemplate = new RrdGraphDefTemplate(new InputSource(templateGraph));
@@ -215,7 +219,6 @@ public class StatisticGraph
 			templateGraph = getClass().getResourceAsStream(RDD_MESSAGES_GRAPH_TEMPLATE);
 			_messagesGraphTemplate = new RrdGraphDefTemplate(new InputSource(templateGraph));
 
-			updateDb();
 
 			RrdDb rrdDb = _rrdPool.requestRrdDb(_rrdPath);
 			setRefreshPeriod(rrdDb.getRrdDef().getStep());
