@@ -33,15 +33,21 @@ public class StatisticGraph
 	public static final String TYPE_CALLS = "calls";
 	public static final String TYPE_MEMORY = "memory";
 	public static final String TYPE_MESSAGES = "messages";
+	public static final String TYPE_CPU = "cpu";
 
 	private static final String RDD_TEMPLATE_FILE_NAME = "rddTemplate.xml";
 	private static final String RDD_CALLS_GRAPH_TEMPLATE = "rddCallsGraphTemplate.xml";
 	private static final String RDD_MEMORY_GRAPH_TEMPLATE = "rddMemoryGraphTemplate.xml";
 	private static final String RDD_MESSAGES_GRAPH_TEMPLATE = "rddMessagesGraphTemplate.xml";
+	private static final String RDD_CPU_GRAPH_TEMPLATE = "rddCpuGraphTemplate.xml";
+	
+	private static final ObjectName OPERATING_SYSTEM = ObjectNameFactory.create("java.lang:type=OperatingSystem");
 
 	private RrdGraphDefTemplate _callGraphTemplate;
 	private RrdGraphDefTemplate _memoryGraphTemplate;
 	private RrdGraphDefTemplate _messagesGraphTemplate;
+	private RrdGraphDefTemplate _cpuGraphTemplate;
+	
 	private long _refreshPeriod = -1; // To ensure that the stat will start if
 										// needed at startup
 
@@ -58,6 +64,8 @@ public class StatisticGraph
 	private Logger _logger = Log.getLogger("console");
 
 	private boolean _started = false;
+	private long _lastProcessCpuTime = -1;
+	private long _lastRefresh = -1;
 
 	public StatisticGraph(MBeanServerConnection connection) throws AttributeNotFoundException,
 			InstanceNotFoundException, MBeanException, ReflectionException, IOException, RrdException
@@ -135,6 +143,22 @@ public class StatisticGraph
 				sample.setValue("outgoingMessages",
 						(Long) _connection.getAttribute(ConsoleFilter.CONNECTOR_MANAGER, "messagesSent"));
 			}
+			
+			if (_lastProcessCpuTime != -1)
+			{
+				long now = System.currentTimeMillis();
+				long processCpuTime = (Long) _connection.getAttribute(OPERATING_SYSTEM, "ProcessCpuTime");
+				int nbCpu = (Integer) _connection.getAttribute(OPERATING_SYSTEM, "AvailableProcessors");
+				
+				float cpuUsage = (processCpuTime - _lastProcessCpuTime ) / ((now - _lastRefresh) * 10000F * nbCpu);
+				
+				sample.setValue("cpu", cpuUsage);
+				
+				_lastProcessCpuTime = processCpuTime;
+				_lastRefresh = now;
+				
+			}
+			
 			sample.update();
 			_rrdPool.release(rrdDb);
 		}
@@ -174,7 +198,7 @@ public class StatisticGraph
 	public byte[] createGraphAsPng(long time, String type)
 	{
 		long start = System.currentTimeMillis() - time * 1000;
-		long end = System.currentTimeMillis() - 5000; // Remove last 5 seconds due to bug with Jrobin LAST function
+		long end = System.currentTimeMillis() - 2500; // Remove last 2,5 seconds due to bug with Jrobin LAST function
 		return createGraphAsPng(new Date(start), new Date(end), getTemplate(type));
 	}
 
@@ -195,6 +219,19 @@ public class StatisticGraph
 			File rrdFile = new File(_dataFileName);
 			_rrdPath = rrdFile.getAbsolutePath();
 
+			if (_connection.isRegistered(OPERATING_SYSTEM))
+			{
+				try
+				{
+					_lastProcessCpuTime = (Long) _connection.getAttribute(OPERATING_SYSTEM, "ProcessCpuTime");
+					_lastRefresh = System.currentTimeMillis();
+				} 
+				catch (Throwable e) 
+				{
+				}
+			}
+			
+			
 			if (!rrdFile.exists())
 			{
 				InputStream templateIs = getClass().getResourceAsStream(RDD_TEMPLATE_FILE_NAME);
@@ -218,6 +255,8 @@ public class StatisticGraph
 			_memoryGraphTemplate = new RrdGraphDefTemplate(new InputSource(templateGraph));
 			templateGraph = getClass().getResourceAsStream(RDD_MESSAGES_GRAPH_TEMPLATE);
 			_messagesGraphTemplate = new RrdGraphDefTemplate(new InputSource(templateGraph));
+			templateGraph = getClass().getResourceAsStream(RDD_CPU_GRAPH_TEMPLATE);
+			_cpuGraphTemplate = new RrdGraphDefTemplate(new InputSource(templateGraph));
 
 
 			RrdDb rrdDb = _rrdPool.requestRrdDb(_rrdPath);
@@ -251,6 +290,8 @@ public class StatisticGraph
 			return _callGraphTemplate;
 		else if (TYPE_MESSAGES.equalsIgnoreCase(type))
 			return _messagesGraphTemplate;
+		else if (TYPE_CPU.equalsIgnoreCase(type))
+			return _cpuGraphTemplate;
 		else
 		{
 			_logger.warn("Unknown graph type: " + type);

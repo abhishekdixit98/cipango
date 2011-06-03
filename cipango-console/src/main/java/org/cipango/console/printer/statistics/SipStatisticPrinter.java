@@ -176,6 +176,7 @@ public class SipStatisticPrinter extends MultiplePrinter implements HtmlPrinter
 				printGraph(out, "Call Sessions", "calls");
 				printGraph(out, "JVM Memory", "memory");
 				printGraph(out, "SIP Messages", "messages");
+				printGraph(out, "CPU Usage", "cpu");
 				out.write("<br/>\n");
 				
 			}

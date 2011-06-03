@@ -1,0 +1,50 @@
+<rrd_graph_def>
+     <span>
+         <start>${start}</start>
+         <end>${end}</end>
+     </span>
+     <options>
+         <title>CPU usage</title>
+         <vertical_label>%</vertical_label>
+         <image_format>png</image_format>
+         <min_value>0</min_value>
+         <width>717</width>
+         <height>300</height>
+     </options>
+     <datasources>
+         <def>
+             <name>cpu</name>
+             <rrd>${rrd}</rrd>
+             <source>cpu</source>
+             <cf>AVERAGE</cf>
+         </def>
+         <def>
+             <name>cpu-max</name>
+             <rrd>${rrd}</rrd>
+             <source>cpu</source>
+             <cf>MAX</cf>
+         </def>
+     </datasources>
+     <graph>
+       <line>
+           <datasource>cpu</datasource>
+           <color>#0000FF</color>
+           <legend>CPU</legend>
+       </line>      
+       <gprint>
+           <datasource>cpu-max</datasource>
+           <cf>MAX</cf>
+           <format>max = %3.2f %%</format>
+       </gprint>
+	   <gprint>
+	       <datasource>cpu</datasource>
+	       <cf>AVERAGE</cf>
+	       <format>avg = %3.2f %%</format>
+	   </gprint>
+	   <gprint>
+           <datasource>cpu</datasource>
+           <cf>LAST</cf>
+           <format>current = %3.2f %%\r</format>
+       </gprint>
+     </graph>
+</rrd_graph_def>

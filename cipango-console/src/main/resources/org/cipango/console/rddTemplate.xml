@@ -3,7 +3,7 @@
      <!-- not mandatory -->
      <start>${start}</start>
      <!-- not mandatory -->
-     <step>10</step>
+     <step>5</step>
      <!-- at least one datasource must be supplied -->
      <datasource>
          <name>calls</name>
@@ -47,20 +47,35 @@
          <min>0</min>
          <max>U</max>
      </datasource>
+     <datasource>
+         <name>cpu</name>
+         <type>GAUGE</type>
+         <heartbeat>10</heartbeat>
+         <min>0</min>
+         <max>100</max>
+     </datasource>
      <!-- at least one archive must be supplied -->
      <archive>
          <cf>AVERAGE</cf>
          <xff>0.5</xff>
-         <!-- 10s -->
+         <!-- 5s -->
          <steps>1</steps>
+         <!-- 1 hour -->
+         <rows>720</rows>
+     </archive>
+     <archive>
+         <cf>AVERAGE</cf>
+         <xff>0.5</xff>
+         <!-- 30s -->
+         <steps>6</steps>
          <!-- 4 hours -->
-         <rows>1440</rows>
+         <rows>480</rows>
      </archive>
      <archive>
          <cf>AVERAGE</cf>
          <xff>0.5</xff>
          <!-- 5 minutes -->
-         <steps>30</steps>
+         <steps>60</steps>
          <!-- two days -->
          <rows>576</rows>
      </archive>
@@ -68,40 +83,48 @@
          <cf>AVERAGE</cf>
          <xff>0.5</xff>
          <!-- 1 hour -->
-         <steps>360</steps>
+         <steps>720</steps>
          <!-- two weeks -->
-         <rows>316</rows>
+         <rows>336</rows>
      </archive>
      <archive>
          <cf>MAX</cf>
          <xff>0.5</xff>
-         <!-- 20s -->
+         <!-- 10s -->
          <steps>2</steps>
-         <!-- 5 minutes -->
-         <rows>15</rows>
+         <!-- 15 minutes -->
+         <rows>90</rows>
      </archive>
      <archive>
          <cf>MAX</cf>
          <xff>0.5</xff>
-         <!-- 5 minutes -->
-         <steps>5</steps>
+         <!-- 1 minute -->
+         <steps>12</steps>
+         <!-- 1 hour -->
+         <rows>60</rows>
+     </archive>
+     <archive>
+         <cf>MAX</cf>
+         <xff>0.5</xff>
+         <!-- 10 minutes -->
+         <steps>120</steps>
          <!-- 4 hours -->
+         <rows>24</rows>
+     </archive>
+     <archive>
+         <cf>MAX</cf>
+         <xff>0.5</xff>
+         <!-- 1 hour -->
+         <steps>720</steps>
+         <!-- two days -->
          <rows>48</rows>
      </archive>
      <archive>
          <cf>MAX</cf>
          <xff>0.5</xff>
-         <!-- 30 minutes -->
-         <steps>180</steps>
-         <!-- two days -->
-         <rows>96</rows>
-     </archive>
-     <archive>
-         <cf>MAX</cf>
-         <xff>0.5</xff>
-         <!-- 4 hours -->
-         <steps>1440</steps>
+         <!-- 8 hours -->
+         <steps>5760</steps>
          <!-- two weeks -->
-         <rows>79</rows>
+         <rows>42</rows>
      </archive>
  </rrd_def>
