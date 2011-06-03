@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.Writer;
+import java.lang.management.ManagementFactory;
 import java.security.Principal;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
@@ -437,6 +438,13 @@ public class ConsoleFilter implements Filter
 		String percentage = f.format(((float) usedMemory) / r.maxMemory());
 		env.add(new Property("Memory", (usedMemory >> 20) + " Mb of " + (r.maxMemory() >> 20) + " Mb (" +
 				percentage + ")"));
+		
+		env.add(new Property("Available processors", ManagementFactory.getOperatingSystemMXBean().getAvailableProcessors()));
+		StringBuilder sb = new StringBuilder();
+		for (String arg : ManagementFactory.getRuntimeMXBean().getInputArguments())
+			sb.append(arg).append(' ');
+		env.add(new Property("VM arguments", sb.toString()));
+		
 		return env;
 	}
 		
