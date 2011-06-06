@@ -49,10 +49,17 @@
      </datasource>
      <datasource>
          <name>cpu</name>
-         <type>GAUGE</type>
+         <type>COUNTER</type>
          <heartbeat>10</heartbeat>
          <min>0</min>
-         <max>100</max>
+         <max>U</max>
+     </datasource>
+     <datasource>
+         <name>timeInGc</name>
+         <type>COUNTER</type>
+         <heartbeat>10</heartbeat>
+         <min>0</min>
+         <max>U</max>
      </datasource>
      <!-- at least one archive must be supplied -->
      <archive>

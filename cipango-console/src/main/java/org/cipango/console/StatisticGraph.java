@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Date;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -29,25 +30,39 @@ import org.xml.sax.InputSource;
 
 public class StatisticGraph
 {
-
-	public static final String TYPE_CALLS = "calls";
-	public static final String TYPE_MEMORY = "memory";
-	public static final String TYPE_MESSAGES = "messages";
-	public static final String TYPE_CPU = "cpu";
-
 	private static final String RDD_TEMPLATE_FILE_NAME = "rddTemplate.xml";
-	private static final String RDD_CALLS_GRAPH_TEMPLATE = "rddCallsGraphTemplate.xml";
-	private static final String RDD_MEMORY_GRAPH_TEMPLATE = "rddMemoryGraphTemplate.xml";
-	private static final String RDD_MESSAGES_GRAPH_TEMPLATE = "rddMessagesGraphTemplate.xml";
-	private static final String RDD_CPU_GRAPH_TEMPLATE = "rddCpuGraphTemplate.xml";
 	
 	private static final ObjectName OPERATING_SYSTEM = ObjectNameFactory.create("java.lang:type=OperatingSystem");
-
-	private RrdGraphDefTemplate _callGraphTemplate;
-	private RrdGraphDefTemplate _memoryGraphTemplate;
-	private RrdGraphDefTemplate _messagesGraphTemplate;
-	private RrdGraphDefTemplate _cpuGraphTemplate;
+	private static final ObjectName GARBAGE_COLLECTORS = ObjectNameFactory.create("java.lang:type=GarbageCollector,*");
 	
+	public enum GraphType
+	{
+		CALLS("rddCallsGraphTemplate.xml"),
+		MEMORY("rddMemoryGraphTemplate.xml"),
+		MESSAGES("rddMessagesGraphTemplate.xml"),
+		CPU("rddCpuGraphTemplate.xml");
+		
+		private RrdGraphDefTemplate _template;
+		
+		private GraphType(String resourceName)
+		{
+			try
+			{
+				InputStream templateGraph = getClass().getResourceAsStream(resourceName);
+				_template = new RrdGraphDefTemplate(new InputSource(templateGraph));
+			}
+			catch (Exception e)
+			{
+				throw new RuntimeException(e);
+			}
+		}
+		
+		public RrdGraphDefTemplate getTemplate()
+		{
+			return _template;
+		}
+	}
+		
 	private long _refreshPeriod = -1; // To ensure that the stat will start if
 										// needed at startup
 
@@ -64,8 +79,7 @@ public class StatisticGraph
 	private Logger _logger = Log.getLogger("console");
 
 	private boolean _started = false;
-	private long _lastProcessCpuTime = -1;
-	private long _lastRefresh = -1;
+	private boolean _cpuStatAvailable = false;
 
 	public StatisticGraph(MBeanServerConnection connection) throws AttributeNotFoundException,
 			InstanceNotFoundException, MBeanException, ReflectionException, IOException, RrdException
@@ -123,6 +137,7 @@ public class StatisticGraph
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	public void updateDb()
 	{
 		try
@@ -144,20 +159,21 @@ public class StatisticGraph
 						(Long) _connection.getAttribute(ConsoleFilter.CONNECTOR_MANAGER, "messagesSent"));
 			}
 			
-			if (_lastProcessCpuTime != -1)
+			int nbCpu = (Integer) _connection.getAttribute(OPERATING_SYSTEM, "AvailableProcessors");
+			if (_cpuStatAvailable)
 			{
-				long now = System.currentTimeMillis();
 				long processCpuTime = (Long) _connection.getAttribute(OPERATING_SYSTEM, "ProcessCpuTime");
-				int nbCpu = (Integer) _connection.getAttribute(OPERATING_SYSTEM, "AvailableProcessors");
-				
-				float cpuUsage = (processCpuTime - _lastProcessCpuTime ) / ((now - _lastRefresh) * 10000F * nbCpu);
-				
-				sample.setValue("cpu", cpuUsage);
-				
-				_lastProcessCpuTime = processCpuTime;
-				_lastRefresh = now;
-				
+				sample.setValue("cpu", processCpuTime / nbCpu);
 			}
+			
+			long timeInGc = 0;
+			Set<ObjectName> garbageCollections = _connection.queryNames(GARBAGE_COLLECTORS, null);
+			for (ObjectName objectName : garbageCollections)
+			{
+				timeInGc += (Long) _connection.getAttribute(objectName, "CollectionTime");
+			}
+			sample.setValue("timeInGc", timeInGc / nbCpu);
+			
 			
 			sample.update();
 			_rrdPool.release(rrdDb);
@@ -199,7 +215,7 @@ public class StatisticGraph
 	{
 		long start = System.currentTimeMillis() - time * 1000;
 		long end = System.currentTimeMillis() - 2500; // Remove last 2,5 seconds due to bug with Jrobin LAST function
-		return createGraphAsPng(new Date(start), new Date(end), getTemplate(type));
+		return createGraphAsPng(new Date(start), new Date(end), GraphType.valueOf(type.toUpperCase()).getTemplate());
 	}
 
 	public void setDataFileName(String name)
@@ -223,8 +239,8 @@ public class StatisticGraph
 			{
 				try
 				{
-					_lastProcessCpuTime = (Long) _connection.getAttribute(OPERATING_SYSTEM, "ProcessCpuTime");
-					_lastRefresh = System.currentTimeMillis();
+					_connection.getAttribute(OPERATING_SYSTEM, "ProcessCpuTime");
+					_cpuStatAvailable = true;
 				} 
 				catch (Throwable e) 
 				{
@@ -249,16 +265,6 @@ public class StatisticGraph
 			else
 				updateDb();
 
-			InputStream templateGraph = getClass().getResourceAsStream(RDD_CALLS_GRAPH_TEMPLATE);
-			_callGraphTemplate = new RrdGraphDefTemplate(new InputSource(templateGraph));
-			templateGraph = getClass().getResourceAsStream(RDD_MEMORY_GRAPH_TEMPLATE);
-			_memoryGraphTemplate = new RrdGraphDefTemplate(new InputSource(templateGraph));
-			templateGraph = getClass().getResourceAsStream(RDD_MESSAGES_GRAPH_TEMPLATE);
-			_messagesGraphTemplate = new RrdGraphDefTemplate(new InputSource(templateGraph));
-			templateGraph = getClass().getResourceAsStream(RDD_CPU_GRAPH_TEMPLATE);
-			_cpuGraphTemplate = new RrdGraphDefTemplate(new InputSource(templateGraph));
-
-
 			RrdDb rrdDb = _rrdPool.requestRrdDb(_rrdPath);
 			setRefreshPeriod(rrdDb.getRrdDef().getStep());
 			_rrdPool.release(rrdDb);
@@ -280,23 +286,8 @@ public class StatisticGraph
 		_started = false;
 		if (_task != null)
 			_task.cancel();
-	}
-
-	private RrdGraphDefTemplate getTemplate(String type)
-	{
-		if (TYPE_MEMORY.equalsIgnoreCase(type))
-			return _memoryGraphTemplate;
-		else if (TYPE_CALLS.equalsIgnoreCase(type))
-			return _callGraphTemplate;
-		else if (TYPE_MESSAGES.equalsIgnoreCase(type))
-			return _messagesGraphTemplate;
-		else if (TYPE_CPU.equalsIgnoreCase(type))
-			return _cpuGraphTemplate;
-		else
-		{
-			_logger.warn("Unknown graph type: " + type);
-			return _callGraphTemplate;
-		}
+		_refreshPeriod = -1;
+		
 	}
 
 	class StatisticGraphTask extends TimerTask
