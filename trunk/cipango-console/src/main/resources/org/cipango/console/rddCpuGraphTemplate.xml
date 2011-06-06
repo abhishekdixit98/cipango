@@ -24,25 +24,73 @@
              <source>cpu</source>
              <cf>MAX</cf>
          </def>
+         <def>
+             <name>timeInGc</name>
+             <rrd>${rrd}</rrd>
+             <source>timeInGc</source>
+             <cf>AVERAGE</cf>
+         </def>
+         <def>
+             <name>timeInGc-max</name>
+             <rrd>${rrd}</rrd>
+             <source>timeInGc</source>
+             <cf>MAX</cf>
+         </def>
+         <cdef>
+             <name>timeInGcPercentage</name>
+             <rpn>timeInGc,10,/</rpn>
+         </cdef>
+         <cdef>
+             <name>timeInGcPercentageMax</name>
+             <rpn>timeInGc-max,10,/</rpn>
+         </cdef>
+         <cdef>
+             <name>cpuPercentage</name>
+             <rpn>cpu,10000000,/</rpn>
+         </cdef>
+          <cdef>
+             <name>cpuMaxPercentage</name>
+             <rpn>cpu-max,10000000,/</rpn>
+         </cdef>
      </datasources>
      <graph>
        <line>
-           <datasource>cpu</datasource>
+           <datasource>cpuPercentage</datasource>
            <color>#0000FF</color>
            <legend>CPU</legend>
-       </line>      
+       </line>    
        <gprint>
-           <datasource>cpu-max</datasource>
+           <datasource>cpuMaxPercentage</datasource>
            <cf>MAX</cf>
            <format>max = %3.2f %%</format>
        </gprint>
 	   <gprint>
-	       <datasource>cpu</datasource>
+	       <datasource>cpuPercentage</datasource>
 	       <cf>AVERAGE</cf>
 	       <format>avg = %3.2f %%</format>
 	   </gprint>
 	   <gprint>
-           <datasource>cpu</datasource>
+           <datasource>cpuPercentage</datasource>
+           <cf>LAST</cf>
+           <format>current = %3.2f %%\r</format>
+       </gprint>
+       <line>
+           <datasource>timeInGcPercentage</datasource>
+           <color>#00FF00</color>
+           <legend>GC</legend>
+       </line>  
+       <gprint>
+           <datasource>timeInGcPercentageMax</datasource>
+           <cf>MAX</cf>
+           <format>max = %3.2f %%</format>
+       </gprint>
+       <gprint>
+           <datasource>timeInGcPercentage</datasource>
+           <cf>AVERAGE</cf>
+           <format>avg = %3.2f %%</format>
+       </gprint>
+       <gprint>
+           <datasource>timeInGcPercentage</datasource>
            <cf>LAST</cf>
            <format>current = %3.2f %%\r</format>
        </gprint>

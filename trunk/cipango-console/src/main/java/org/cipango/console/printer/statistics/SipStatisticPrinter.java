@@ -29,6 +29,7 @@ import org.cipango.console.Row;
 import org.cipango.console.Row.Header;
 import org.cipango.console.Row.Value;
 import org.cipango.console.StatisticGraph;
+import org.cipango.console.StatisticGraph.GraphType;
 import org.cipango.console.Table;
 import org.cipango.console.printer.MenuPrinter;
 import org.cipango.console.printer.generic.HtmlPrinter;
@@ -41,9 +42,9 @@ import org.cipango.console.printer.generic.SetPrinter;
 public class SipStatisticPrinter extends MultiplePrinter implements HtmlPrinter
 {
 	private static final int[] STATS_TIME_VALUE =
-		{ 800, 3600, 14400, 86400, 604800, 1209600};
+		{ 800, 3600, 14400, 43200, 86400, 172800,604800, 1209600};
 	private static final String[] STATS_TIME_TITLE = 
-		{"last 15 minutes", "last hour", "last 4 hours", "last 24 hours", "last 7 days", "last 2 weeks"};
+		{"last 15 minutes", "last hour", "last 4 hours", "last 12 hours", "last day", "last 2 days", "last week", "last 2 weeks"};
 	
 	public static final Action CHANGE_TIME_GRAPH = Action.add(new Action(MenuPrinter.STATISTICS_SIP, "change-time")
 	{
@@ -173,10 +174,10 @@ public class SipStatisticPrinter extends MultiplePrinter implements HtmlPrinter
 				out.write("<input type=\"hidden\" name=\"" + Parameters.ACTION + "\" value=\"" + CHANGE_TIME_GRAPH.getParameter() + "\">");
 				out.write("<input type=\"submit\" name=\"submit\" value=\"change\"/></form>\n");
 
-				printGraph(out, "Call Sessions", "calls");
-				printGraph(out, "JVM Memory", "memory");
-				printGraph(out, "SIP Messages", "messages");
-				printGraph(out, "CPU Usage", "cpu");
+				printGraph(out, "Call Sessions", GraphType.CALLS);
+				printGraph(out, "SIP Messages", GraphType.MESSAGES);
+				printGraph(out, "JVM Memory", GraphType.MEMORY);
+				printGraph(out, "CPU Usage", GraphType.CPU);
 				out.write("<br/>\n");
 				
 			}
@@ -188,7 +189,7 @@ public class SipStatisticPrinter extends MultiplePrinter implements HtmlPrinter
 		}
 	}
 
-	private void printGraph(Writer out, String title, String type) throws Exception
+	private void printGraph(Writer out, String title, GraphType type) throws Exception
 	{
 		out.write("<h3>" + title + "</h3>" + "<img src=\"statisticGraph.png?time=" + _time 
 				+ "&type=" + type + "\"/><br/>\n");
