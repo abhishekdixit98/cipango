@@ -26,6 +26,13 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
+import javax.management.ListenerNotFoundException;
+import javax.management.MBeanNotificationInfo;
+import javax.management.Notification;
+import javax.management.NotificationEmitter;
+import javax.management.NotificationFilter;
+import javax.management.NotificationListener;
+
 import org.apache.commons.jexl.Expression;
 import org.apache.commons.jexl.ExpressionFactory;
 import org.apache.commons.jexl.JexlContext;
@@ -35,15 +42,18 @@ import org.cipango.server.SipMessage;
 import org.cipango.server.log.AbstractMessageLog;
 import org.eclipse.jetty.util.log.Log;
 
-public class JmxMessageLog extends AbstractMessageLog
+public class JmxMessageLog extends AbstractMessageLog implements NotificationEmitter
 {
 	private static final int DEFAULT_MAX_MESSAGES = 100;
 	
 	private MessageInfo[] _messages;
 	private int _maxMessages = DEFAULT_MAX_MESSAGES;
 	private int _cursor;
+	private long _messageId = 0;
 	
 	private Map<String, String> _alias = new HashMap<String, String>();
+	
+	private List<ListenerInfo> _listeners = new ArrayList<JmxMessageLog.ListenerInfo>();
 	
 	public int getMaxMessages()
 	{
@@ -97,12 +107,23 @@ public class JmxMessageLog extends AbstractMessageLog
 					&& connection.getLocalPort() == connection.getRemotePort())
 				return;
 				
+			MessageInfo messageInfo = new MessageInfo(message, direction, connection);
 			synchronized (this)
 			{
-				_messages[_cursor] = new MessageInfo(message, direction, connection);
+				_messages[_cursor] = messageInfo;
 				_cursor = getNextCursor();
+				_messageId++;
 			}
-			
+			if (!_listeners.isEmpty())
+			{
+				String infoLine;
+				synchronized (this)
+				{
+					infoLine = generateInfoLine(direction, connection, System.currentTimeMillis());
+				}
+				CallflowNotification notification = new CallflowNotification(messageInfo, _messageId, infoLine);
+				sendNotification(notification);
+			}
 		}
 	}
 		
@@ -369,6 +390,101 @@ public class JmxMessageLog extends AbstractMessageLog
 		public void set(MessageInfo arg0)
 		{
 			throw new UnsupportedOperationException("Read-only");
+		}
+	}
+
+	public void addNotificationListener(NotificationListener listener, NotificationFilter filter,
+			Object handback) throws IllegalArgumentException
+	{
+		synchronized (_listeners)
+		{
+			_listeners.add(new ListenerInfo(listener, filter, handback));
+		}
+	}
+
+	public void removeNotificationListener(NotificationListener listener) throws ListenerNotFoundException
+	{
+		synchronized (_listeners)
+		{
+			Iterator<ListenerInfo> it = _listeners.iterator();
+			while (it.hasNext())
+			{
+				JmxMessageLog.ListenerInfo info = it.next();
+				if (info.listener.equals(listener))
+				{
+					it.remove();
+					return;
+				}
+			}
+		}
+		throw new ListenerNotFoundException();
+	}
+	
+	public void removeNotificationListener(NotificationListener listener, NotificationFilter filter,
+			Object handback) throws ListenerNotFoundException
+	{
+		synchronized (_listeners)
+		{
+			Iterator<ListenerInfo> it = _listeners.iterator();
+			while (it.hasNext())
+			{
+				JmxMessageLog.ListenerInfo info = it.next();
+				if (info.listener.equals(listener) && info.filter == filter && info.handback == handback)
+				{
+					it.remove();
+					return;
+				}
+			}
+		}
+		throw new ListenerNotFoundException();
+	}
+
+	public MBeanNotificationInfo[] getNotificationInfo()
+	{
+		String[] types = new String[] { "SIP" };
+		String name = MBeanNotificationInfo.class.getName();
+		String description = "SIP message notification";
+		MBeanNotificationInfo info = new MBeanNotificationInfo(types, name, description);
+
+		return new MBeanNotificationInfo[] { info };
+	}
+
+	private void sendNotification(Notification notification)
+	{
+		if (notification == null || _listeners.isEmpty())
+			return;
+		
+		synchronized (_listeners)
+		{
+			for (ListenerInfo info : _listeners)
+			{
+				if (info.filter == null || info.filter.isNotificationEnabled(notification))
+				{
+					try
+					{
+						info.listener.handleNotification(notification, info.handback);
+					}
+					catch (Exception e)
+					{
+						Log.warn(e);
+					}
+				}
+			}
+		}
+	}
+	
+	
+	private class ListenerInfo
+	{
+		public NotificationListener listener;
+		NotificationFilter filter;
+		Object handback;
+
+		public ListenerInfo(NotificationListener listener, NotificationFilter filter, Object handback)
+		{
+			this.listener = listener;
+			this.filter = filter;
+			this.handback = handback;
 		}
 	}
 
