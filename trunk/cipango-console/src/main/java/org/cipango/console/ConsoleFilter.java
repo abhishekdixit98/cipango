@@ -139,6 +139,8 @@ public class ConsoleFilter implements Filter
 			if (_servletContext.getAttribute(MenuFactory.class.getName()) == null)
 				_servletContext.setAttribute(MenuFactory.class.getName(), new MenuFactoryImpl(_mbsc));
 			
+			_servletContext.setAttribute(ConsoleFilter.class.getName(), this);
+			
 			Action.load(ApplicationPrinter.class);
 			registerActions();
 		}
@@ -319,7 +321,10 @@ public class ConsoleFilter implements Filter
 				doGraph(request, response);
 			}
 			else if (command.equals(MenuPrinter.SIP_LOGS.getName()))
+			{
+				request.setAttribute(Attributes.JAVASCRIPT_SRC, "javascript/webSocket.js");
 				request.setAttribute(Attributes.CONTENT, new SipLogPrinter(_mbsc, request, Output.HTML));
+			}
 			else if (command.equals(MenuPrinter.DIAMETER_LOGS.getName()))
 				request.setAttribute(Attributes.CONTENT, new DiameterLogPrinter(_mbsc, request, Output.HTML));
 			else if (command.equals(MenuPrinter.CONFIG_SNMP.getName()))

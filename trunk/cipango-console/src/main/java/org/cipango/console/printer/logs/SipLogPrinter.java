@@ -16,6 +16,7 @@ package org.cipango.console.printer.logs;
 import java.io.Writer;
 import java.lang.reflect.Method;
 import java.util.Enumeration;
+import java.util.Properties;
 import java.util.ResourceBundle;
 
 import javax.management.MBeanServerConnection;
@@ -24,6 +25,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.sip.SipServletMessage;
 import javax.servlet.sip.SipServletRequest;
 
+import org.cipango.callflow.CallflowNotificationFilter;
 import org.cipango.console.Action;
 import org.cipango.console.ConsoleFilter;
 import org.cipango.console.Page;
@@ -41,7 +43,7 @@ public class SipLogPrinter extends AbstractLogPrinter
 	private static final ResourceBundle FILTERS = ResourceBundle
 			.getBundle("org.cipango.console.sip-filters");
 
-	private static final String 
+	public static final String 
 		CALL_ID_FILTER = "message.callId",
 		BRANCH_FILTER = "message.topVia.branch",
 		TO_FILTER = "message.to.uRI.toString()",
@@ -85,10 +87,16 @@ public class SipLogPrinter extends AbstractLogPrinter
 	{
 		super(connection, request);
 		_msgFilter = request.getParameter(Parameters.SIP_MESSAGE_FILTER);
+		CallflowNotificationFilter filter = (CallflowNotificationFilter) request.getSession().getAttribute(Parameters.SIP_MESSAGE_FILTER);
 		if (_msgFilter == null)
-			_msgFilter = (String) request.getSession().getAttribute(Parameters.SIP_MESSAGE_FILTER);
+			_msgFilter = filter == null ? null : filter.getFilter();
+		else if (filter == null)
+		{
+			filter = new CallflowNotificationFilter(_msgFilter);
+			request.getSession().setAttribute(Parameters.SIP_MESSAGE_FILTER, filter);
+		}
 		else
-			request.getSession().setAttribute(Parameters.SIP_MESSAGE_FILTER, _msgFilter);
+			filter.setFilter(_msgFilter);
 		
 		_output = output;
 
@@ -129,6 +137,7 @@ public class SipLogPrinter extends AbstractLogPrinter
 		{
 			out.write("<h2>Console Log</h2>");
 			printHeaders(out);
+			out.write("<input id=\"realtimeUpdate\" type=\"submit\" value=\"Start realtime update\"/>");
 			if (isLoggerRunning())
 			{
 				printCallflow(out);
@@ -145,10 +154,16 @@ public class SipLogPrinter extends AbstractLogPrinter
 
 	protected void printCommonFilters(Writer out) throws Exception
 	{
-		out.write("Filter:&nbsp;" + "<SELECT name=\""
-				+ Parameters.SIP_MESSAGE_FILTER + "\">");
+		out.write("Filter:&nbsp;" + "<SELECT name=\"" + Parameters.SIP_MESSAGE_FILTER + "\">");
 		Enumeration<String> keys = FILTERS.getKeys();
 		boolean selected = false;
+		out.write("<OPTION value=\"\" ");
+		if (_msgFilter == null || "".equals(_msgFilter))
+		{
+			out.write(" selected");
+			selected = true;
+		}
+		out.write(">Select a filter</OPTION>");
 		while (keys.hasMoreElements())
 		{
 			String key = keys.nextElement();
@@ -217,9 +232,9 @@ public class SipLogPrinter extends AbstractLogPrinter
 
 	private void printCallflow(Writer out) throws Exception
 	{
+		out.write("<div id=\"callflow\">");
 		if (_messagesLogs != null && _messagesLogs.length > 0)
 		{
-			out.write("<div id=\"callflow\">");
 			out.write("<embed src=\"message.svg?" + Parameters.MAX_MESSAGES
 					+ "=" + _maxMessages);
 			if (_msgFilter != null)
@@ -228,16 +243,16 @@ public class SipLogPrinter extends AbstractLogPrinter
 			out.write("\" width=\"790\" height=\""
 							+ height
 							+ "\" type=\"image/svg+xml\" pluginspage=\"http://www.adobe.com/svg/viewer/install/\"/>");
-			out.write("</div>");
 		}
+		out.write("</div>");
 	}
 	
-	private String encode(String unencoded)
+	private static String encode(String unencoded)
 	{
 		return unencoded.replace("%", "%25");
 	}
 
-	private String sipToHtml(SipServletMessage message)
+	public static String sipToHtml(SipServletMessage message)
 	{
 		StringBuilder sb = new StringBuilder(message.toString());
 
@@ -271,12 +286,12 @@ public class SipLogPrinter extends AbstractLogPrinter
 		return sb.toString();
 	}
 	
-	private void replace(StringBuilder sb, int index, String toChange, String filterId)
+	private static void replace(StringBuilder sb, int index, String toChange, String filterId)
 	{
 		replaceOnce(sb, index, toChange, getFilterLink(filterId, toChange));
 	}
 	
-	private String getFilterLink(String name, String value)
+	public static String getFilterLink(String name, String value)
 	{
 		StringBuffer sb = new StringBuffer();
 		sb.append("<A href=\"" + MenuPrinter.SIP_LOGS.getName() + "?").append(Parameters.SIP_MESSAGE_FILTER).append(
@@ -297,8 +312,9 @@ public class SipLogPrinter extends AbstractLogPrinter
 	{
 		return "message.log";
 	}
+	
 
-	class MessageLog
+	public static class MessageLog
 	{
 		private Object[] _array;
 
@@ -323,3 +339,4 @@ public class SipLogPrinter extends AbstractLogPrinter
 		}
 	}
 }
+

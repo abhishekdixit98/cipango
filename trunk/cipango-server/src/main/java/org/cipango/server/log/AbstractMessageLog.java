@@ -36,7 +36,7 @@ public abstract class AbstractMessageLog extends AbstractLifeCycle implements Ac
     private Locale _logLocale     = Locale.getDefault();
     private String _logTimeZone   = TimeZone.getDefault().getID();
     private SipGenerator _generator;
-    private StringBuffer _buf = new StringBuffer();
+    private StringBuilder _buf = new StringBuilder();
     private Buffer _buffer;
     
 	public static final int IN = 0;

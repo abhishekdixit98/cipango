@@ -69,7 +69,7 @@ public abstract class AbstractLogPrinter implements HtmlPrinter
 		if (on)
 		{
 			out.write("<div class=\"inline\">");
-			out.write("<form method=\"get\" action=\"" + getPage().getName() + "\">" + "Show &nbsp;"
+			out.write("<form name=\"form1\" method=\"get\" action=\"" + getPage().getName() + "\">" + "Show &nbsp;"
 					+ "<SELECT name=\"" + Parameters.MAX_MESSAGES + "\">");
 			int maxSavedMsg = (Integer) _connection.getAttribute(getObjectName(), "maxMessages");
 			for (int i = 0; i < NB_MESSAGES.length; i++)
@@ -124,7 +124,7 @@ public abstract class AbstractLogPrinter implements HtmlPrinter
 		}
 	}
 
-	protected void replaceAll(StringBuilder sb, String toFind, Object toSet)
+	protected static void replaceAll(StringBuilder sb, String toFind, Object toSet)
 	{
 		int index = 0;
 		while ((index = sb.indexOf(toFind)) != -1)
@@ -138,7 +138,7 @@ public abstract class AbstractLogPrinter implements HtmlPrinter
 			sb.replace(index, index + toFind.length(), toSet.toString());
 	}
 	
-	protected void replaceOnce(StringBuilder sb, int index, String toFind, Object toSet)
+	protected static void replaceOnce(StringBuilder sb, int index, String toFind, Object toSet)
 	{
 		if ((index = sb.indexOf(toFind, index)) != -1)
 			sb.replace(index, index + toFind.length(), toSet.toString());
