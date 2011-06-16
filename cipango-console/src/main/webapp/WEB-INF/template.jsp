@@ -12,6 +12,7 @@
   <meta name="Description" content="" />
   <meta name="Keywords" content="" />
   <link rel="stylesheet" href="css/style.css" type="text/css" media="screen" />
+  <script type="text/javascript" src="javascript/jquery-1.6.1.js"></script>
   <%= (request.getAttribute(Attributes.JAVASCRIPT_SRC) == null ? 
   				"" : "<script type=\"text/javascript\" src=\"" + request.getAttribute(Attributes.JAVASCRIPT_SRC) + "\"></script>") %>
 </head>

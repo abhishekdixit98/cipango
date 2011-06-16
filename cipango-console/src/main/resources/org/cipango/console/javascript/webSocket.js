@@ -1,56 +1,102 @@
-  function $() {
-    return document.getElementById(arguments[0]);
-  }
-
-  window.onload=start;
-  
-  function start() {   
-      if (window.WebSocket) {
-        $("realtimeUpdate").style.display = 'block';
-        $("realtimeUpdate").onclick = startRealtimeUpdate;
+  $(document).ready(function()
+  {
+     if (window.WebSocket) {
+        $("#realtimeUpdate").show();
+        $("#realtimeUpdate").click(function(event)
+        {
+            if ($("#realtimeUpdate").attr("value") == "Start realtime update") {
+              webSocket.connect();
+            } else {
+              webSocket.close();
+            }
+        });
       }
       else {
-        $("realtimeUpdate").style.display = 'none';
+        $("realtimeUpdate").hide();
       }
+  
+      $("#clear-logs").click(function(event){
+         $("#messageLog").empty();
+         $("#callflow").empty();
+         doAction(this);         
+         event.preventDefault();
+      });
+            
+       setFilterClickEvents();
+   });
+   
+  function setFilterClickEvents()
+  {
+      $(".filter").click(function(event){
+         refresh(this.href);
+         event.preventDefault();
+      });
+      
+      $("#filterForm input").click(function(event){
+         var uri = document.location.toString();
+         if (uri.indexOf("#") > 0)
+            uri = uri.substr(0, uri.indexOf("#"));
+         uri += "?" + $("#filterForm").serialize();
+         refresh(uri);
+         event.preventDefault();
+      });
   }
+   
+  function refresh(target)
+  {
+    $.getJSON(target, {ajax: "true", action: "refresh-logs"}, function(data){
+        var items = [];
+
+       $.each(data, function(key, val) {
+          $("#" + key).replaceWith(val);
+       });
+        
+        refreshGraph();
+        setFilterClickEvents();
+     });
+  }
+  
+  function doAction(event)
+  {
+    $.get(document.location, { ajax: "true", action: event.id } );
+  }
+  
   
   function log(message)
   {
-    var log = $("messageLog");
-    log.appendChild(document.createElement("a"));
-    var text = document.createElement("div");
-    text.innerHTML = message;
-    log.appendChild(text);
+    var log = $("#messageLog");
     
-    var maxMessages = document.forms.form1.maxMessages.value;
-    var childCount = log.getElementsByTagName("div").length / 2;
+    log.append("<a/>");
+    log.append("<div>" + message + "</div>");
+        
+    var maxMessages = $("#maxMessages").val();
+    var childCount = $("#messageLog div").size() / 2;
     while (childCount > maxMessages)
     {
-        log.removeChild(log.firstChild);
-        childCount = log.getElementsByTagName("div").length / 2;
+        $("#messageLog:first-child").remove();
+        childCount = $("#messageLog div").size() / 2;
     }
     
-    var children = log.childNodes;
-    var j = 1;
-    for(var i = 0; i < children.length; i++)
-    {
-       var child = children[i];
-       if (child.tagName == "A")
-       {
-            child.setAttribute("name", 'msg-' + j); 
-            j++;
-       }
-    }
+    var children = log.children("A");
+    children.attr("name", function(i, val) {
+        return 'msg-' + i;
+    });
     
+    refreshGraph();  
+    setFilterClickEvents();
+  }
+  
+  function refreshGraph()
+  {
+    var childCount = $("#messageLog div").size() / 2;
     var height = 100 + (childCount * 25);
 
     var html = '<embed height="' + height;
-    html = html +  '" width="790" pluginspage="http://www.adobe.com/svg/viewer/install/" type="image/svg+xml" ';
-    html = html +  'src="message.svg?maxMessages=' + maxMessages + '&sipMessageFilter=' + document.forms.form1.sipMessageFilter.value + '">';
-    $("callflow").innerHTML = html;
-         
+    html = html +  '" width="790" pluginspage="http://www.adobe.com/svg/viewer/install/" type="image/svg+xml" src="message.svg">';
+    $("#callflow").html(html);
   }
   
+    
   var webSocket = {
 
     connect: function() {
@@ -64,7 +110,7 @@
     },
 
     _onopen: function() {
-      $("realtimeUpdate").value = "Stop realtime update";
+      $("#realtimeUpdate").attr("value", "Stop realtime update");
     },
 
     send: function(message) {
@@ -88,7 +134,7 @@
 
     _onclose: function(m) {
       this._ws = null;
-      $("realtimeUpdate").value = "Start realtime update";
+      $("#realtimeUpdate").attr("value", "Start realtime update");
     },
 
     close: function() {
@@ -99,11 +145,4 @@
 
   };
   
-  function startRealtimeUpdate() {
-    if (this.value == "Start realtime update") {
-      webSocket.connect();
-    } else {
-      webSocket.close();
-    }
-    return false;
-  };
+  

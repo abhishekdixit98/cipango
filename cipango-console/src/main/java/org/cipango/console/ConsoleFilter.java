@@ -285,7 +285,13 @@ public class ConsoleFilter implements Filter
 				{
 					action.process(request);
 					forward = false;
-					response.sendRedirect(command);
+					if (action.isAjax(request))
+					{
+						action.setAjaxContent(request, response);
+						return;
+					}
+					else
+						response.sendRedirect(command);
 				} 
 			}
 
@@ -567,8 +573,9 @@ public class ConsoleFilter implements Filter
 	{
 		response.setContentType("image/svg+xml");
 		int maxMessages = 
-			PrinterUtil.getInt(request.getParameter(Parameters.MAX_MESSAGES), SipLogPrinter.DEFAULT_MAX_MESSAGES);
-		String msgFilter = request.getParameter(Parameters.SIP_MESSAGE_FILTER);
+			ConsoleUtil.getParamValueAsInt(Parameters.MAX_MESSAGES, request, SipLogPrinter.DEFAULT_MAX_MESSAGES);
+		
+		String msgFilter = ConsoleUtil.getCallflowNotificationFilter(request).getFilter();
 		if (_mbsc.isRegistered(SIP_CONSOLE_MSG_LOG))
 		{
 			String userAgent = request.getHeader("User-Agent");

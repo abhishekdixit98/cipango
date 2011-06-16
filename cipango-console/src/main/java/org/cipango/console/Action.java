@@ -24,6 +24,7 @@ import javax.management.MBeanServerConnection;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.cipango.console.printer.generic.HtmlPrinter;
 import org.eclipse.jetty.util.log.Log;
@@ -144,7 +145,7 @@ public abstract class Action implements HtmlPrinter
 	
 	public void print(Writer out) throws Exception
 	{
-		out.write("<a href=\"" + getPage().getName());
+		out.write("<a id=\"" + getParameter() + "\" href=\"" + getPage().getName());
 		out.write("?" + Parameters.ACTION + "=" + getParameter() + "\">");
 		out.write(getDescription());
 		out.write("</a>");
@@ -154,6 +155,16 @@ public abstract class Action implements HtmlPrinter
 	{
 		String description = _parameter.replace('-', ' ');
 		return description.substring(0,1).toUpperCase() + description.substring(1);
+	}
+	
+	public boolean isAjax(HttpServletRequest request)
+	{
+		return request.getParameter("ajax") != null;
+	}
+	
+	public void setAjaxContent(HttpServletRequest request, HttpServletResponse response) throws Exception
+	{
+		
 	}
 	
 	@Override
