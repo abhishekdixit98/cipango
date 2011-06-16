@@ -24,10 +24,10 @@ import javax.servlet.http.HttpServletRequest;
 import org.cipango.console.Action;
 import org.cipango.console.Action.StartAction;
 import org.cipango.console.Action.StopAction;
+import org.cipango.console.ConsoleUtil;
 import org.cipango.console.Page;
 import org.cipango.console.Parameters;
 import org.cipango.console.printer.generic.HtmlPrinter;
-import org.cipango.console.printer.generic.PrinterUtil;
 
 public abstract class AbstractLogPrinter implements HtmlPrinter
 {
@@ -48,13 +48,7 @@ public abstract class AbstractLogPrinter implements HtmlPrinter
 	public AbstractLogPrinter(MBeanServerConnection connection, HttpServletRequest request) throws Exception
 	{
 		_connection = connection;
-		String maxMsg = request.getParameter(Parameters.MAX_MESSAGES);
-		if (maxMsg == null)
-			maxMsg = (String) request.getSession().getAttribute(Parameters.MAX_MESSAGES);
-		else
-			request.getSession().setAttribute(Parameters.MAX_MESSAGES, maxMsg);
-		
-		_maxMessages = PrinterUtil.getInt(maxMsg, DEFAULT_MAX_MESSAGES);
+		_maxMessages = ConsoleUtil.getParamValueAsInt(Parameters.MAX_MESSAGES, request, SipLogPrinter.DEFAULT_MAX_MESSAGES);
 	}
 	
 	public void printHeaders(Writer out) throws Exception
@@ -69,25 +63,7 @@ public abstract class AbstractLogPrinter implements HtmlPrinter
 		if (on)
 		{
 			out.write("<div class=\"inline\">");
-			out.write("<form name=\"form1\" method=\"get\" action=\"" + getPage().getName() + "\">" + "Show &nbsp;"
-					+ "<SELECT name=\"" + Parameters.MAX_MESSAGES + "\">");
-			int maxSavedMsg = (Integer) _connection.getAttribute(getObjectName(), "maxMessages");
-			for (int i = 0; i < NB_MESSAGES.length; i++)
-			{
-				if (NB_MESSAGES[i] <= maxSavedMsg)
-				{
-					out.write("<OPTION ");
-					if (_maxMessages == NB_MESSAGES[i])
-						out.write(" selected");
-					out.write(">" + NB_MESSAGES[i] + "</OPTION>");
-				}
-			}
-			out.write("</SELECT>");
-			out.write("&nbsp;last filtered messages.&nbsp;|&nbsp;");
-
-			printCommonFilters(out);
-
-			out.write("&nbsp;&nbsp;<input type=\"submit\" name=\"submit\" value=\"Apply\"/></FORM>");
+			printFilterForm(out);
 
 			new ClearConsoleLoggerAction(getPage()).print(out);
 			out.write("&nbsp;|&nbsp;");
@@ -95,6 +71,7 @@ public abstract class AbstractLogPrinter implements HtmlPrinter
 			
 			out.write("&nbsp;|&nbsp;<A href=\"" + getLogFile() + "\">Display as log file</A>\n");
 			
+			int maxSavedMsg = (Integer) _connection.getAttribute(getObjectName(), "maxMessages");
 			new MessageInMemoryAction(getPage(), getObjectName()).print(out, maxSavedMsg);
 		}
 		else
@@ -103,6 +80,28 @@ public abstract class AbstractLogPrinter implements HtmlPrinter
 		}
 	}
 	
+	protected void printFilterForm(Writer out) throws Exception
+	{
+		out.write("<form id=\"filterForm\" method=\"get\" action=\"" + getPage().getName() + "\">" + "Show &nbsp;"
+				+ "<SELECT id=\"maxMessages\" name=\"" + Parameters.MAX_MESSAGES + "\">");
+		int maxSavedMsg = (Integer) _connection.getAttribute(getObjectName(), "maxMessages");
+		for (int i = 0; i < NB_MESSAGES.length; i++)
+		{
+			if (NB_MESSAGES[i] <= maxSavedMsg)
+			{
+				out.write("<OPTION ");
+				if (_maxMessages == NB_MESSAGES[i])
+					out.write(" selected");
+				out.write(">" + NB_MESSAGES[i] + "</OPTION>");
+			}
+		}
+		out.write("</SELECT>");
+		out.write("&nbsp;last filtered messages.&nbsp;|&nbsp;");
+
+		printCommonFilters(out);
+
+		out.write("&nbsp;&nbsp;<input type=\"submit\" name=\"submit\" value=\"Apply\"/></FORM>");
+	}
 
 	public abstract Page getPage();
 	
@@ -166,7 +165,7 @@ public abstract class AbstractLogPrinter implements HtmlPrinter
 		{
 			super(page, "clear-logs");
 		}
-
+		
 		@Override
 		protected void doProcess(HttpServletRequest request) throws Exception
 		{

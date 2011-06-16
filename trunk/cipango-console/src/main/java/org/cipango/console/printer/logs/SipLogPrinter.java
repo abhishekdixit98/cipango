@@ -13,27 +13,31 @@
 // ========================================================================
 package org.cipango.console.printer.logs;
 
+import java.io.StringWriter;
 import java.io.Writer;
 import java.lang.reflect.Method;
 import java.util.Enumeration;
-import java.util.Properties;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.ResourceBundle;
 
 import javax.management.MBeanServerConnection;
 import javax.management.ObjectName;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.servlet.sip.SipServletMessage;
 import javax.servlet.sip.SipServletRequest;
 
-import org.cipango.callflow.CallflowNotificationFilter;
 import org.cipango.console.Action;
 import org.cipango.console.ConsoleFilter;
+import org.cipango.console.ConsoleUtil;
 import org.cipango.console.Page;
 import org.cipango.console.Parameters;
 import org.cipango.console.printer.MenuPrinter;
 import org.cipango.console.printer.logs.FileLogPrinter.DeleteLogsFilesAction;
 import org.cipango.console.printer.logs.FileLogPrinter.StartFileLoggerAction;
 import org.cipango.console.printer.logs.FileLogPrinter.StopFileLoggerAction;
+import org.eclipse.jetty.util.ajax.JSON;
 
 public class SipLogPrinter extends AbstractLogPrinter
 {
@@ -50,6 +54,34 @@ public class SipLogPrinter extends AbstractLogPrinter
 		FROM_FILTER = "message.from.uRI.toString()",
 		REMOTE_FILTER = "remote",
 		REQUEST_URI_FILTER = "message.requestURI != null and message.requestURI.toString()";
+	
+	public static final Action REFRESH_LOGS = Action.add(new Action(MenuPrinter.SIP_LOGS, "refresh-logs")
+	{
+		
+		@Override
+		public void doProcess(HttpServletRequest request) throws Exception
+		{
+			
+		}
+
+		@Override
+		public void setAjaxContent(HttpServletRequest request, HttpServletResponse response) throws Exception
+		{
+			Map<String, String> map = new HashMap<String, String>();
+			
+			SipLogPrinter printer = new SipLogPrinter(getConnection(), request, Output.HTML);
+			StringWriter writer = new StringWriter();
+			printer.printConsoleLog(writer);
+			
+			map.put("messageLog", writer.toString());
+			writer = new StringWriter();
+			printer.printFilterForm(writer);
+			map.put("filterForm", writer.toString());
+			
+			JSON.getDefault().appendMap(response.getWriter(), map);
+			
+		}	
+	});
 	
 	static
 	{
@@ -86,18 +118,7 @@ public class SipLogPrinter extends AbstractLogPrinter
 			HttpServletRequest request, Output output) throws Exception
 	{
 		super(connection, request);
-		_msgFilter = request.getParameter(Parameters.SIP_MESSAGE_FILTER);
-		CallflowNotificationFilter filter = (CallflowNotificationFilter) request.getSession().getAttribute(Parameters.SIP_MESSAGE_FILTER);
-		if (_msgFilter == null)
-			_msgFilter = filter == null ? null : filter.getFilter();
-		else if (filter == null)
-		{
-			filter = new CallflowNotificationFilter(_msgFilter);
-			request.getSession().setAttribute(Parameters.SIP_MESSAGE_FILTER, filter);
-		}
-		else
-			filter.setFilter(_msgFilter);
-		
+		_msgFilter = ConsoleUtil.getCallflowNotificationFilter(request).getFilter();
 		_output = output;
 
 		if (isLoggerRunning())
@@ -137,9 +158,9 @@ public class SipLogPrinter extends AbstractLogPrinter
 		{
 			out.write("<h2>Console Log</h2>");
 			printHeaders(out);
-			out.write("<input id=\"realtimeUpdate\" type=\"submit\" value=\"Start realtime update\"/>");
 			if (isLoggerRunning())
 			{
+				out.write("<input id=\"realtimeUpdate\" type=\"submit\" value=\"Start realtime update\" style=\"display:none\"/>");
 				printCallflow(out);
 				printConsoleLog(out);
 			}
@@ -157,13 +178,16 @@ public class SipLogPrinter extends AbstractLogPrinter
 		out.write("Filter:&nbsp;" + "<SELECT name=\"" + Parameters.SIP_MESSAGE_FILTER + "\">");
 		Enumeration<String> keys = FILTERS.getKeys();
 		boolean selected = false;
-		out.write("<OPTION value=\"\" ");
+		out.write("<OPTION value=\" \" ");
 		if (_msgFilter == null || "".equals(_msgFilter))
 		{
 			out.write(" selected");
+			out.write(">Select a filter</OPTION>");
 			selected = true;
 		}
-		out.write(">Select a filter</OPTION>");
+		else
+			out.write(">Clear filter</OPTION>");
+		
 		while (keys.hasMoreElements())
 		{
 			String key = keys.nextElement();
@@ -212,7 +236,7 @@ public class SipLogPrinter extends AbstractLogPrinter
 	
 
 
-	private void printConsoleLog(Writer out) throws Exception
+	public void printConsoleLog(Writer out) throws Exception
 	{
 		out.write("<div id=\"messageLog\">");
 		for (int i = 0; i < _messagesLogs.length; i++)
@@ -235,13 +259,9 @@ public class SipLogPrinter extends AbstractLogPrinter
 		out.write("<div id=\"callflow\">");
 		if (_messagesLogs != null && _messagesLogs.length > 0)
 		{
-			out.write("<embed src=\"message.svg?" + Parameters.MAX_MESSAGES
-					+ "=" + _maxMessages);
-			if (_msgFilter != null)
-				out.write("&" + Parameters.SIP_MESSAGE_FILTER + "=" + encode(_msgFilter));
+			out.write("<embed src=\"message.svg\" width=\"790\"");
 			int height = 100 + _messagesLogs.length * 25;
-			out.write("\" width=\"790\" height=\""
-							+ height
+			out.write("height=\"" + height
 							+ "\" type=\"image/svg+xml\" pluginspage=\"http://www.adobe.com/svg/viewer/install/\"/>");
 		}
 		out.write("</div>");
@@ -294,7 +314,7 @@ public class SipLogPrinter extends AbstractLogPrinter
 	public static String getFilterLink(String name, String value)
 	{
 		StringBuffer sb = new StringBuffer();
-		sb.append("<A href=\"" + MenuPrinter.SIP_LOGS.getName() + "?").append(Parameters.SIP_MESSAGE_FILTER).append(
+		sb.append("<A class=\"filter\" href=\"" + MenuPrinter.SIP_LOGS.getName() + "?").append(Parameters.SIP_MESSAGE_FILTER).append(
 				"=");
 		sb.append(name).append(".equals(%27").append(encode(value)).append("%27)");
 		sb.append("\">").append(value).append("</A>");
