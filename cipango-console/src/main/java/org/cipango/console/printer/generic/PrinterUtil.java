@@ -33,19 +33,6 @@ public class PrinterUtil
 	public static final ResourceBundle DESCRIPTION = ResourceBundle
 			.getBundle("org.cipango.console.description");
 	
-	public static final int getInt(String sValue, int defaultValue)
-	{
-		if (sValue == null)
-			return defaultValue;
-		try 
-		{
-			return Integer.parseInt(sValue);
-		}
-		catch (Exception e)
-		{
-			return defaultValue;
-		}
-	}
 	
 	public static String[] getParams(String name)
 	{

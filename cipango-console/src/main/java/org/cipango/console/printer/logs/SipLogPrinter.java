@@ -29,6 +29,7 @@ import javax.servlet.sip.SipServletMessage;
 import javax.servlet.sip.SipServletRequest;
 
 import org.cipango.console.Action;
+import org.cipango.console.Attributes;
 import org.cipango.console.ConsoleFilter;
 import org.cipango.console.ConsoleUtil;
 import org.cipango.console.Page;
@@ -79,6 +80,7 @@ public class SipLogPrinter extends AbstractLogPrinter
 			map.put("filterForm", writer.toString());
 			
 			JSON.getDefault().appendMap(response.getWriter(), map);
+			request.getSession().removeAttribute(Attributes.INFO);
 			
 		}	
 	});
@@ -241,7 +243,7 @@ public class SipLogPrinter extends AbstractLogPrinter
 		out.write("<div id=\"messageLog\">");
 		for (int i = 0; i < _messagesLogs.length; i++)
 		{
-			out.write("<a name=\"msg-" + (i + 1) + "\"></a><div id=\"log_" + i + "\">");
+			out.write("<a name=\"msg-" + (i + 1) + "\"></a><div>");
 			MessageLog log = new MessageLog(_messagesLogs[i]);
 			String info = log.getInfoLine().replaceFirst(log.getRemote(),
 					getFilterLink(REMOTE_FILTER, log.getRemote()));

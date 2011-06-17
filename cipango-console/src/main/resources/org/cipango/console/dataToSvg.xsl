@@ -60,7 +60,7 @@
 			
 			<g>
 				<xsl:attribute name="id">msg<xsl:value-of select="position()"/></xsl:attribute>
-				<xsl:attribute name="onclick">window.parent.location.hash='msg-<xsl:value-of select="position() - 1"/>';</xsl:attribute>
+				<xsl:attribute name="onclick">window.parent.location.hash='msg-<xsl:value-of select="position()"/>';</xsl:attribute>
 				
 				<text x="30" class='message-header'>
 					<xsl:attribute name="y"><xsl:value-of select="$yLine"/></xsl:attribute>
