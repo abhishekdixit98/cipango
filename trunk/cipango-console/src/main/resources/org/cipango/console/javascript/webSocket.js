@@ -28,21 +28,30 @@
   function setFilterClickEvents()
   {
       $(".filter").click(function(event){
-         refresh(this.href);
+         refreshLogs(this.href);
          event.preventDefault();
       });
       
       $("#filterForm input").click(function(event){
-         var uri = document.location.toString();
-         if (uri.indexOf("#") > 0)
-            uri = uri.substr(0, uri.indexOf("#"));
-         uri += "?" + $("#filterForm").serialize();
-         refresh(uri);
+         refreshLogs(getLocation() +  "?" + $("#filterForm").serialize());
+         event.preventDefault();
+      });
+      
+      $("#filterForm select").change(function(event){
+         refreshLogs(getLocation() +  "?" + $(this).serialize());
          event.preventDefault();
       });
   }
    
-  function refresh(target)
+  function getLocation()
+  {
+     var uri = document.location.toString();
+     if (uri.indexOf("#") > 0)
+        uri = uri.substr(0, uri.indexOf("#"));
+     return uri;
+  } 
+   
+  function refreshLogs(target)
   {
     $.getJSON(target, {ajax: "true", action: "refresh-logs"}, function(data){
         var items = [];
@@ -70,16 +79,12 @@
     log.append("<div>" + message + "</div>");
         
     var maxMessages = $("#maxMessages").val();
-    var childCount = $("#messageLog div").size() / 2;
-    while (childCount > maxMessages)
-    {
-        $("#messageLog:first-child").remove();
-        childCount = $("#messageLog div").size() / 2;
-    }
+    while (log.children("div").size() > maxMessages)
+        log.children().first().remove();
     
     var children = log.children("A");
     children.attr("name", function(i, val) {
-        return 'msg-' + i;
+        return 'msg-' + (i + 1);
     });
     
     refreshGraph();  
@@ -96,6 +101,9 @@
     $("#callflow").html(html);
   }
   
+  
+  
+  var keepAlive;  
     
   var webSocket = {
 
@@ -107,16 +115,18 @@
       this._ws.onmessage = this._onmessage;
       this._ws.onerror = this._onerror;
       this._ws.onclose = this._onclose;
+      keepAlive = setTimeout("webSocket.sendKeepAlive()",30000);
     },
 
     _onopen: function() {
       $("#realtimeUpdate").attr("value", "Stop realtime update");
     },
 
-    send: function(message) {
+    sendKeepAlive: function() {
       if (this._ws) {
-        this._ws.send(message);
-        log(message);
+        console.log("Send keep alive");
+        this._ws.send(" ");
+        keepAlive = setTimeout("webSocket.sendKeepAlive()",30000);
       }
     },
 
@@ -143,6 +153,12 @@
       }
     }
 
+  };
+  
+  window.onunload = function() 
+  { 
+     if (webSocket)
+        webSocket.close(); 
   };
   
   

@@ -579,6 +579,7 @@ public class ConsoleFilter implements Filter
 		if (_mbsc.isRegistered(SIP_CONSOLE_MSG_LOG))
 		{
 			String userAgent = request.getHeader("User-Agent");
+			
 			// Firefox does not support animation and IE does not support foreignObject
 			boolean supportAnimation = (userAgent.indexOf("Firefox") == -1 
 				&& userAgent.indexOf("MSIE") == -1 )
@@ -613,7 +614,7 @@ public class ConsoleFilter implements Filter
 			Node doc = documentBuilder.parse(new ByteArrayInputStream(source));
 			
 			Transformer transformer = factory.newTransformer(
-					new StreamSource(_servletContext.getResourceAsStream("/dataToSvg.xsl")));
+					new StreamSource(getClass().getResourceAsStream("dataToSvg.xsl")));
 			transformer.transform(new DOMSource(doc), result);
 			return os.toByteArray();
 		}

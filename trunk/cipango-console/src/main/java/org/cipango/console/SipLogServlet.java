@@ -93,14 +93,6 @@ public class SipLogServlet extends WebSocketServlet
 
 		public void onMessage(byte frame, String data)
 		{
-			try
-			{
-				_connection.sendMessage(data);
-			}
-			catch (IOException e)
-			{
-				e.printStackTrace();
-			}
 		}
 
 		public void onMessage(byte frame, byte[] data, int offset, int length)
@@ -126,8 +118,7 @@ public class SipLogServlet extends WebSocketServlet
 			}
 			catch (IOException e)
 			{
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				_logger.debug(e);
 			}
 		}
 
