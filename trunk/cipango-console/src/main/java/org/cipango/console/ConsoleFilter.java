@@ -109,7 +109,49 @@ public class ConsoleFilter implements Filter
 		SIP_MESSAGE_LOG = ObjectNameFactory.create("org.cipango.server.log:type=filemessagelog,id=0"),
 		TRANSACTION_MANAGER = ObjectNameFactory.create("org.cipango.server.transaction:type=transactionmanager,id=0");
 	
-	private static final String[] RESOURCES_EXT = { ".css", ".js", ".jpg", ".png", ".gif", ".xsl"};
+	enum Resource
+	{
+		CSS(".css", "text/css", "css"),
+		JAVASCRIPT(".js", "text/javascript", "javascript"),
+		JPEG(".jpg", "image/jpeg", "images"),
+		PNG(".png", "image/png", "images"),
+		GIF(".gif", "image/gif", "images"),
+		XSL(".xsl", "application/xhtml+xml");
+		
+		private String _extension;
+		private String _contentType;
+		private String _directory;
+		
+		private Resource(String extension, String contentType)
+		{
+			_extension = extension;
+			_contentType = contentType;
+			_directory = "";
+		}
+		
+		private Resource(String extension, String contentType, String directory)
+		{
+			_extension = extension;
+			_contentType = contentType;
+			_directory = directory;
+		}
+
+		public String getExtension()
+		{
+			return _extension;
+		}
+
+		public String getContentType()
+		{
+			return _contentType;
+		}
+		
+		public String getDirectory()
+		{
+			return _directory;
+		}
+	}
+	
 	
 	private static final Long ONE_HOUR = new Long(3600);
 
@@ -328,7 +370,7 @@ public class ConsoleFilter implements Filter
 			}
 			else if (command.equals(MenuPrinter.SIP_LOGS.getName()))
 			{
-				request.setAttribute(Attributes.JAVASCRIPT_SRC, "javascript/webSocket.js");
+				request.setAttribute(Attributes.JAVASCRIPT_SRC, "javascript/jquery-1.6.1.js,javascript/webSocket.js");
 				request.setAttribute(Attributes.CONTENT, new SipLogPrinter(_mbsc, request, Output.HTML));
 			}
 			else if (command.equals(MenuPrinter.DIAMETER_LOGS.getName()))
@@ -627,13 +669,16 @@ public class ConsoleFilter implements Filter
 
 	private boolean doResource(String command, HttpServletResponse response) throws IOException
 	{
-		for (int i = 0; i < RESOURCES_EXT.length; i++)
+		for (Resource resource : Resource.values())
 		{
-			if (command.endsWith(RESOURCES_EXT[i]))
+			if (command.endsWith(resource.getExtension()) && 
+					command.startsWith(resource.getDirectory()))
 			{
-				InputStream is = getClass().getResourceAsStream(command);
+				InputStream is = ConsoleFilter.class.getResourceAsStream(command);
 				if (is != null)
 				{
+					response.setContentType(resource.getContentType());
+					response.addHeader("Cache-Control", "max-age=3600");
 					int read;
 					byte[] b = new byte[1024];
 					while ((read = is.read(b)) != -1)

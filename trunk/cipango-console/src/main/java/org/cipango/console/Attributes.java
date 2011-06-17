@@ -22,4 +22,5 @@ public class Attributes
 	public static final String INFO = "info";
 
 	public static final String JAVASCRIPT_SRC = "javascriptSrc";
+	public static final String CSS_SRC = "cssSrc";
 }
