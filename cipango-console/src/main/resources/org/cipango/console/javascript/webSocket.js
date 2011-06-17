@@ -124,7 +124,6 @@
 
     sendKeepAlive: function() {
       if (this._ws) {
-        console.log("Send keep alive");
         this._ws.send(" ");
         keepAlive = setTimeout("webSocket.sendKeepAlive()",30000);
       }

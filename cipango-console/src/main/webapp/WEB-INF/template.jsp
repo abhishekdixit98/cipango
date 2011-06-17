@@ -3,7 +3,7 @@
 
 <html xmlns="http://www.w3.org/1999/xhtml" dir="ltr" lang="en-EN">
 <%
-	MenuPrinter menuPrinter = ((MenuPrinter) request.getAttribute(Attributes.MENU));
+	Menu menuPrinter = ((Menu) request.getAttribute(Attributes.MENU));
 %>
 <head>
   <title><%= menuPrinter.getTitle() %></title>
@@ -12,9 +12,24 @@
   <meta name="Description" content="" />
   <meta name="Keywords" content="" />
   <link rel="stylesheet" href="css/style.css" type="text/css" media="screen" />
-  <script type="text/javascript" src="javascript/jquery-1.6.1.js"></script>
-  <%= (request.getAttribute(Attributes.JAVASCRIPT_SRC) == null ? 
-  				"" : "<script type=\"text/javascript\" src=\"" + request.getAttribute(Attributes.JAVASCRIPT_SRC) + "\"></script>") %>
+  <%
+ 		if(request.getAttribute(Attributes.CSS_SRC) != null)
+  		{
+	  		String[] css = ((String) request.getAttribute(Attributes.CSS_SRC)).split(",");
+			for(int i=0; i<css.length; i++)
+			{
+				%><link rel="stylesheet" href="<%= css[i] %> " /><%
+			}
+		}
+	 	if(request.getAttribute(Attributes.JAVASCRIPT_SRC) != null)
+  		{
+	  		String[] js = ((String) request.getAttribute(Attributes.JAVASCRIPT_SRC)).split(",");
+			for(int i=0; i<js.length; i++)
+			{
+				%><script type="text/javascript" src="<%= js[i] %> "></script><%
+			}
+		}
+  %>
 </head>
 <body>
 	<div id="container">
