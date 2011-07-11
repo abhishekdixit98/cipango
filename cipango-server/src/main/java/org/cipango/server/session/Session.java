@@ -878,6 +878,9 @@ public class Session implements SessionIf
 			setDialogHeaders(request, cseq);
 			
 			request.setSession(Session.this);
+			
+			if (_state == State.INITIAL)
+				request.setInitial(true);
 			return request;
 		}
 		
