@@ -53,6 +53,7 @@ import org.cipango.sip.NameAddr;
 import org.cipango.sip.RAck;
 import org.cipango.sip.SipHeaders;
 import org.cipango.sip.SipMethods;
+import org.cipango.sip.SipParams;
 import org.cipango.sip.URIFactory;
 import org.cipango.sip.Via;
 import org.cipango.sip.security.AuthInfoImpl;
@@ -96,8 +97,11 @@ public class SipRequest extends SipMessage implements SipServletRequest
 		if (getTransaction().isCompleted())
 			throw new IllegalStateException("Transaction has completed");
 		
-		return createRequest(SipMethods.CANCEL);
-	}
+		SipRequest cancel = createRequest(SipMethods.CANCEL);
+		cancel.to().removeParameter(SipParams.TAG);
+		
+		return cancel;
+    }
 	
 	/**
 	 * @see SipServletRequest#createResponse(int)
