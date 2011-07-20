@@ -17,10 +17,13 @@ package org.cipango.server;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import javax.servlet.ServletException;
 import javax.servlet.sip.Address;
@@ -391,12 +394,8 @@ public class B2bHelper implements B2buaHelper
 							try
 							{
 								Address address = new NameAddr(l.get(0));
-								if (ordinal == SipHeaders.FROM_ORDINAL)
-									address.setParameter(SipParams.TAG, request.from().getParameter(SipParams.TAG));
-								else
-									address.removeParameter(SipParams.TAG);
-								request.getFields().setAddress(name, address);
-								// TODO from/to session ?
+								
+								mergeFromTo(address, request.getFields().getAddress(name));
 							}
 							catch (ServletException e)
 							{
@@ -485,5 +484,39 @@ public class B2bHelper implements B2buaHelper
 			String name = it.next();
 			dest.setParameter(name, source.getParameter(name));
 		}
+	}
+	
+	public static void mergeFromTo(Address src, Address dest)
+	{
+		dest.setURI(src.getURI());
+		dest.setDisplayName(src.getDisplayName());
+		
+		List<String> params = new ArrayList<String>();
+		
+		Iterator<String> it = src.getParameterNames();
+		while (it.hasNext())
+		{
+			params.add(it.next());
+		}
+		it = dest.getParameterNames();
+		while (it.hasNext())
+		{
+			params.add(it.next());
+		}
+		
+		for (String param : params)
+		{
+			if (!param.equalsIgnoreCase(SipParams.TAG))
+				dest.setParameter(param, src.getParameter(param));
+		}
+	}
+	
+	public static void main(String[] args) throws Exception
+	{
+		NameAddr dest = new NameAddr("Alice <sip:alice@atlanta.com>;toberemoved");
+		NameAddr src = new NameAddr("sip:alice@atlanta2.com;tag=void;foo=bar"); 
+		mergeFromTo(src, dest);
+		
+		System.out.println(dest);
 	}
 }
