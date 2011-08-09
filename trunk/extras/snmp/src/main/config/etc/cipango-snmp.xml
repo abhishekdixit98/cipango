@@ -13,7 +13,7 @@
     </New>
   </Set>
 
-  <Call name="addLifeCycle">
+  <Call name="addBean">
     <Arg>
       <New class="org.cipango.snmp.SnmpAgent" id="SnmpAgent">
         <Set name="server"><Ref id="Server"/></Set>
@@ -21,8 +21,8 @@
           <Array type="org.cipango.snmp.SnmpAddress">
             <Item>
               <New class="org.cipango.snmp.SnmpAddress">
-                <Set name="port"><SystemProperty default="162" name="snmp.trap.port"/></Set>
-                <Set name="host"><SystemProperty default="localhost" name="snmp.trap.host"/></Set>
+                <Set name="port"><Property default="162" name="snmp.trap.port"/></Set>
+                <Set name="host"><Property default="localhost" name="snmp.trap.host"/></Set>
                 <Set name="transport">UDP</Set>
               </New>
             </Item>
@@ -32,8 +32,8 @@
           <Array type="org.cipango.snmp.SnmpAddress">
             <Item>
               <New class="org.cipango.snmp.SnmpAddress">
-                <Set name="port"><SystemProperty default="161" name="snmp.port"/></Set>
-                <Set name="host"><SystemProperty default="0.0.0.0" name="snmp.host"/></Set>
+                <Set name="port"><Property default="161" name="snmp.port"/></Set>
+                <Set name="host"><Property default="0.0.0.0" name="snmp.host"/></Set>
                 <Set name="transport">UDP</Set>
               </New>
             </Item>
@@ -41,6 +41,11 @@
         </Set>
       </New>
     </Arg>
+  </Call>
+  
+  <Call name="setAttribute">
+    <Arg>org.cipango.snmp.SnmpAgent</Arg>
+    <Arg><Ref id="SnmpAgent"/></Arg>
   </Call>
 
 </Configure>
