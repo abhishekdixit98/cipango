@@ -20,15 +20,16 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.cipango.server.Server;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.snmp4j.TransportMapping;
 import org.snmp4j.agent.BaseAgent;
 import org.snmp4j.agent.CommandProcessor;
 import org.snmp4j.agent.DuplicateRegistrationException;
 import org.snmp4j.agent.MOGroup;
+import org.snmp4j.agent.NotificationOriginator;
 import org.snmp4j.agent.mo.MOTableRow;
 import org.snmp4j.agent.mo.jmx.mibs.JvmManagementMibInst;
 import org.snmp4j.agent.mo.snmp.RowStatus;
@@ -56,7 +57,7 @@ import org.snmp4j.smi.Variable;
 import org.snmp4j.transport.DefaultTcpTransportMapping;
 import org.snmp4j.transport.DefaultUdpTransportMapping;
 
-public class SnmpAgent extends BaseAgent implements LifeCycle, Dumpable
+public class SnmpAgent extends AbstractLifeCycle implements Dumpable
 {
 
 	public static final OID NEXCOM_ENTREPRISE_OID = new OID("1.3.6.1.4.26588");
@@ -72,62 +73,22 @@ public class SnmpAgent extends BaseAgent implements LifeCycle, Dumpable
 	private List<MOGroup> _mibs = new ArrayList<MOGroup>();
 	private Server _server;
 
-
+	private Agent _agent;
+	
 	public SnmpAgent()
 			throws IOException
 	{
-		super(new File("snmpAgentBC.cfg"),
-	        null,
-	        new CommandProcessor(new OctetString(MPv3.createLocalEngineID())));
-		setSysDescr(new OctetString("Cipango-" + Server.getSipVersion()));
-		setSysOID(NEXCOM_ENTREPRISE_OID);
-		agent = new CommandProcessor(new OctetString(MPv3.createLocalEngineID()));
+		_agent = new Agent();
 	}
 	
-	public void start() throws IOException
+	protected void doStart() throws IOException
 	{
-		init();
-		finishInit();
-		run();
+		_agent.start();
 	}
 	
-	protected void addCommunities(SnmpCommunityMIB communityMIB)
+	protected void doStop() throws IOException
 	{
-		Variable[] com2sec = new Variable[]
-		{ new OctetString("public"), // community name
-				new OctetString("public"), // security name
-				getAgent().getContextEngineID(), // local engine ID
-				new OctetString(), // default context name
-				new OctetString(), // transport tag
-				new Integer32(StorageType.nonVolatile), // storage type
-				new Integer32(RowStatus.active) // row status
-		};
-		MOTableRow row = communityMIB.getSnmpCommunityEntry().createRow(
-				new OctetString("public2public").toSubIndex(true), com2sec);
-		communityMIB.getSnmpCommunityEntry().addRow(row);
-	}
-
-	protected void addNotificationTargets(SnmpTargetMIB targetMIB,
-			SnmpNotificationMIB notificationMIB)
-	{
-		targetMIB.addDefaultTDomains();
-
-		notificationMIB.addNotifyEntry(new OctetString("default"),
-				new OctetString("notify"),
-				SnmpNotificationMIB.SnmpNotifyTypeEnum.trap,
-				StorageType.permanent);
-
-		for (int i = 0; i < _trapReceivers.length; i++)
-		{
-			addTrapHost(_trapReceivers[i]);
-		}
-		
-		targetMIB.addTargetParams(new OctetString("v2c"),
-                MessageProcessingModel.MPv2c,
-                SecurityModel.SECURITY_MODEL_SNMPv2c,
-                new OctetString("public"),
-                SecurityLevel.NOAUTH_NOPRIV,
-                StorageType.permanent);
+		_agent.stop();
 	}
 	
 	private void addTrapHost(SnmpAddress address)
@@ -142,7 +103,7 @@ public class SnmpAgent extends BaseAgent implements LifeCycle, Dumpable
 			else
 				transportIpAddress = new TcpAddress(address.getInetAddress(), address.getPort());
 	
-			snmpTargetMIB.addTargetAddress(new OctetString("notification" + address.getHost()),
+			_agent.getSnmpTargetMIB().addTargetAddress(new OctetString("notification" + address.getHost()),
 					address.getTransportDomain(), 
 					new OctetString(transportIpAddress.getValue()),
 					200, 1, 
@@ -158,109 +119,11 @@ public class SnmpAgent extends BaseAgent implements LifeCycle, Dumpable
 		}
 	}
 
-	protected void addUsmUser(USM usm)
-	{
-		 UsmUser user = new UsmUser(new OctetString("SHADES"),
-                 AuthSHA.ID,
-                 new OctetString("SHADESAuthPassword"),
-                 PrivDES.ID,
-                 new OctetString("SHADESPrivPassword"));
-		usm.addUser(user.getSecurityName(), usm.getLocalEngineID(), user);
-		user = new UsmUser(new OctetString("TEST"),
-		                 AuthSHA.ID,
-		                 new OctetString("maplesyrup"),
-		                 PrivDES.ID,
-		                 new OctetString("maplesyrup"));
-		usm.addUser(user.getSecurityName(), usm.getLocalEngineID(), user);
-		user = new UsmUser(new OctetString("SHA"),
-		                 AuthSHA.ID,
-		                 new OctetString("SHAAuthPassword"),
-		                 null,
-		                 null);
-		usm.addUser(user.getSecurityName(), usm.getLocalEngineID(), user);
-	}
-
-	protected void addViews(VacmMIB vacm)
-	{
-		   vacm.addGroup(SecurityModel.SECURITY_MODEL_SNMPv1,
-	                  new OctetString("public"),
-	                  new OctetString("v1v2group"),
-	                  StorageType.nonVolatile);
-	    vacm.addGroup(SecurityModel.SECURITY_MODEL_SNMPv2c,
-	                  new OctetString("public"),
-	                  new OctetString("v1v2group"),
-	                  StorageType.nonVolatile);
-	    vacm.addGroup(SecurityModel.SECURITY_MODEL_USM,
-	                  new OctetString("SHADES"),
-	                  new OctetString("v3group"),
-	                  StorageType.nonVolatile);
-	    vacm.addGroup(SecurityModel.SECURITY_MODEL_USM,
-	                  new OctetString("TEST"),
-	                  new OctetString("v3test"),
-	                  StorageType.nonVolatile);
-	    vacm.addGroup(SecurityModel.SECURITY_MODEL_USM,
-	                  new OctetString("SHA"),
-	                  new OctetString("v3restricted"),
-	                  StorageType.nonVolatile);
-
-	    vacm.addAccess(new OctetString("v1v2group"), new OctetString(),
-	                   SecurityModel.SECURITY_MODEL_ANY,
-	                   SecurityLevel.NOAUTH_NOPRIV,
-	                   MutableVACM.VACM_MATCH_EXACT,
-	                   new OctetString("fullReadView"),
-	                   new OctetString("fullWriteView"),
-	                   new OctetString("fullNotifyView"),
-	                   StorageType.nonVolatile);
-	    vacm.addAccess(new OctetString("v3group"), new OctetString(),
-	                   SecurityModel.SECURITY_MODEL_USM,
-	                   SecurityLevel.AUTH_PRIV,
-	                   MutableVACM.VACM_MATCH_EXACT,
-	                   new OctetString("fullReadView"),
-	                   new OctetString("fullWriteView"),
-	                   new OctetString("fullNotifyView"),
-	                   StorageType.nonVolatile);
-	    vacm.addAccess(new OctetString("v3restricted"), new OctetString(),
-	                   SecurityModel.SECURITY_MODEL_USM,
-	                   SecurityLevel.AUTH_NOPRIV,
-	                   MutableVACM.VACM_MATCH_EXACT,
-	                   new OctetString("restrictedReadView"),
-	                   new OctetString("restrictedWriteView"),
-	                   new OctetString("restrictedNotifyView"),
-	                   StorageType.nonVolatile);
-	    vacm.addAccess(new OctetString("v3test"), new OctetString(),
-	                   SecurityModel.SECURITY_MODEL_USM,
-	                   SecurityLevel.AUTH_PRIV,
-	                   MutableVACM.VACM_MATCH_EXACT,
-	                   new OctetString("testReadView"),
-	                   new OctetString("testWriteView"),
-	                   new OctetString("testNotifyView"),
-	                   StorageType.nonVolatile);
-
-	    vacm.addViewTreeFamily(new OctetString("fullReadView"), new OID("1.3"),
-	                           new OctetString(), VacmMIB.vacmViewIncluded,
-	                           StorageType.nonVolatile);
-	    vacm.addViewTreeFamily(new OctetString("fullWriteView"), new OID("1.3"),
-	                           new OctetString(), VacmMIB.vacmViewIncluded,
-	                           StorageType.nonVolatile);
-	    vacm.addViewTreeFamily(new OctetString("fullNotifyView"), new OID("1.3"),
-	                           new OctetString(), VacmMIB.vacmViewIncluded,
-	                           StorageType.nonVolatile);
-	}
 
 	public void setTransportMapping(TransportMapping[] mappings)
 	{
-		transportMappings = mappings;
+		_agent.setTransportMapping(mappings);
 	}
-
-	@Override
-	protected void registerManagedObjects()
-	{
-	}
-
-	@Override
-	protected void unregisterManagedObjects()
-	{
-	}	
 		
 	public SnmpAddress[] getTrapReceivers()
 	{
@@ -284,7 +147,7 @@ public class SnmpAgent extends BaseAgent implements LifeCycle, Dumpable
 	                if (oldReceivers[i]!=null)
 	                {
 	                	String key = "notification" + oldReceivers[i].getHost();
-	                    snmpTargetMIB.removeTargetAddress(new OctetString(key));
+	                    _agent.getSnmpTargetMIB().removeTargetAddress(new OctetString(key));
 	                }
 	            }
 	        }
@@ -297,83 +160,27 @@ public class SnmpAgent extends BaseAgent implements LifeCycle, Dumpable
 		}
 	}
 	
-	public void addMib(MOGroup mib)
+	public void addMib(MOGroup mib) throws DuplicateRegistrationException
 	{
-		if (!_mibs.contains(mib))
+		if (!_mibs.contains(mib) && mib != null)
+		{
 			_mibs.add(mib);
-	}
 		
-	@Override
-	protected void registerSnmpMIBs()
-	{
-		super.registerSnmpMIBs();
-		try
-		{
-			_mibs.add(new CipangoMib());
-			_mibs.add(new JvmManagementMibInst(notificationOriginator));
-
-			for (MOGroup mib : _mibs)
-			{
-				mib.registerMOs(server, null);
-				if (mib instanceof Mib)
-					((Mib) mib).setSnmpAgent(this);
-			}
-
-		}
-		catch (DuplicateRegistrationException ex)
-		{
-			Log.warn("Unable to register MIBs", ex);
+			if (mib instanceof Mib)
+				((Mib) mib).setSnmpAgent(this);
+			
+			if (isStarted())
+				mib.registerMOs(_agent.getServer(), null);
 		}
 	}
-
-	@Override
-	protected void unregisterSnmpMIBs()
-	{
-		super.unregisterSnmpMIBs();
-		for (MOGroup moGroup : _mibs)
-			moGroup.unregisterMOs(server, null);
-	}
 	
-	
-
-	public void addLifeCycleListener(Listener arg0)
+	public void removeMib(MOGroup mib)
 	{
-	}
-
-	public boolean isFailed()
-	{
-		return false;
-	}
-
-	public boolean isRunning()
-	{
-		return getAgentState() == STATE_INIT_STARTED 
-			||  getAgentState() == STATE_INIT_FINISHED
-			||  getAgentState() == STATE_RUNNING;
-	}
-
-	public boolean isStarted()
-	{
-		return  getAgentState() == STATE_RUNNING;
-	}
-
-	public boolean isStarting()
-	{
-		return getAgentState() == STATE_INIT_STARTED;
-	}
-
-	public boolean isStopped()
-	{
-		return getAgentState() == STATE_STOPPED; 
-	}
-
-	public boolean isStopping()
-	{
-		return false; 
-	}
-
-	public void removeLifeCycleListener(Listener arg0)
-	{
+		if (_mibs.contains(mib))
+		{
+			_mibs.remove(mib);	
+			mib.unregisterMOs(_agent.getServer(), null);
+		}
 	}
 	
 	public SnmpAddress[] getConnectors()
@@ -391,38 +198,14 @@ public class SnmpAgent extends BaseAgent implements LifeCycle, Dumpable
 		_connectors = connectors;
 	}
 	
-	@Override
-	protected void initTransportMappings() throws IOException {
-		if (_connectors == null)
-		{
-			SnmpAddress[] connectors = new SnmpAddress[1];
-			connectors[0] = new SnmpAddress();
-			connectors[0].setPort(161);
-			connectors[0].setHost("0.0.0.0");
-			setConnectors(_connectors);
-		}
-
-	    transportMappings = new TransportMapping[_connectors.length];
-	    for (int i = 0; i < _connectors.length; i++)
-	    {
-	    	if (_connectors[i].getPort() <= 0)
-	    		_connectors[i].setPort(161);
-	    	if (_connectors[i].isUdp())
-	    	{
-	    		UdpAddress address = new UdpAddress(_connectors[i].getInetAddress(), _connectors[i].getPort());
-	    		transportMappings[i] = new DefaultUdpTransportMapping(address);
-	    	}
-	    	else
-	    	{
-	    		TcpAddress address = new TcpAddress(_connectors[i].getInetAddress(), _connectors[i].getPort());
-	    		transportMappings[i] = new DefaultTcpTransportMapping(address);
-	    	}
-	    }
-	  }
-
 	public void setServer(Server server)
 	{
 		_server = server;
+	}
+	
+	public NotificationOriginator getNotificationOriginator()
+	{
+		return _agent.getNotificationOriginator();
 	}
 
 	public String dump()
@@ -434,5 +217,226 @@ public class SnmpAgent extends BaseAgent implements LifeCycle, Dumpable
 	{
 		out.append(String.valueOf(this)).append("\n");
 		AggregateLifeCycle.dump(out,indent,Arrays.asList(_connectors), Arrays.asList(_trapReceivers));
+	}
+	
+	class Agent  extends BaseAgent
+	{
+		public Agent()
+		{
+			super(new File("snmpAgentBC.cfg"),
+			        null,
+			        new CommandProcessor(new OctetString(MPv3.createLocalEngineID())));
+			setSysDescr(new OctetString("Cipango-" + Server.getSipVersion()));
+			setSysOID(NEXCOM_ENTREPRISE_OID);
+			agent = new CommandProcessor(new OctetString(MPv3.createLocalEngineID()));
+		}
+		
+		public void start() throws IOException
+		{
+			init();
+			finishInit();
+			run();
+		}
+		
+		protected void addCommunities(SnmpCommunityMIB communityMIB)
+		{
+			Variable[] com2sec = new Variable[]
+			{ new OctetString("public"), // community name
+					new OctetString("public"), // security name
+					getAgent().getContextEngineID(), // local engine ID
+					new OctetString(), // default context name
+					new OctetString(), // transport tag
+					new Integer32(StorageType.nonVolatile), // storage type
+					new Integer32(RowStatus.active) // row status
+			};
+			MOTableRow row = communityMIB.getSnmpCommunityEntry().createRow(
+					new OctetString("public2public").toSubIndex(true), com2sec);
+			communityMIB.getSnmpCommunityEntry().addRow(row);
+		}
+
+		protected void addNotificationTargets(SnmpTargetMIB targetMIB,
+				SnmpNotificationMIB notificationMIB)
+		{
+			targetMIB.addDefaultTDomains();
+
+			notificationMIB.addNotifyEntry(new OctetString("default"),
+					new OctetString("notify"),
+					SnmpNotificationMIB.SnmpNotifyTypeEnum.trap,
+					StorageType.permanent);
+
+			for (int i = 0; i < _trapReceivers.length; i++)
+			{
+				addTrapHost(_trapReceivers[i]);
+			}
+			
+			targetMIB.addTargetParams(new OctetString("v2c"),
+	                MessageProcessingModel.MPv2c,
+	                SecurityModel.SECURITY_MODEL_SNMPv2c,
+	                new OctetString("public"),
+	                SecurityLevel.NOAUTH_NOPRIV,
+	                StorageType.permanent);
+		}
+		
+
+		protected void addUsmUser(USM usm)
+		{
+			 UsmUser user = new UsmUser(new OctetString("SHADES"),
+	                 AuthSHA.ID,
+	                 new OctetString("SHADESAuthPassword"),
+	                 PrivDES.ID,
+	                 new OctetString("SHADESPrivPassword"));
+			usm.addUser(user.getSecurityName(), usm.getLocalEngineID(), user);
+			user = new UsmUser(new OctetString("TEST"),
+			                 AuthSHA.ID,
+			                 new OctetString("maplesyrup"),
+			                 PrivDES.ID,
+			                 new OctetString("maplesyrup"));
+			usm.addUser(user.getSecurityName(), usm.getLocalEngineID(), user);
+			user = new UsmUser(new OctetString("SHA"),
+			                 AuthSHA.ID,
+			                 new OctetString("SHAAuthPassword"),
+			                 null,
+			                 null);
+			usm.addUser(user.getSecurityName(), usm.getLocalEngineID(), user);
+		}
+
+		protected void addViews(VacmMIB vacm)
+		{
+			   vacm.addGroup(SecurityModel.SECURITY_MODEL_SNMPv1,
+		                  new OctetString("public"),
+		                  new OctetString("v1v2group"),
+		                  StorageType.nonVolatile);
+		    vacm.addGroup(SecurityModel.SECURITY_MODEL_SNMPv2c,
+		                  new OctetString("public"),
+		                  new OctetString("v1v2group"),
+		                  StorageType.nonVolatile);
+		    vacm.addGroup(SecurityModel.SECURITY_MODEL_USM,
+		                  new OctetString("SHADES"),
+		                  new OctetString("v3group"),
+		                  StorageType.nonVolatile);
+		    vacm.addGroup(SecurityModel.SECURITY_MODEL_USM,
+		                  new OctetString("TEST"),
+		                  new OctetString("v3test"),
+		                  StorageType.nonVolatile);
+		    vacm.addGroup(SecurityModel.SECURITY_MODEL_USM,
+		                  new OctetString("SHA"),
+		                  new OctetString("v3restricted"),
+		                  StorageType.nonVolatile);
+
+		    vacm.addAccess(new OctetString("v1v2group"), new OctetString(),
+		                   SecurityModel.SECURITY_MODEL_ANY,
+		                   SecurityLevel.NOAUTH_NOPRIV,
+		                   MutableVACM.VACM_MATCH_EXACT,
+		                   new OctetString("fullReadView"),
+		                   new OctetString("fullWriteView"),
+		                   new OctetString("fullNotifyView"),
+		                   StorageType.nonVolatile);
+		    vacm.addAccess(new OctetString("v3group"), new OctetString(),
+		                   SecurityModel.SECURITY_MODEL_USM,
+		                   SecurityLevel.AUTH_PRIV,
+		                   MutableVACM.VACM_MATCH_EXACT,
+		                   new OctetString("fullReadView"),
+		                   new OctetString("fullWriteView"),
+		                   new OctetString("fullNotifyView"),
+		                   StorageType.nonVolatile);
+		    vacm.addAccess(new OctetString("v3restricted"), new OctetString(),
+		                   SecurityModel.SECURITY_MODEL_USM,
+		                   SecurityLevel.AUTH_NOPRIV,
+		                   MutableVACM.VACM_MATCH_EXACT,
+		                   new OctetString("restrictedReadView"),
+		                   new OctetString("restrictedWriteView"),
+		                   new OctetString("restrictedNotifyView"),
+		                   StorageType.nonVolatile);
+		    vacm.addAccess(new OctetString("v3test"), new OctetString(),
+		                   SecurityModel.SECURITY_MODEL_USM,
+		                   SecurityLevel.AUTH_PRIV,
+		                   MutableVACM.VACM_MATCH_EXACT,
+		                   new OctetString("testReadView"),
+		                   new OctetString("testWriteView"),
+		                   new OctetString("testNotifyView"),
+		                   StorageType.nonVolatile);
+
+		    vacm.addViewTreeFamily(new OctetString("fullReadView"), new OID("1.3"),
+		                           new OctetString(), VacmMIB.vacmViewIncluded,
+		                           StorageType.nonVolatile);
+		    vacm.addViewTreeFamily(new OctetString("fullWriteView"), new OID("1.3"),
+		                           new OctetString(), VacmMIB.vacmViewIncluded,
+		                           StorageType.nonVolatile);
+		    vacm.addViewTreeFamily(new OctetString("fullNotifyView"), new OID("1.3"),
+		                           new OctetString(), VacmMIB.vacmViewIncluded,
+		                           StorageType.nonVolatile);
+		}
+		
+		
+		@Override
+		protected void registerSnmpMIBs()
+		{
+			super.registerSnmpMIBs();
+			try
+			{
+				addMib(new CipangoMib());
+				addMib(new JvmManagementMibInst(notificationOriginator));
+
+				for (MOGroup mib : _mibs)
+					mib.registerMOs(server, null);
+			}
+			catch (DuplicateRegistrationException ex)
+			{
+				Log.warn("Unable to register MIBs", ex);
+			}
+		}
+
+		@Override
+		protected void unregisterSnmpMIBs()
+		{
+			super.unregisterSnmpMIBs();
+			for (MOGroup moGroup : _mibs)
+				moGroup.unregisterMOs(server, null);
+		}
+		
+
+		@Override
+		protected void registerManagedObjects()
+		{
+		}
+
+		@Override
+		protected void unregisterManagedObjects()
+		{
+		}	
+		
+		public void setTransportMapping(TransportMapping[] transports)
+		{
+			transportMappings = transports;
+		}
+		
+		@Override
+		protected void initTransportMappings() throws IOException {
+			if (_connectors == null)
+			{
+				SnmpAddress[] connectors = new SnmpAddress[1];
+				connectors[0] = new SnmpAddress();
+				connectors[0].setPort(161);
+				connectors[0].setHost("0.0.0.0");
+				setConnectors(_connectors);
+			}
+
+		    transportMappings = new TransportMapping[_connectors.length];
+		    for (int i = 0; i < _connectors.length; i++)
+		    {
+		    	if (_connectors[i].getPort() <= 0)
+		    		_connectors[i].setPort(161);
+		    	if (_connectors[i].isUdp())
+		    	{
+		    		UdpAddress address = new UdpAddress(_connectors[i].getInetAddress(), _connectors[i].getPort());
+		    		transportMappings[i] = new DefaultUdpTransportMapping(address);
+		    	}
+		    	else
+		    	{
+		    		TcpAddress address = new TcpAddress(_connectors[i].getInetAddress(), _connectors[i].getPort());
+		    		transportMappings[i] = new DefaultTcpTransportMapping(address);
+		    	}
+		    }
+		  }
 	}
 }
