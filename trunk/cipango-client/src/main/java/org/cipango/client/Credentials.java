@@ -14,30 +14,24 @@
 
 package org.cipango.client;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
-public class UserAgentTest 
+public class Credentials 
 {
-	private SipClient _client;
+	private String _user;
+	private String _passwd;
 	
-	@Before
-	public void start() throws Exception
+	public Credentials(String user, String passwd)
 	{
-		_client = new SipClient(5060);
-		_client.start();
+		_user = user;
+		_passwd = passwd;
 	}
 	
-	@After
-	public void close() throws Exception
+	public String getUser()
 	{
-		_client.stop();
+		return _user;
 	}
 	
-	@Test
-	public void testUA() throws Exception
+	public String getPasswd()
 	{
-		
+		return _passwd;
 	}
 }
