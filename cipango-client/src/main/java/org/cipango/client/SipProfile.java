@@ -14,7 +14,51 @@
 
 package org.cipango.client;
 
-public interface UserAgentListener 
+import javax.servlet.sip.SipURI;
+
+import org.cipango.sip.SipURIImpl;
+
+public class SipProfile 
 {
+	private SipURI _uri;
+	private Credentials _credentials;
 	
+	public SipProfile(String username, String domain)
+	{
+		String host = domain;
+		int port = -1;
+		
+		int i = domain.indexOf(":");
+		if (i != -1)
+		{
+			host = domain.substring(0, i);
+			port = Integer.parseInt(domain.substring(i+1));
+		}
+		_uri = new SipURIImpl(username, host, port);
+	}
+	
+	public void setCredentials(Credentials credentials)
+	{
+		_credentials = credentials;
+	}
+	
+	public Credentials getCredentials()
+	{
+		return _credentials;
+	}
+	
+	public String getUsername()
+	{
+		return _uri.getUser();
+	}
+	
+	public String getDomain()
+	{
+		return _uri.getPort() == -1 ? _uri.getHost() : _uri.getHost() + ":" + _uri.getPort();
+	}
+	
+	public SipURI getURI()
+	{
+		return _uri;
+	}
 }

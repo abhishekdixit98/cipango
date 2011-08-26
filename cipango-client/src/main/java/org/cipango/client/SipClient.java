@@ -14,18 +14,29 @@
 
 package org.cipango.client;
 
+import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 
+import javax.servlet.ServletException;
 import javax.servlet.sip.Address;
+import javax.servlet.sip.SipFactory;
 import javax.servlet.sip.SipServlet;
+import javax.servlet.sip.SipServletMessage;
 import javax.servlet.sip.SipServletResponse;
 import javax.servlet.sip.SipURI;
 import javax.servlet.sip.URI;
 
 import javax.servlet.sip.SipServletRequest;
+import javax.servlet.sip.ar.SipApplicationRouter;
+import javax.servlet.sip.ar.SipApplicationRouterInfo;
+import javax.servlet.sip.ar.SipApplicationRoutingDirective;
+import javax.servlet.sip.ar.SipApplicationRoutingRegion;
+import javax.servlet.sip.ar.SipRouteModifier;
+import javax.servlet.sip.ar.SipTargetedRequestInfo;
 
-import org.cipango.client.test.SipTester;
 import org.cipango.server.Server;
 import org.cipango.server.bio.UdpConnector;
 import org.cipango.server.handler.SipContextHandlerCollection;
@@ -40,16 +51,17 @@ public class SipClient extends AbstractLifeCycle
 	private SipAppContext _context;
 	
 	private List<UserAgent> _userAgents = new ArrayList<UserAgent>();
-	
-	public SipClient(int port)
+		
+	public SipClient(String host, int port)
 	{
 		_server = new Server();
 		
 		UdpConnector connector = new UdpConnector();
+		connector.setHost(host);
 		connector.setPort(port);
 		
 		_server.getConnectorManager().addConnector(connector);
-		_server.setApplicationRouter(new SipClientApplicationRouter());
+		_server.setApplicationRouter(new ApplicationRouter());
 		
 		SipContextHandlerCollection handler = new SipContextHandlerCollection();
 		_server.setHandler(handler);
@@ -67,6 +79,23 @@ public class SipClient extends AbstractLifeCycle
 		_context.getSipServletHandler().setMainServletName(ClientServlet.class.getName());
 		
 		handler.addHandler(_context);
+	}
+	
+	public SipClient(int port)
+	{
+		this(null, port);
+	}
+	
+	public SipFactory getFactory()
+	{
+		return _context.getSipFactory();
+	}
+	
+	public UserAgent createUserAgent(SipProfile profile)
+	{
+		UserAgent agent = new UserAgent(profile);
+		addAgent(agent);
+		return agent;
 	}
 	
 	@Override
@@ -92,7 +121,7 @@ public class SipClient extends AbstractLifeCycle
 		{
 			for (UserAgent agent : _userAgents)
 			{
-				if (agent.getLocalAddress().getURI().equals(uri))
+				if (agent.getProfile().getURI().equals(uri))
 					return agent;
 			}
 		}
@@ -112,48 +141,72 @@ public class SipClient extends AbstractLifeCycle
 		}
 	}
 	
-	public UserAgent createUserAgent(SipURI uri)
-	{
-		UserAgent agent = new UserAgent(uri);
-		addAgent(agent);
-		return agent;
-	}
-	
-	
-	
-	public UserAgent createUserAgent(String user, String host)
-	{
-		return createUserAgent(createSipURI(user, host));
-	}
-	
-	
-	
-	public SipURI createSipURI(String user, String host)
-	{
-		return _context.getSipFactory().createSipURI(user, host);
-	}
-	
 	@SuppressWarnings("serial")
 	class ClientServlet extends SipServlet
 	{
-		@Override
-		protected void doRequest(SipServletRequest request)
+		protected MessageHandler getHandler(SipServletMessage message)
 		{
-			Address local = request.getTo();
-			UserAgent agent = getUserAgent(local.getURI());
-			
-			if (agent != null)
-				agent.handleRequest(request);
+			return (MessageHandler) message.getSession().getAttribute(MessageHandler.class.getName());
 		}
 		
 		@Override
-		protected void doResponse(SipServletResponse response)
+		protected void doRequest(SipServletRequest request) throws ServletException, IOException
 		{
-			Address local = response.getFrom();
-			UserAgent agent = getUserAgent(local.getURI());
+			MessageHandler handler = getHandler(request);
+			if (handler != null)
+				handler.handleRequest(request);
 			
-			if (agent != null)
-				agent.handleResponse(response);
+			if (request.isInitial())
+			{
+				Address local = request.getTo();
+				UserAgent agent = getUserAgent(local.getURI());
+			
+				if (agent != null)
+					agent.handleInitialRequest(request);
+				else
+					log("No agent for initial request: " + request.getMethod() + " " + request.getRequestURI());
+			}
+			else
+			{
+				log("No handler for request: " + request.getMethod() + " " + request.getRequestURI());
+			}
+		}
+		
+		@Override
+		protected void doResponse(SipServletResponse response) throws ServletException, IOException
+		{
+			MessageHandler handler = getHandler(response);
+			if (handler != null)
+				handler.handleResponse(response);
+			else
+				log("No handler for response: " + response.getStatus() + " " + response.getMethod());
+		}
+	}
+	
+	class ApplicationRouter implements SipApplicationRouter
+	{
+		public void init() { }
+		
+		public void init(Properties properties) { }
+		
+		public void destroy() { }
+		
+		public void applicationDeployed(List<String> deployedApplications) { }
+		
+		public void applicationUndeployed(List<String> undeployedApplications) { }
+
+		public SipApplicationRouterInfo getNextApplication(SipServletRequest request,
+				SipApplicationRoutingRegion region, SipApplicationRoutingDirective directive,
+				SipTargetedRequestInfo requestedInfo, Serializable info)
+		{
+			if (request.getRemoteAddr() == null)
+				return null;
+			return new SipApplicationRouterInfo(SipClient.class.getName(),
+					SipApplicationRoutingRegion.NEUTRAL_REGION, 
+					request.getFrom().getURI().toString(), 
+					null,
+					SipRouteModifier.NO_ROUTE, 
+					1);
 		}
 	}
 }
