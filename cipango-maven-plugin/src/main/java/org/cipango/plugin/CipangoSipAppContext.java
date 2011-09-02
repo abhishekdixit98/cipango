@@ -28,6 +28,7 @@ public class CipangoSipAppContext extends SipAppContext
     private List<File> classpathFiles;
     private File jettyEnvXmlFile;
     private File webXmlFile;
+    private boolean baseAppFirst = true;
 
     private String[] configs = 
     	new String[]{
@@ -44,6 +45,10 @@ public class CipangoSipAppContext extends SipAppContext
     
     private String jettyEnvXml;
     private List<Resource> overlays;
+    
+    /**
+     * @deprecated The value of this parameter will be ignored by the plugin. Overlays will always be unpacked.
+     */
     private boolean unpackOverlays;
     private List<File> webInfClasses = new ArrayList<File>();
     private List<File> webInfJars = new ArrayList<File>();
@@ -194,6 +199,19 @@ public class CipangoSipAppContext extends SipAppContext
     {
         webInfJars.addAll(jars);
     }    
+    
+    /* ------------------------------------------------------------ */
+    public void setBaseAppFirst(boolean value)
+    {
+        baseAppFirst = value;
+    }
+
+    /* ------------------------------------------------------------ */
+    public boolean getBaseAppFirst()
+    {
+        return baseAppFirst;
+    }
+    
     /* ------------------------------------------------------------ */
     /**
      * This method is provided as a conveniance for jetty maven plugin configuration 
