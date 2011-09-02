@@ -161,11 +161,13 @@ public class ConsoleFilter implements Filter
 	private Deployer _deployer;
 	private ServletContext _servletContext;
 	private Map<String, List<Action>> _actions = new HashMap<String, List<Action>>();
+	private String _filterPath;
 	
 	public void init(FilterConfig config) throws ServletException
 	{
 		initConnection();
 		_servletContext = config.getServletContext();
+		_filterPath = getFilterPath(config);
 		if (isJmxEnabled())
 		{
 			try
@@ -186,6 +188,22 @@ public class ConsoleFilter implements Filter
 			Action.load(ApplicationPrinter.class);
 			registerActions();
 		}
+	}
+	
+	private String getFilterPath(FilterConfig config) throws ServletException
+	{
+		String path = config.getInitParameter("filterMappingUrlPattern");
+		if (path == null || path.equals("/*"))
+		{
+			return "";
+		}
+		else if (!path.startsWith("/") || !path.endsWith("/*"))
+		{
+			throw new ServletException("Your filterMappingUrlPattern must start with \"/\" and end with \"/*\". It is: " + path);
+		}
+		// Strip wilcards
+		return path.substring(1, path.length() - 1);
+		
 	}
 	
 	
@@ -272,6 +290,17 @@ public class ConsoleFilter implements Filter
 	{
 		return _mbsc != null;
 	}
+	
+	public String getCommand(HttpServletRequest request)
+	{
+		String command = request.getRequestURI().substring(request.getContextPath().length() + 1);
+		if (command.indexOf(';') != -1)
+			command = command.substring(0, command.indexOf(';') - 1);
+		
+		if (command.startsWith(getFilterPath()))
+			command = command.substring(getFilterPath().length());
+		return command;
+	}
 
 	public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse,
 			FilterChain filterChain) throws IOException, ServletException
@@ -281,9 +310,7 @@ public class ConsoleFilter implements Filter
 		boolean forward = true;
 		boolean handled = true;
 				
-		String command = request.getRequestURI().substring(request.getContextPath().length() + 1);
-		if (command.indexOf(';') != -1)
-			command = command.substring(0, command.indexOf(';') - 1);
+		String command = getCommand(request);
 				
 		if (!isJmxEnabled())
 		{
@@ -298,8 +325,12 @@ public class ConsoleFilter implements Filter
 			_logger.info("User " + principal.getName() + " has logged in console");
 			request.getSession().setAttribute(Principal.class.getName(), principal);
 		}
+	
+		String path = ("".equals(request.getContextPath()) ? "/" : request.getContextPath()) + getFilterPath();
+		if (path.endsWith("/"))
+			path = path.substring(0, path.length() - 1);
 		
-		Menu menuPrinter = getMenuFactory().getMenu(command, request.getContextPath());
+		Menu menuPrinter = getMenuFactory().getMenu(command, path);
 		try
 		{
 
@@ -336,8 +367,10 @@ public class ConsoleFilter implements Filter
 						response.sendRedirect(command);
 				} 
 			}
-
-			if (command.equals(MenuPrinter.CONFIG_SIP.getName()))
+			
+			if (request.getAttribute(Attributes.CONTENT) != null)
+				return; // Content already generated, just need to forward the request
+			else if (command.equals(MenuPrinter.CONFIG_SIP.getName()))
 				doSipConfig(request);
 			else if (command.equals(MenuPrinter.MAPPINGS.getName()))
 			{
@@ -704,5 +737,11 @@ public class ConsoleFilter implements Filter
 	public Deployer getDeployer()
 	{
 		return _deployer;
+	}
+
+
+	public String getFilterPath()
+	{
+		return _filterPath;
 	}
 }
