@@ -24,14 +24,16 @@ import org.cipango.sipapp.SipAppContext;
 
 import org.eclipse.jetty.http.HttpSchemes;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.session.AbstractSession;
 import org.eclipse.jetty.server.session.AbstractSessionManager;
+import org.eclipse.jetty.server.session.HashedSession;
 import org.eclipse.jetty.server.session.HashSessionManager;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.URIUtil;
 
 public class ConvergedSessionManager extends HashSessionManager
 {
-	public class Session extends HashSessionManager.HashedSession implements ConvergedHttpSession
+	public class Session extends HashedSession implements ConvergedHttpSession
 	{
 		private AppSessionIf _appSession;
 		private String _serverName;
@@ -41,7 +43,7 @@ public class ConvergedSessionManager extends HashSessionManager
 		
 		protected Session(HttpServletRequest httpServletRequest)
         {
-           super(httpServletRequest);
+           super(ConvergedSessionManager.this, httpServletRequest);
            Request request = (Request) httpServletRequest;
            _serverName = request.getServerName();
            _scheme = request.getScheme();
@@ -153,11 +155,12 @@ public class ConvergedSessionManager extends HashSessionManager
 		}
 		
 		@Override
-		protected void access(long time) 
+		protected boolean access(long time) 
 		{
-			super.access(time);
+			boolean access = super.access(time);
 			if (_appSession != null)
 				_appSession.getAppSession().access(time);
+			return access;
 		}
 		
 		@Override
@@ -170,7 +173,7 @@ public class ConvergedSessionManager extends HashSessionManager
 	}
 	
 	@Override
-	protected AbstractSessionManager.Session newSession(HttpServletRequest request)
+	protected AbstractSession newSession(HttpServletRequest request)
 	{
 		return new Session(request);
 	}
