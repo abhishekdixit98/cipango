@@ -97,7 +97,7 @@ public class SipAppContext extends WebAppContext implements SipHandler
     
     public final static String SIP_DEFAULTS_XML="org/cipango/sipapp/sipdefault.xml";
         
-    public final static String[] EXTENSIONS = { "100rel" };
+    public final static String[] EXTENSIONS = { "MESSAGE", "INFO", "SUBSCRIBE", "NOTIFY", "UPDATE", "PUBLISH", "REFER",  "100rel" };
     
 	public static final String[] SUPPORTED_RFC = new String[] {
 		"2976", // The SIP INFO Method
@@ -105,9 +105,11 @@ public class SipAppContext extends WebAppContext implements SipHandler
 		"3262", // Reliability of Provisional Responses
 		"3265", // (SIP)-Specific Event Notification. 
 		"3311", // (SIP) UPDATE Method
+		"3327", // SIP) Extension Header Field for Registering Non-Adjacent Contacts (Path header)
 		"3428", // SIP Extension for Instant Messaging  
+		"3515", // SIP Refer Method
+		"3903", // SIP Extension for Event State Publication=
 		"6026"	// Correct Transaction Handling for 2xx Responses to Session Initiation Protocol (SIP) INVITE Requests
-
 	};
 	
 	public static final String EXTERNAL_INTERFACES = "org.cipango.externalOutboundInterfaces";
