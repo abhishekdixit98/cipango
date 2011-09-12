@@ -19,7 +19,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 
 import javax.servlet.Servlet;
@@ -28,30 +27,24 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.sip.SipServlet;
-
 import javax.servlet.sip.SipServletMessage;
 import javax.servlet.sip.SipServletRequest;
 
-import org.cipango.server.Server;
 import org.cipango.server.SipHandler;
 import org.cipango.server.SipMessage;
 import org.cipango.server.session.Session;
 import org.cipango.sipapp.SipAppContext;
 import org.cipango.sipapp.SipServletMapping;
-
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
+import org.eclipse.jetty.servlet.ServletContextHandler.Decorator;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.servlet.ServletMapping;
-import org.eclipse.jetty.servlet.ServletContextHandler.Decorator;
-
 import org.eclipse.jetty.util.LazyList;
+import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.MultiException;
 
 public class SipServletHandler extends ServletHandler implements SipHandler
 {
@@ -188,7 +181,7 @@ public class SipServletHandler extends ServletHandler implements SipHandler
         return _mainServlet;
     }
 	
-	protected void updateSipMappings() 
+	protected void updateSipMappings() throws ServletException
     {
         if (_sipServlets == null)
         {
@@ -200,6 +193,8 @@ public class SipServletHandler extends ServletHandler implements SipHandler
             
             for (int i = 0; i < _sipServlets.length; i++)
             {
+            	if (nm.containsKey(_sipServlets[i].getName()))
+            		throw new ServletException("A servlet with name " + _sipServlets[i].getName() + " is already registered");
                 nm.put(_sipServlets[i].getName(), _sipServlets[i]);
                 _sipServlets[i].setServletHandler(this);
             }
@@ -341,11 +336,24 @@ public class SipServletHandler extends ServletHandler implements SipHandler
 	
 	public void setSipServlets(SipServletHolder[] holders) 
 	{
-		if (getServer() != null) 
-			getServer().getContainer().update(this, _sipServlets, holders, "sipServlets", true);
-	
-		_sipServlets = holders;
-		updateSipMappings();
+		SipServletHolder[] oldHolders = getSipServlets();
+        if (oldHolders!=null)
+        	oldHolders = oldHolders.clone();
+		
+        try
+        {
+			_sipServlets = holders;
+			updateSipMappings();
+			if (getServer() != null) 
+				getServer().getContainer().update(this, oldHolders, _sipServlets, "sipServlets", true);
+        }
+        catch (Exception e) 
+        {
+			_sipServlets = oldHolders;
+			if (e instanceof RuntimeException)
+				throw (RuntimeException) e;
+			throw new RuntimeException(e);
+		}
 	}
 	
 	public void setSipServletMappings(SipServletMapping[] sipServletMappings)
