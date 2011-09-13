@@ -121,7 +121,7 @@ public class ApplicationPrinter extends MultiplePrinter
 							getConsoleFilter().getDeployer().deploy(item.getName(), item.get());
 							request.getSession().setAttribute(Attributes.INFO,
 									"Successful request to deploy " + item.getName());
-							Log.info("User " + request.getUserPrincipal() 
+							__logger.info("User " + request.getUserPrincipal() 
 									+ " requested to deploy application: " + item.getName());
 						}
 					}
@@ -162,7 +162,7 @@ public class ApplicationPrinter extends MultiplePrinter
 				getConsoleFilter().getDeployer().undeploy(objectName);	
 				String path = (String) getConnection().getAttribute(objectName, "contextPath");
 				request.getSession().setAttribute(Attributes.INFO, "Successfull request to undeploy application " + path);
-				Log.info("User " + request.getUserPrincipal() 
+				__logger.info("User " + request.getUserPrincipal() 
 						+ " requested to undeploy application " + path);
 			}
 			else

@@ -23,6 +23,7 @@ import javax.servlet.ServletException;
 import org.cipango.servlet.SipServletHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.DescriptorProcessor;
 import org.eclipse.jetty.webapp.DiscoveredAnnotation;
@@ -35,7 +36,9 @@ import org.eclipse.jetty.webapp.WebAppContext;
  * All data associated with the configuration and deployment of a SIP application.
  */
 public class SipMetaData
-{        
+{    
+	private static final Logger LOG = Log.getLogger(SipMetaData.class);
+	
     protected SipDescriptor _sipDefaultsRoot;
     protected SipDescriptor _sipXmlRoot;
     protected final List<SipDescriptor> _sipOverrideRoots=new ArrayList<SipDescriptor>();
@@ -173,7 +176,7 @@ public class SipMetaData
 				{
 					if (listener.getClass().getName().equals(className))
 					{
-						Log.debug("Found multiple listener declaration " +  className);
+						LOG.debug("Found multiple listener declaration " +  className);
 						if (holder != null)
 							holder.setServlet((Servlet) listener);
 						found = true;
@@ -199,7 +202,7 @@ public class SipMetaData
 			}
 			catch (Exception e) 
 			{
-				Log.warn("Could not instantiate listener: " + className, e);
+				LOG.warn("Could not instantiate listener: " + className, e);
 			}
 		}
 

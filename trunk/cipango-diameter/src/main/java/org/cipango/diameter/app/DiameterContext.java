@@ -31,10 +31,13 @@ import org.cipango.server.session.AppSessionIf;
 import org.cipango.sipapp.SipAppContext;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 public class DiameterContext implements DiameterHandler
 {
+	private static final Logger LOG = Log.getLogger(DiameterContext.class);
+	
 	private SipAppContext _defaultContext;
 	private Map<String, DiameterAppContext> _diameterListeners = new ConcurrentHashMap<String, DiameterAppContext>();
 
@@ -145,7 +148,7 @@ public class DiameterContext implements DiameterHandler
 		if (listeners != null && listeners.length != 0)
 			context.fire(listeners, _handleMsg, message);
 		else
-			Log.warn("No diameter listeners for context {} to handle message {}", 
+			LOG.warn("No diameter listeners for context {} to handle message {}", 
 					context == null ? "" : context.getName(), message);	
 	}
 	

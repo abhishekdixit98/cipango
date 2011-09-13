@@ -48,7 +48,6 @@ import org.cipango.server.session.SessionManager;
 import org.cipango.server.session.SessionManager.SessionScope;
 import org.cipango.server.transaction.ClientTransaction;
 import org.cipango.server.transaction.ServerTransaction;
-import org.cipango.sip.CSeq;
 import org.cipango.sip.NameAddr;
 import org.cipango.sip.RAck;
 import org.cipango.sip.SipHeaders;
@@ -63,9 +62,11 @@ import org.cipango.sip.security.Authorization;
 import org.cipango.util.LazyMap;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class SipRequest extends SipMessage implements SipServletRequest
 {
+	private static final Logger LOG = Log.getLogger(SipRequest.class);
     private String _method;
     private URI _requestUri;
     private String _sRequestUri;
@@ -192,7 +193,7 @@ public class SipRequest extends SipMessage implements SipServletRequest
 			}
 			catch (ServletParseException e)
 			{
-				Log.info("Received bad request: " + e.getMessage());
+				LOG.info("Received bad request: " + e.getMessage());
 			}
     	}
 		return _requestUri;
@@ -343,17 +344,17 @@ public class SipRequest extends SipMessage implements SipServletRequest
 	/**
 	 * @see javax.servlet.ServletRequest#getLocales()
 	 */
-	public Enumeration getLocales() 
+	public Enumeration<Locale> getLocales() 
     {
-		final Iterator it = getAcceptLanguages();
-		return new Enumeration() 
+		final Iterator<Locale> it = getAcceptLanguages();
+		return new Enumeration<Locale>() 
         {
 			public boolean hasMoreElements() 
             {
 				return it.hasNext();
 			}
 
-			public Object nextElement() 
+			public Locale nextElement() 
             {
 				return it.next();
 			}
@@ -384,18 +385,18 @@ public class SipRequest extends SipMessage implements SipServletRequest
 	/**
 	 * @see javax.servlet.ServletRequest#getParameterMap()
 	 */
-	public Map getParameterMap() 
+	public Map<String, String[]> getParameterMap() 
     {
-		Map map = new HashMap();
+		Map<String, String[]> map = new HashMap<String, String[]>();
 		
 		SipURI paramUri = getParamUri();
 		
 		if (paramUri != null) 
         {
-			Iterator it = paramUri.getParameterNames();
+			Iterator<String> it = paramUri.getParameterNames();
 			while (it.hasNext()) 
             {
-				String key = (String) it.next();
+				String key = it.next();
 				map.put(key, new String[] {paramUri.getParameter(key)});
 			}
 		}
@@ -405,7 +406,8 @@ public class SipRequest extends SipMessage implements SipServletRequest
 	/**
 	 * @see javax.servlet.ServletRequest#getParameterNames()
 	 */
-	public Enumeration getParameterNames() 
+	@SuppressWarnings("unchecked")
+	public Enumeration<String> getParameterNames() 
     {
 		SipURI paramUri = getParamUri();
 		

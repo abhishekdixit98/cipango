@@ -38,6 +38,7 @@ import javax.servlet.sip.ar.SipTargetedRequestInfo;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * Default Application Router. 
@@ -46,6 +47,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class DefaultApplicationRouter implements SipApplicationRouter, Dumpable
 {
+	private static final Logger LOG = Log.getLogger(DefaultApplicationRouter.class);
+	
 	public static final String __J_S_DAR_CONFIGURATION = "javax.servlet.sip.ar.dar.configuration";
 	
 	public static final String ROUTE_OUTGOING_REQUESTS = "org.cipango.dar.routeOutgoingRequests";
@@ -235,12 +238,12 @@ public class DefaultApplicationRouter implements SipApplicationRouter, Dumpable
 		}
 		catch (Exception e)
 		{
-			Log.debug("DAR configuration error: " + e);
+			LOG.debug("DAR configuration error: " + e);
 		}
 		
 		
 		if ((_routerInfoMap == null || _routerInfoMap.isEmpty()) && !_applicationNames.isEmpty())
-			Log.info("No DAR configuration. Using application: " + _applicationNames.first());
+			LOG.info("No DAR configuration. Using application: " + _applicationNames.first());
 	}
 	
 	public void init(Properties properties)

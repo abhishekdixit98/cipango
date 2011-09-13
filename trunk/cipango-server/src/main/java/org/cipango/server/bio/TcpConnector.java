@@ -32,18 +32,20 @@ import org.cipango.server.SipMessage;
 import org.cipango.server.transaction.Transaction;
 import org.cipango.sip.BufferOverflowException;
 import org.cipango.sip.SipParser;
-
-import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
-import org.eclipse.jetty.io.bio.SocketEndPoint;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.io.bio.SocketEndPoint;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
 
 public class TcpConnector extends AbstractSipConnector //implements Buffers
 {
+	private static final Logger LOG = Log.getLogger(TcpConnector.class);
+	
 	public static final int DEFAULT_PORT = 5060;
 	public static final boolean RELIABLE = true;
 	
@@ -91,7 +93,7 @@ public class TcpConnector extends AbstractSipConnector //implements Buffers
 			} 
 			catch (Exception e) 
 			{
-				Log.ignore(e);
+				LOG.ignore(e);
 			}
 		}
 	}
@@ -292,7 +294,7 @@ public class TcpConnector extends AbstractSipConnector //implements Buffers
         {
             if (!getTcpThreadPool().dispatch(this))
             {
-                Log.warn("dispatch failed for {}", this);
+                LOG.warn("dispatch failed for {}", this);
                 close();
             }
         }
@@ -377,14 +379,14 @@ public class TcpConnector extends AbstractSipConnector //implements Buffers
 			catch (EofException e)
 			{
 				//System.out.println(parser.getState());
-				Log.debug("EOF: {}", this);
+				LOG.debug("EOF: {}", this);
 				try 
 				{
 					close();
 				} 
 				catch (IOException e2)
 				{
-					Log.ignore(e2);
+					LOG.ignore(e2);
 				}
 			} 
 			
@@ -398,16 +400,16 @@ public class TcpConnector extends AbstractSipConnector //implements Buffers
 						_nbParseErrors++;
 					}
 				}
-				Log.warn("TCP handle failed", e);
+				LOG.warn("TCP handle failed", e);
 				if (handler.hasException())
-					Log.warn(handler.getException());
+					LOG.warn(handler.getException());
 				try 
 				{
 					close();
 				} 
 				catch (IOException e2) 
 				{
-					Log.ignore(e2);
+					LOG.ignore(e2);
 				}
 			} 
 			finally 

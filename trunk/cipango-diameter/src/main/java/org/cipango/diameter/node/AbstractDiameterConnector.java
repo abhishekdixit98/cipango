@@ -25,9 +25,11 @@ import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public abstract class AbstractDiameterConnector extends AbstractLifeCycle implements DiameterConnector //, Buffers
 {
+	private static final Logger LOG = Log.getLogger(AbstractDiameterConnector.class);
 	
 	private static String __localhost;
     
@@ -39,7 +41,7 @@ public abstract class AbstractDiameterConnector extends AbstractLifeCycle implem
         }
         catch (Exception e)
         {
-            Log.ignore(e);
+            LOG.ignore(e);
             __localhost = "127.0.0.1";
         }
     }
@@ -94,7 +96,7 @@ public abstract class AbstractDiameterConnector extends AbstractLifeCycle implem
 				_acceptorThread[i].start();
 			}
 		}
-		Log.info("Started {}", this);
+		LOG.info("Started {}", this);
 	}
 	
 	@Override
@@ -133,7 +135,7 @@ public abstract class AbstractDiameterConnector extends AbstractLifeCycle implem
 		}
 		catch (Exception e)
 		{
-			Log.warn(e);
+			LOG.warn(e);
 		}
 		
 		if (_node != null && _node.getServer() != null)
@@ -304,11 +306,11 @@ public abstract class AbstractDiameterConnector extends AbstractLifeCycle implem
 					}
 					catch (IOException e)
 					{
-						Log.ignore(e);
+						LOG.ignore(e);
 					}
 					catch (Throwable t)
 					{
-						Log.warn(t);
+						LOG.warn(t);
 					}
 				}
 			}
@@ -323,7 +325,7 @@ public abstract class AbstractDiameterConnector extends AbstractLifeCycle implem
 				}
 				catch (IOException e)
 				{
-					Log.warn(e);
+					LOG.warn(e);
 				}
 				synchronized (AbstractDiameterConnector.this)
 				{

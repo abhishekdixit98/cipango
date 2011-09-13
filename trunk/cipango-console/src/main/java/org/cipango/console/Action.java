@@ -71,7 +71,7 @@ public abstract class Action implements HtmlPrinter
 				} 
 				catch (Exception e) 
 				{
-					Log.warn(e);
+					__logger.warn(e);
 				}
 			}
 		}

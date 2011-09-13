@@ -41,9 +41,12 @@ import org.cipango.server.SipConnection;
 import org.cipango.server.SipMessage;
 import org.cipango.server.log.AbstractMessageLog;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class JmxMessageLog extends AbstractMessageLog implements NotificationEmitter
 {
+	private static final Logger LOG = Log.getLogger(JmxMessageLog.class);
+	
 	private static final int DEFAULT_MAX_MESSAGES = 100;
 	
 	private MessageInfo[] _messages;
@@ -183,7 +186,7 @@ public class JmxMessageLog extends AbstractMessageLog implements NotificationEmi
 			Expression msgExpression = null;
 			if (msgFilter != null && !msgFilter.trim().equals(""))
 			{
-				Log.debug("Get messages with filter: " + msgFilter);
+				LOG.debug("Get messages with filter: " + msgFilter);
 				msgExpression = ExpressionFactory.createExpression("log." + msgFilter);
 			}
 		
@@ -466,7 +469,7 @@ public class JmxMessageLog extends AbstractMessageLog implements NotificationEmi
 					}
 					catch (Exception e)
 					{
-						Log.warn(e);
+						LOG.warn(e);
 					}
 				}
 			}

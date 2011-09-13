@@ -24,9 +24,11 @@ import org.cipango.server.transaction.ClientTransaction;
 import org.cipango.server.transaction.ServerTransaction;
 import org.cipango.util.TimerTask;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class CallSessionViewer
 {
+	private static final Logger LOG = Log.getLogger(CallSessionViewer.class);
 	private SessionManager _sessionManager;
 	
 	public CallSessionViewer(SessionManager sessionManager)
@@ -76,7 +78,7 @@ public class CallSessionViewer
 		catch (Exception e)
 		{
 			sb.append("\n\n").append(e);
-			Log.warn(e);
+			LOG.warn(e);
 		}
 		
 		return sb.toString();

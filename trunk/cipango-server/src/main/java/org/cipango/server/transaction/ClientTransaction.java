@@ -36,6 +36,7 @@ import org.cipango.sip.Via;
 import org.cipango.util.TimerTask;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * INVITE and non-INVITE client transaction. 
@@ -43,6 +44,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class ClientTransaction extends Transaction 
 {
+	private static final Logger LOG = Log.getLogger(ClientTransaction.class);
+	
 	// INVITE request retransmit, for UDP only
 	private static final int TIMER_A = 0;
 	
@@ -108,7 +111,7 @@ public class ClientTransaction extends Transaction
 		} 
         catch (IOException e) 
         {
-			Log.ignore(e);
+			LOG.ignore(e);
 		}
 	}
 	
@@ -150,7 +153,7 @@ public class ClientTransaction extends Transaction
 		} 
         catch (IOException e) 
         {
-			Log.warn(e);
+			LOG.warn(e);
 		}
         return cancelTx;
 	}
@@ -162,7 +165,7 @@ public class ClientTransaction extends Transaction
 			if (getConnection().isOpen())
 				getServer().getConnectorManager().send(_request, getConnection());
 			else
-				Log.debug("Could not sent request {} as the connection {} is closed", _request, getConnection());
+				LOG.debug("Could not sent request {} as the connection {} is closed", _request, getConnection());
 		}
 		else 
 		{
@@ -300,7 +303,7 @@ public class ClientTransaction extends Transaction
 			case STATE_ACCEPTED:
 				if (!(200 <= status && status < 300))
 				{
-					Log.debug("non 2xx response {} in Accepted state", response);
+					LOG.debug("non 2xx response {} in Accepted state", response);
 					response.setHandled(true);
 				}
 				else
@@ -309,7 +312,7 @@ public class ClientTransaction extends Transaction
 				}
 				break;
 			default:
-				Log.debug("handleResponse (invite) && state ==" + _state);
+				LOG.debug("handleResponse (invite) && state ==" + _state);
 				response.setHandled(true);
 			}
 		} 
@@ -354,7 +357,7 @@ public class ClientTransaction extends Transaction
 				break;
 				
 			default:
-				Log.warn("handleResponse (non-invite) && state ==" + _state);
+				LOG.warn("handleResponse (non-invite) && state ==" + _state);
 				response.setHandled(true);
 			}
 		}
@@ -387,7 +390,7 @@ public class ClientTransaction extends Transaction
 			} 
             catch (IOException e) 
             {
-				Log.debug("Failed to (re)send request " + _request);
+				LOG.debug("Failed to (re)send request " + _request);
 			}
 			_aDelay = _aDelay * 2;
 			startTimer(TIMER_A, _aDelay);
@@ -411,7 +414,7 @@ public class ClientTransaction extends Transaction
             }
             catch (IOException e)
             {
-                Log.debug("Failed to (re)send request " + _request);
+                LOG.debug("Failed to (re)send request " + _request);
             }
             if (_state == STATE_TRYING)
                 _eDelay = Math.min(_eDelay * 2, __T2);

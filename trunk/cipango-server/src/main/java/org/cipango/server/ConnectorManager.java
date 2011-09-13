@@ -43,9 +43,12 @@ import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipHandler
 {
+	private static final Logger LOG = Log.getLogger(ConnectorManager.class);
+	
     private static final int DEFAULT_MTU = 1500;
     private static final int DEFAULT_MESSAGE_SIZE = 16*1024; // FIXME
     private static final int MAX_MESSAGE_SIZE = 64*1024;
@@ -144,7 +147,7 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
         	}
         	catch (Exception e)
         	{
-        		Log.warn("failed to start access log", e);
+        		LOG.warn("failed to start access log", e);
         	}
         }
         
@@ -179,7 +182,7 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
         
 
     	if (_accessLog instanceof LifeCycle)
-    		try { ((LifeCycle) _accessLog).stop(); } catch (Throwable t) { Log.warn(t); }
+    		try { ((LifeCycle) _accessLog).stop(); } catch (Throwable t) { LOG.warn(t); }
         
         super.doStop();
         
@@ -266,7 +269,7 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
 			}
 			catch (UnknownHostException e)
 			{
-				Log.ignore(e);
+				LOG.ignore(e);
 			}
 		}
 		
@@ -544,7 +547,7 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
         }
         catch (Exception e)
         {
-            Log.warn(e);
+            LOG.warn(e);
         }
     }
     
@@ -597,7 +600,7 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
 					|| message.getTo() == null
 					|| message.getCSeq() == null)
 			{
-				Log.info("Received bad message: unparsable required headers");
+				LOG.info("Received bad message: unparsable required headers");
 				valid = false;
 			}
 			message.getAddressHeader("contact");
@@ -610,7 +613,7 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
 				request.getTopRoute();
 				if (!request.getCSeq().getMethod().equals(request.getMethod()))
 				{
-					Log.info("Received bad request: CSeq method does not match");
+					LOG.info("Received bad request: CSeq method does not match");
 					valid = false;
 				}
 			}
@@ -619,15 +622,15 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
 				int status = ((SipResponse) message).getStatus();
 				if (status < 100 || status > 699)
 				{
-					Log.info("Received bad response: Invalid status code: " + status);
+					LOG.info("Received bad response: Invalid status code: " + status);
 					valid = false;
 				}
 			}
 		}
 		catch (Exception e) 
 		{
-			Log.info("Received bad message: Some headers are not parsable: {}", e);
-			Log.debug("Received bad message: Some headers are not parsable", e);
+			LOG.info("Received bad message: Some headers are not parsable: {}", e);
+			LOG.debug("Received bad message: Some headers are not parsable", e);
 			valid = false;
 		}
 				
@@ -646,7 +649,7 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
 		}
 		catch (Exception e) 
 		{
-			Log.ignore(e);
+			LOG.ignore(e);
 		}
 		
 		return valid;
@@ -654,15 +657,15 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
 	
 	private boolean isUnique(Buffer headerName, SipMessage message)
 	{
-		Iterator it = message.getFields().getValues(headerName);
+		Iterator<String> it = message.getFields().getValues(headerName);
 		if (!it.hasNext())
 		{
-			Log.info("Received bad message: Missing required header: " + headerName);
+			LOG.info("Received bad message: Missing required header: " + headerName);
 			return false;
 		}
 		it.next();
 		if (it.hasNext())
-			Log.info("Received bad message: Duplicate header: " + headerName);
+			LOG.info("Received bad message: Duplicate header: " + headerName);
 		return !it.hasNext();
 	}
 

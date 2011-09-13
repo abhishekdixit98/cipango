@@ -27,6 +27,7 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.sip.SipServlet;
 import javax.servlet.sip.SipServletMessage;
 import javax.servlet.sip.SipServletRequest;
 
@@ -45,14 +46,17 @@ import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class SipServletHandler extends ServletHandler implements SipHandler
 {
+	private static final Logger LOG = Log.getLogger(SipServletHandler.class);
+	
     private SipServletHolder _defaultServlet;
     private SipServletHolder _mainServlet;
 	private SipServletHolder[] _sipServlets;
 	private SipServletMapping[] _sipServletMappings;
-	private Map _sipServletNameMap;
+	private Map<String, SipServletHolder> _sipServletNameMap;
     
     private SipAppContext _context;
     
@@ -109,7 +113,7 @@ public class SipServletHandler extends ServletHandler implements SipHandler
         _context = servletContext == null ? null: (SipAppContext) servletContext.getContextHandler();
         
         if (_context == null)
-            Log.warn("Null context for sip handler: " + this);
+            LOG.warn("Null context for sip handler: " + this);
         
         if (_sipServlets != null && _sipServlets.length > 0)
             _defaultServlet = _sipServlets[0];
@@ -142,7 +146,7 @@ public class SipServletHandler extends ServletHandler implements SipHandler
 	            }
 	            catch(Exception e) 
 	            {
-	                Log.warn(Log.EXCEPTION, e);
+	                LOG.warn(Log.EXCEPTION, e);
 	                //mx.add(e);
 	            }
 	        } 
@@ -189,7 +193,7 @@ public class SipServletHandler extends ServletHandler implements SipHandler
         }
         else
         {   
-            HashMap nm = new HashMap();
+            Map<String, SipServletHolder> nm = new HashMap<String, SipServletHolder>();
             
             for (int i = 0; i < _sipServlets.length; i++)
             {
@@ -220,7 +224,7 @@ public class SipServletHandler extends ServletHandler implements SipHandler
 	            catch(Exception e)
 	            {
 
-	            	Log.debug(Log.EXCEPTION, e);
+	            	LOG.debug(Log.EXCEPTION, e);
 	                mx.add(e);
 	            }
 	        } 
@@ -256,7 +260,7 @@ public class SipServletHandler extends ServletHandler implements SipHandler
 	}
 	
 	
-	public SipServletHolder newSipServletHolder(Class servlet)
+	public SipServletHolder newSipServletHolder(Class<SipServlet> servlet)
 	{
 		return new SipServletHolder(servlet);
 	}

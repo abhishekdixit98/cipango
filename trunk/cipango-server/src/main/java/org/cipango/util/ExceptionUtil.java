@@ -21,9 +21,12 @@ import java.io.UnsupportedEncodingException;
 import javax.servlet.sip.SipServletMessage;
 
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class ExceptionUtil 
 {
+	private static final Logger LOG = Log.getLogger(ExceptionUtil.class);
+	
 	public static void fillStackTrace(SipServletMessage message, Throwable t)
 	{
 		ByteArrayOutputStream os = new ByteArrayOutputStream();
@@ -40,7 +43,7 @@ public class ExceptionUtil
 		} 
         catch (UnsupportedEncodingException e)
         {
-			Log.ignore(e);
+			LOG.ignore(e);
 		} 
 	}
 }

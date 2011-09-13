@@ -12,16 +12,18 @@ import java.util.TreeSet;
 
 import org.cipango.sipapp.SipAppContext;
 import org.eclipse.jetty.plus.webapp.EnvConfiguration;
-import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
+import org.eclipse.jetty.webapp.Configuration;
 
 public class CipangoSipAppContext extends SipAppContext
 {
-
+	private static final Logger LOG = Log.getLogger(CipangoSipAppContext.class);
+	
     private static final String WEB_INF_CLASSES_PREFIX = "/WEB-INF/classes";
     private static final String WEB_INF_LIB_PREFIX = "/WEB-INF/lib";
     
@@ -289,7 +291,7 @@ public class CipangoSipAppContext extends SipAppContext
             }
             catch (IOException e)
             {
-                Log.ignore(e);
+                LOG.ignore(e);
             }
         }
         return resource;

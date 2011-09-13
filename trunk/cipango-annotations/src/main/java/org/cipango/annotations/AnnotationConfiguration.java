@@ -23,6 +23,7 @@ import org.eclipse.jetty.annotations.AnnotationParser;
 import org.eclipse.jetty.annotations.AnnotationParser.DiscoverableAnnotationHandler;
 import org.eclipse.jetty.annotations.ClassNameResolver;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.AbstractConfiguration;
 import org.eclipse.jetty.webapp.DiscoveredAnnotation;
@@ -33,7 +34,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
  */
 public class AnnotationConfiguration extends AbstractConfiguration
 {
- 
+	private static final Logger LOG = Log.getLogger(AnnotationConfiguration.class);
     
     @Override
     public void configure(WebAppContext context) throws Exception
@@ -46,8 +47,8 @@ public class AnnotationConfiguration extends AbstractConfiguration
         if (sac.getSpecVersion() == SipAppContext.VERSION_10)
         	return;
         
-        if (Log.isDebugEnabled()) 
-        	Log.debug("parsing annotations");
+        if (LOG.isDebugEnabled()) 
+        	LOG.debug("parsing annotations");
         
         SipApplicationAnnotationHandler sipApplicationAnnotationHandler = new SipApplicationAnnotationHandler(sac);
         parser.registerAnnotationHandler("javax.servlet.sip.annotation.SipApplication", sipApplicationAnnotationHandler);
@@ -79,7 +80,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
     throws Exception
     {
         //if no pattern for the container path is defined, then by default scan NOTHING
-        Log.debug("Scanning container jars");
+        LOG.debug("Scanning container jars");
        
         //Convert from Resource to URI
         ArrayList<URI> containerUris = new ArrayList<URI>();
@@ -147,7 +148,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
     public void parseWebInfClasses (final WebAppContext context, final AnnotationParser parser)
     throws Exception
     {
-        Log.debug("Scanning classes in WEB-INF/classes");
+        LOG.debug("Scanning classes in WEB-INF/classes");
         if (context.getWebInf() != null)
         {
             Resource classesDir = context.getWebInf().addPath("classes/");

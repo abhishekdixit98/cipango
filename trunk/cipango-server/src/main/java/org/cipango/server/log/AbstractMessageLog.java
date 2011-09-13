@@ -21,16 +21,18 @@ import java.util.TimeZone;
 import org.cipango.server.SipConnection;
 import org.cipango.server.SipMessage;
 import org.cipango.sip.SipGenerator;
-
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
-import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public abstract class AbstractMessageLog extends AbstractLifeCycle implements AccessLog
 {
+	private static final Logger LOG = Log.getLogger(AbstractMessageLog.class);
+	
 	private DateCache _logDateCache;
     private String _logDateFormat = "yyyy-MM-dd HH:mm:ss"; //"yyyy-MM-dd HH:mm:ss.SSS ZZZ";
     private Locale _logLocale     = Locale.getDefault();
@@ -57,7 +59,7 @@ public abstract class AbstractMessageLog extends AbstractLifeCycle implements Ac
 		}
 		catch (Exception e) 
 		{
-			Log.warn("Unable to log SIP messages: " + e.getMessage());
+			LOG.warn("Unable to log SIP messages: " + e.getMessage());
 		}
 	}
     
@@ -71,7 +73,7 @@ public abstract class AbstractMessageLog extends AbstractLifeCycle implements Ac
     	}
     	catch (Exception e)
     	{
-    		Log.warn("Failed to log message", e);
+    		LOG.warn("Failed to log message", e);
     	}
 	}
     
@@ -85,7 +87,7 @@ public abstract class AbstractMessageLog extends AbstractLifeCycle implements Ac
     	}
 		catch (Exception e)
 		{
-			Log.warn("Failed to log message", e);
+			LOG.warn("Failed to log message", e);
 		}
 	}
 	

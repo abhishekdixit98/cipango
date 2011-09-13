@@ -19,17 +19,19 @@ import org.cipango.diameter.node.DiameterFactoryImpl;
 import org.cipango.diameter.node.Node;
 import org.cipango.sipapp.SipAppContext;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.AbstractConfiguration;
 
 public class DiameterConfiguration extends AbstractConfiguration
 {
+	private static final Logger LOG = Log.getLogger(DiameterConfiguration.class);
 
 	@Override
 	public void preConfigure(org.eclipse.jetty.webapp.WebAppContext context) throws Exception
 	{
 		if (context.isStarted())
         {
-           	Log.debug("Cannot configure webapp after it is started");
+           	LOG.debug("Cannot configure webapp after it is started");
             return;
         } 
 				

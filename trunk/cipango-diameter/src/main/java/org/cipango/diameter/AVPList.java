@@ -70,13 +70,12 @@ public class AVPList extends AbstractList<AVP<?>>
 	{
 		return _avps.size();
 	}	
-	
-	@SuppressWarnings("unchecked")
-	public <T> Iterator<AVP<T>> getAVPs(Type<T> type)
+		public <T> Iterator<AVP<T>> getAVPs(Type<T> type)
 	{
 		Object avps = null;
 		for (int i = 0; i < _avps.size(); i++)
 		{
+			@SuppressWarnings("rawtypes")
 			AVP avp = _avps.get(i);
 			if (avp.getType() == type)
 				avps = LazyList.add(avps, avp);

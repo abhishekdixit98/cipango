@@ -19,14 +19,16 @@ import org.cipango.server.SipConnection;
 import org.cipango.server.SipRequest;
 import org.cipango.server.session.CallSession;
 import org.cipango.util.TimerTask;
-
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * SIP transaction base class
  */
 public abstract class Transaction
 {
+	private static final Logger LOG = Log.getLogger(Transaction.class);
+	
 	public static final int STATE_UNDEFINED  = 0;
     public static final int STATE_CALLING    = 1;
     public static final int STATE_TRYING     = 2;
@@ -124,8 +126,8 @@ public abstract class Transaction
     
     public void setState(int state) 
     {
-        if (Log.isDebugEnabled()) 
-            Log.debug("{} -> {}", this, STATES[state]);
+        if (LOG.isDebugEnabled()) 
+            LOG.debug("{} -> {}", this, STATES[state]);
         
         _state = state;
     }
@@ -191,13 +193,13 @@ public abstract class Transaction
     	{
     		try 
     		{		
-    			if (Log.isDebugEnabled())
-    				Log.debug("timeout {} for transaction {}", this, Transaction.this);
+    			if (LOG.isDebugEnabled())
+    				LOG.debug("timeout {} for transaction {}", this, Transaction.this);
     			timeout(_timer);
     		}
     		catch (Throwable t)
     		{
-    			Log.warn(t);
+    			LOG.warn(t);
     		}
     	}
     	

@@ -24,19 +24,21 @@ import org.cipango.io.SipBuffer;
 import org.cipango.sip.SipHeaders;
 import org.cipango.sip.SipParser;
 import org.cipango.sip.SipURIImpl;
-
+import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.BufferCache.CachedBuffer;
+import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.io.Buffer;
-import org.eclipse.jetty.io.ByteArrayBuffer;
-import org.eclipse.jetty.io.BufferCache.CachedBuffer;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ThreadPool;
 
 public abstract class AbstractSipConnector extends AbstractLifeCycle implements SipConnector, Dumpable
 {
+	private static final Logger LOG = Log.getLogger(AbstractSipConnector.class);
+	
     private int _port;
     private String _host;
     private String _name;
@@ -146,7 +148,7 @@ public abstract class AbstractSipConnector extends AbstractLifeCycle implements 
     		}
     		catch (Exception e)
     		{
-    			Log.ignore(e);
+    			LOG.ignore(e);
     			_host = "127.0.0.1";
     		}
     	}
@@ -177,18 +179,18 @@ public abstract class AbstractSipConnector extends AbstractLifeCycle implements 
             {
                 if (!_threadPool.dispatch(new Acceptor(i)))
                 {
-                    Log.warn("insufficient maxThreads configured for {}", this);
+                    LOG.warn("insufficient maxThreads configured for {}", this);
                     break;
                 }
             }
         }
         
-        Log.info("Started {}", this);
+        LOG.info("Started {}", this);
     }
         
     protected void doStop() throws Exception 
     {
-    	try { close(); } catch(IOException e) { Log.warn(e); }
+    	try { close(); } catch(IOException e) { LOG.warn(e); }
         
         if (_server != null && _threadPool == _server.getSipThreadPool())
             _threadPool = null;
@@ -223,7 +225,7 @@ public abstract class AbstractSipConnector extends AbstractLifeCycle implements 
     	
     	if (!getThreadPool().dispatch(new MessageTask(message)))
 		{
-    		Log.warn("No threads to dispatch message from {}:{}",
+    		LOG.warn("No threads to dispatch message from {}:{}",
 					message.getRemoteAddr(), message.getRemotePort());
 		}
     }
@@ -355,11 +357,11 @@ public abstract class AbstractSipConnector extends AbstractLifeCycle implements 
                     } 
                     catch (IOException ioe) 
                     {
-                        Log.ignore(ioe);
+                        LOG.ignore(ioe);
                     } 
                     catch (Exception e) 
                     {
-                        Log.warn(e);
+                        LOG.warn(e);
                     }
                 }
             } 
@@ -374,7 +376,7 @@ public abstract class AbstractSipConnector extends AbstractLifeCycle implements 
                 }
                 catch (IOException e)
                 {
-                    Log.warn(e);
+                    LOG.warn(e);
                 }
                 
                 synchronized(AbstractSipConnector.this)
@@ -403,7 +405,7 @@ public abstract class AbstractSipConnector extends AbstractLifeCycle implements 
     		}
     		catch (Exception e)
     		{
-    			Log.warn(e);
+    			LOG.warn(e);
     		}
     	}
     }
@@ -422,8 +424,8 @@ public abstract class AbstractSipConnector extends AbstractLifeCycle implements 
 				SipRequest request = new SipRequest();
 	            if (!(method instanceof CachedBuffer))
 	            {
-	            	if (Log.isDebugEnabled())
-	            		Log.debug("Unknown method: " + method);
+	            	if (LOG.isDebugEnabled())
+	            		LOG.debug("Unknown method: " + method);
 	            }
 	            
 				request.setMethod(method.toString());
