@@ -306,6 +306,7 @@ public class NameAddr implements Address, Serializable
 		return sb.toString();
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public Object clone() 
 	{

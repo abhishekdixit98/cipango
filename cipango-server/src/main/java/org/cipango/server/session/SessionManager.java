@@ -43,6 +43,7 @@ import org.cipango.util.TimerQueue;
 import org.cipango.util.TimerTask;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
 
@@ -58,6 +59,8 @@ import org.eclipse.jetty.util.statistic.SampleStatistic;
  */
 public class SessionManager extends AbstractLifeCycle
 {   
+	private static final Logger LOG = Log.getLogger(SessionManager.class);
+	
     protected Map<String, CSession> _sessions = new HashMap<String, CSession>(1024);
     protected TimerQueue<CSession> _queue = new TimerQueue<CSession>(1024);
     
@@ -201,8 +204,8 @@ public class SessionManager extends AbstractLifeCycle
      */
     protected boolean removeSession(CSession callSession)
     {
-    	if (Log.isDebugEnabled())
-			Log.debug("CallSession " + callSession.getId() + " is done.");
+    	if (LOG.isDebugEnabled())
+			LOG.debug("CallSession " + callSession.getId() + " is done.");
 		
 		synchronized (_sessions)
     	{
@@ -245,7 +248,7 @@ public class SessionManager extends AbstractLifeCycle
         
         if (!_storeDir.canWrite())
         {
-            Log.warn ("Unable to save session. Session persistence storage directory " + _storeDir.getAbsolutePath() + " is not writeable");
+            LOG.warn ("Unable to save session. Session persistence storage directory " + _storeDir.getAbsolutePath() + " is not writeable");
             return;
         }
         
@@ -261,7 +264,7 @@ public class SessionManager extends AbstractLifeCycle
         }
         catch (Exception e)
         {
-            Log.warn("Problem persisting session " + session.getId(), e);
+            LOG.warn("Problem persisting session " + session.getId(), e);
         }
     }
     
@@ -274,7 +277,7 @@ public class SessionManager extends AbstractLifeCycle
     	
     	if (!_storeDir.canRead())
     	{
-    		Log.warn("unable to restore sessions: cannot read from store directory " + _storeDir.getAbsolutePath());
+    		LOG.warn("unable to restore sessions: cannot read from store directory " + _storeDir.getAbsolutePath());
     		return;
     	}
     	File[] files = _storeDir.listFiles();
@@ -289,7 +292,7 @@ public class SessionManager extends AbstractLifeCycle
     		}
     		catch (Exception e)
     		{
-    			Log.warn("problem restoring session " + files[i].getName(), e);
+    			LOG.warn("problem restoring session " + files[i].getName(), e);
     		}
     	}
     }
@@ -402,8 +405,8 @@ public class SessionManager extends AbstractLifeCycle
 							
 							if (timeout > 0)
 							{
-								if (Log.isDebugEnabled())
-									Log.debug("waiting {} ms for call session: {}", timeout, csession);
+								if (LOG.isDebugEnabled())
+									LOG.debug("waiting {} ms for call session: {}", timeout, csession);
 								_queue.wait(timeout);
 							} 
 							else
@@ -413,13 +416,13 @@ public class SessionManager extends AbstractLifeCycle
 						}
 						if (timeout <= 0)
 						{
-							if (Log.isDebugEnabled())
-								Log.debug("running timers for call session: {}", csession);
+							if (LOG.isDebugEnabled())
+								LOG.debug("running timers for call session: {}", csession);
 							runTimers(csession);
 						}
     				}
     				catch (InterruptedException e) { continue; }
-    				catch (Throwable t) { Log.warn(t); }
+    				catch (Throwable t) { LOG.warn(t); }
     			}
     			while (isRunning()); 
     		}
@@ -431,9 +434,9 @@ public class SessionManager extends AbstractLifeCycle
     			
     			String exit = "session-scheduler exited";
     			if (isStarted())
-    				Log.warn(exit);
+    				LOG.warn(exit);
     			else
-    				Log.debug(exit);
+    				LOG.debug(exit);
     		}
     	}
     }
@@ -479,8 +482,8 @@ public class SessionManager extends AbstractLifeCycle
     		TimerTask timer = new TimerTask(runnable, System.currentTimeMillis() + delay);
     		_timers.addTimer(timer);
     		
-    		if (Log.isDebugEnabled())
-    			Log.debug("scheduled timer {} for call session: {}", timer, _id);
+    		if (LOG.isDebugEnabled())
+    			LOG.debug("scheduled timer {} for call session: {}", timer, _id);
     		
     		return timer;
     	}
@@ -489,8 +492,8 @@ public class SessionManager extends AbstractLifeCycle
 		{
     		assertLocked();
     		
-    		if (Log.isDebugEnabled())
-    			Log.debug("canceled timer {} for call session: {}", timer, _id);
+    		if (LOG.isDebugEnabled())
+    			LOG.debug("canceled timer {} for call session: {}", timer, _id);
     		
     		if (timer != null)
     		{
@@ -628,8 +631,8 @@ public class SessionManager extends AbstractLifeCycle
 						return session;
 				}
 			}
-			if (Log.isDebugEnabled())
-				Log.debug("could not find session for request {}", request.getRequestLine());
+			if (LOG.isDebugEnabled())
+				LOG.debug("could not find session for request {}", request.getRequestLine());
 			
 			return null;
 		}
@@ -644,8 +647,8 @@ public class SessionManager extends AbstractLifeCycle
 					return session;
 			}
 			
-			if (Log.isDebugEnabled())
-				Log.debug("could not find session for response {}", response.getRequestLine());
+			if (LOG.isDebugEnabled())
+				LOG.debug("could not find session for response {}", response.getRequestLine());
 			
 			return null;
 		}
@@ -681,15 +684,15 @@ public class SessionManager extends AbstractLifeCycle
 			{
 				if (!timer.isCancelled())
 				{
-					if (Log.isDebugEnabled())
-						Log.debug("running timer {} for call session {}", timer, _id);
+					if (LOG.isDebugEnabled())
+						LOG.debug("running timer {} for call session {}", timer, _id);
 					try
 					{
 						timer.getRunnable().run();
 					}
 					catch(Throwable t)
 					{
-						Log.warn(t);
+						LOG.warn(t);
 					}
 				}
 			}
@@ -718,15 +721,14 @@ public class SessionManager extends AbstractLifeCycle
     		return _lock;
     	}
 
-    	@SuppressWarnings("unchecked")
 		public String toString()
         {
         	StringBuffer sb = new StringBuffer();
         	sb.append(_id 
-        		+ "[stxs= " + new ArrayList(_serverTransactions)
-        		+ ", ctxs=" + new ArrayList(_clientTransactions) 
-        		+ ", timers=" + new ArrayList(_timers) 
-        		+ ", sessions=" + new ArrayList(_appSessions) + "]");
+        		+ "[stxs= " + new ArrayList<ServerTransaction>(_serverTransactions)
+        		+ ", ctxs=" + new ArrayList<ClientTransaction>(_clientTransactions) 
+        		+ ", timers=" + new ArrayList<TimerTask>(_timers) 
+        		+ ", sessions=" + new ArrayList<AppSession>(_appSessions) + "]");
         	return sb.toString();
         }
     }

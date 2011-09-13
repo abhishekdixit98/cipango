@@ -22,9 +22,12 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class SipDispatcher implements RequestDispatcher
 {
+	private static final Logger LOG = Log.getLogger(SipDispatcher.class);
+	
     private SipServletHolder _holder;
     
     public SipDispatcher(SipServletHolder holder)
@@ -37,8 +40,8 @@ public class SipDispatcher implements RequestDispatcher
      */
     public void forward(ServletRequest request, ServletResponse response) throws ServletException, IOException
     {
-        if (Log.isDebugEnabled())
-            Log.debug("Forwarding to handler: " + _holder.getName());
+        if (LOG.isDebugEnabled())
+            LOG.debug("Forwarding to handler: " + _holder.getName());
         _holder.handle(request, null);
     }
     

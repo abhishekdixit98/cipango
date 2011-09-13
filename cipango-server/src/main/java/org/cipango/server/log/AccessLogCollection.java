@@ -15,16 +15,18 @@ package org.cipango.server.log;
 
 import org.cipango.server.SipConnection;
 import org.cipango.server.SipMessage;
-
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.MultiException;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class AccessLogCollection extends AbstractLifeCycle implements AccessLog
 {
+	private static final Logger LOG = Log.getLogger(AccessLogCollection.class);
+	
 	private AccessLog[] _loggers;
 	private Server _server;
 
@@ -108,7 +110,7 @@ public class AccessLogCollection extends AbstractLifeCycle implements AccessLog
 			}
 			catch (Exception e)
 			{
-				Log.warn(e);
+				LOG.warn(e);
 			}
 		}
 		super.doStart();
@@ -126,7 +128,7 @@ public class AccessLogCollection extends AbstractLifeCycle implements AccessLog
 			}
 			catch (Exception e)
 			{
-				Log.warn(e);
+				LOG.warn(e);
 			}
 
 		}

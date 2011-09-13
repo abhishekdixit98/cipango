@@ -26,6 +26,7 @@ import javax.management.ObjectName;
 
 import org.cipango.log.event.Events;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.snmp4j.agent.DuplicateRegistrationException;
 import org.snmp4j.agent.MOAccess;
 import org.snmp4j.agent.MOServer;
@@ -42,6 +43,7 @@ import org.snmp4j.smi.VariableBinding;
 
 public class CipangoMib implements Mib, NotificationListener
 {
+	private static final Logger LOG = Log.getLogger(CipangoMib.class);
 
 	public static final OID 
 		OID_MESSAGES_RECEIVED = new OID("1.3.6.1.4.26588.1.10.1.0"),
@@ -105,7 +107,7 @@ public class CipangoMib implements Mib, NotificationListener
 		}
 		catch (Exception e)
 		{
-			Log.warn(e);
+			LOG.warn(e);
 		}
 	}
 

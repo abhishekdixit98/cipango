@@ -24,6 +24,7 @@ import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.snmp4j.TransportMapping;
 import org.snmp4j.agent.BaseAgent;
 import org.snmp4j.agent.CommandProcessor;
@@ -59,7 +60,8 @@ import org.snmp4j.transport.DefaultUdpTransportMapping;
 
 public class SnmpAgent extends AbstractLifeCycle implements Dumpable
 {
-
+	private static final Logger LOG = Log.getLogger(SnmpAgent.class);
+	
 	public static final OID NEXCOM_ENTREPRISE_OID = new OID("1.3.6.1.4.26588");
 
 	static
@@ -111,11 +113,11 @@ public class SnmpAgent extends AbstractLifeCycle implements Dumpable
 					new OctetString("v2c"),
 					StorageType.permanent);
 
-			Log.info("Add SNMP trap receiver: " + address);
+			LOG.info("Add SNMP trap receiver: " + address);
 		}
 		catch (Exception e) 
 		{
-			Log.warn("Failed to add SNMP trap receiver: " + address, e);
+			LOG.warn("Failed to add SNMP trap receiver: " + address, e);
 		}
 	}
 
@@ -382,7 +384,7 @@ public class SnmpAgent extends AbstractLifeCycle implements Dumpable
 			}
 			catch (DuplicateRegistrationException ex)
 			{
-				Log.warn("Unable to register MIBs", ex);
+				LOG.warn("Unable to register MIBs", ex);
 			}
 		}
 

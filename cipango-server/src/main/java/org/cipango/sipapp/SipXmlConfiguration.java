@@ -19,12 +19,15 @@ import java.net.MalformedURLException;
 
 import org.cipango.servlet.SipServletHandler;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.AbstractConfiguration;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 public class SipXmlConfiguration extends AbstractConfiguration
 {	
+	private static final Logger LOG = Log.getLogger(SipXmlConfiguration.class);
+	
 	public void preConfigure(WebAppContext context) throws Exception
 	{
 		if (!(context instanceof SipAppContext))
@@ -34,8 +37,8 @@ public class SipXmlConfiguration extends AbstractConfiguration
 		
 		if (sipContext.isStarted())
 		{
-			if (Log.isDebugEnabled()) 
-				Log.debug("Cannot configure sipapp after it is started");
+			if (LOG.isDebugEnabled()) 
+				LOG.debug("Cannot configure sipapp after it is started");
 			return;
 		}
 				
@@ -73,8 +76,8 @@ public class SipXmlConfiguration extends AbstractConfiguration
 		
 		if (sipContext.isStarted())
 		{
-			if (Log.isDebugEnabled())
-				Log.debug("Cannot configure sipapp after it is started");
+			if (LOG.isDebugEnabled())
+				LOG.debug("Cannot configure sipapp after it is started");
 		}
 
         ((SipAppContext) context).getSipMetaData().addDescriptorProcessor(new StandardDescriptorProcessor());
@@ -104,7 +107,7 @@ public class SipXmlConfiguration extends AbstractConfiguration
 			Resource sip = webInf.addPath("sip.xml");
 			if (sip.exists()) 
 				return sip;
-			Log.debug("No WEB-INF/sip.xml in " + context.getWar());
+			LOG.debug("No WEB-INF/sip.xml in " + context.getWar());
 		}
 		return null;
 	}

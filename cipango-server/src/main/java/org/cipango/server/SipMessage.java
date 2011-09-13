@@ -155,7 +155,7 @@ public abstract class SipMessage implements SipServletMessage, Cloneable
 	 */
 	public Locale getAcceptLanguage() 
     {
-        Iterator it = getFields().getValues(SipHeaders.ACCEPT_LANGUAGE_BUFFER);
+        Iterator<String> it = getFields().getValues(SipHeaders.ACCEPT_LANGUAGE_BUFFER);
         if (!it.hasNext())
             return Locale.getDefault();
         

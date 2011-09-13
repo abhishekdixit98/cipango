@@ -40,6 +40,7 @@ import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
 
@@ -49,6 +50,8 @@ import org.eclipse.jetty.util.thread.ThreadPool;
  */
 public class Server extends org.eclipse.jetty.server.Server implements SipHandler
 {
+	private static final Logger LOG = Log.getLogger(Server.class);
+	
 	private static final String __sipVersion;
 	
 	static 
@@ -78,7 +81,7 @@ public class Server extends org.eclipse.jetty.server.Server implements SipHandle
 	@Override
 	protected void doStart() throws Exception 
     {
-		Log.info("cipango-" + __sipVersion);
+		LOG.info("cipango-" + __sipVersion);
 
 		MultiException mex = new MultiException();
 		

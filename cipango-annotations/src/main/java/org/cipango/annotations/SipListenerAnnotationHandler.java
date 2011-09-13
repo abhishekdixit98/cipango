@@ -19,9 +19,11 @@ import org.cipango.sipapp.SipAppContext;
 import org.eclipse.jetty.annotations.AbstractDiscoverableAnnotationHandler;
 import org.eclipse.jetty.annotations.AnnotationParser.Value;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class SipListenerAnnotationHandler extends AbstractDiscoverableAnnotationHandler
 {
+	private static final Logger LOG = Log.getLogger(SipListenerAnnotationHandler.class);
 	
 	public SipListenerAnnotationHandler(SipAppContext context)
 	{
@@ -37,13 +39,13 @@ public class SipListenerAnnotationHandler extends AbstractDiscoverableAnnotation
 	public void handleMethod(String className, String methodName, int access, String desc, String signature,
 			String[] exceptions, String annotation, List<Value> values)
 	{
-		Log.warn ("@SipListener annotation ignored on method: "+className+"."+methodName+" "+signature);
+		LOG.warn ("@SipListener annotation ignored on method: "+className+"."+methodName+" "+signature);
 	}
 
 	public void handleField(String className, String fieldName, int access, String fieldType,
 			String signature, Object value, String annotation, List<Value> values)
 	{
-		Log.warn ("@SipListener annotation not applicable for fields: "+className+"."+fieldName);
+		LOG.warn ("@SipListener annotation not applicable for fields: "+className+"."+fieldName);
 	}
 
 }

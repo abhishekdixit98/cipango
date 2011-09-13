@@ -20,14 +20,15 @@ import java.io.OutputStream;
 
 import org.cipango.server.SipConnection;
 import org.cipango.server.SipMessage;
-
 import org.eclipse.jetty.io.Buffer;
-import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.RolloverFileOutputStream;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class FileMessageLog extends AbstractMessageLog implements AccessLog 
 {
+	private static final Logger LOG = Log.getLogger(FileMessageLog.class);
 
 	public final static String YYYY_MM_DD="yyyy_mm_dd";
     private OutputStream _out;
@@ -52,14 +53,14 @@ public class FileMessageLog extends AbstractMessageLog implements AccessLog
 	        			
 			super.doStart();
 	        
-	        Log.info("Access log started in {}", 
+	        LOG.info("Access log started in {}", 
 	                _out instanceof RolloverFileOutputStream ? 
 	                        ((RolloverFileOutputStream) _out).getDatedFilename() :
 	                            "stdout");
 		}
 		catch (Exception e) 
 		{
-			Log.warn("Unable to log SIP messages: " + e.getMessage());
+			LOG.warn("Unable to log SIP messages: " + e.getMessage());
 		}
 	}
 	
@@ -74,7 +75,7 @@ public class FileMessageLog extends AbstractMessageLog implements AccessLog
 			} 
             catch (IOException e) 
             {
-				Log.ignore(e);
+				LOG.ignore(e);
 			}
 			_out = null;
 		}

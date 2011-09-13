@@ -15,9 +15,12 @@
 package org.cipango.util;
 
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class SystemUtil 
 {
+	private static final Logger LOG = Log.getLogger(SystemUtil.class);
+	
 	public static int getIntOrDefault(String property, int defaultValue) 
 	{
 		String s = System.getProperty(property);
@@ -29,7 +32,7 @@ public class SystemUtil
 		}
 		catch (NumberFormatException e) 
 		{
-			Log.ignore(e);
+			LOG.ignore(e);
 		}
 		return defaultValue;
 	}

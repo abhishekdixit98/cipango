@@ -21,9 +21,12 @@ import org.apache.commons.jexl.ExpressionFactory;
 import org.apache.commons.jexl.JexlContext;
 import org.apache.commons.jexl.JexlHelper;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class CallflowNotificationFilter implements NotificationFilter
 {
+	private static final Logger LOG = Log.getLogger(CallflowNotificationFilter.class);
+	
 	private String _filter;
 	
 	public CallflowNotificationFilter(String filter)
@@ -54,7 +57,7 @@ public class CallflowNotificationFilter implements NotificationFilter
 			}
 			catch (Exception e)
 			{
-				Log.ignore(e);
+				LOG.ignore(e);
 			}
 		}
 		return false;

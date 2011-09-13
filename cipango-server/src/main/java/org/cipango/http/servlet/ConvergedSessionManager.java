@@ -21,18 +21,19 @@ import javax.servlet.sip.SipApplicationSession;
 import org.cipango.server.ID;
 import org.cipango.server.session.AppSessionIf;
 import org.cipango.sipapp.SipAppContext;
-
 import org.eclipse.jetty.http.HttpSchemes;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.session.AbstractSession;
-import org.eclipse.jetty.server.session.AbstractSessionManager;
-import org.eclipse.jetty.server.session.HashedSession;
 import org.eclipse.jetty.server.session.HashSessionManager;
-import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.server.session.HashedSession;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class ConvergedSessionManager extends HashSessionManager
 {
+	private static final Logger LOG = Log.getLogger(ConvergedSessionManager.class);
+	
 	public class Session extends HashedSession implements ConvergedHttpSession
 	{
 		private AppSessionIf _appSession;
@@ -67,8 +68,8 @@ public class ConvergedSessionManager extends HashSessionManager
                 if (path_params!=null && path_params.startsWith(ID.APP_SESSION_ID_PARAMETER))
                 {
                 	appId = path_params.substring(ID.APP_SESSION_ID_PARAMETER.length() + 1);
-                    if(Log.isDebugEnabled())
-                    	Log.debug("Got App ID " + appId + " from URL");
+                    if(LOG.isDebugEnabled())
+                    	LOG.debug("Got App ID " + appId + " from URL");
                 }
             }
 			

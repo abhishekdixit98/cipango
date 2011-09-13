@@ -14,7 +14,6 @@
 package org.cipango.console.printer.statistics;
 
 import java.io.Writer;
-import java.util.Date;
 import java.util.Set;
 
 import javax.management.Attribute;

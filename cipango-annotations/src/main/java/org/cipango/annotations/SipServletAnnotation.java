@@ -18,11 +18,13 @@ import javax.servlet.sip.annotation.SipServlet;
 import org.cipango.servlet.SipServletHolder;
 import org.cipango.sipapp.SipAppContext;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.DiscoveredAnnotation;
 
 public class SipServletAnnotation extends DiscoveredAnnotation
 {
-    
+	private static final Logger LOG = Log.getLogger(SipServletAnnotation.class);
+	
     public SipServletAnnotation (SipAppContext context, String className)
     {
         super(context, className);
@@ -39,14 +41,14 @@ public class SipServletAnnotation extends DiscoveredAnnotation
         
         if (clazz == null)
         {
-            Log.warn(_className+" cannot be loaded");
+            LOG.warn(_className+" cannot be loaded");
             return;
         }
         
         //Servlet Spec 8.1.1
         if (!javax.servlet.sip.SipServlet.class.isAssignableFrom(clazz))
         {
-            Log.warn(clazz.getName()+" is not assignable from javax.servlet.sip.SipServlet");
+            LOG.warn(clazz.getName()+" is not assignable from javax.servlet.sip.SipServlet");
             return;
         }
         

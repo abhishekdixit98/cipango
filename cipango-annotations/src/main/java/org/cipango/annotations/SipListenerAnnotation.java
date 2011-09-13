@@ -16,16 +16,16 @@ package org.cipango.annotations;
 import java.util.EventListener;
 
 import javax.servlet.sip.annotation.SipListener;
-import javax.servlet.sip.annotation.SipServlet;
 
-import org.cipango.servlet.SipServletHolder;
 import org.cipango.sipapp.SipAppContext;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.DiscoveredAnnotation;
 
 public class SipListenerAnnotation extends DiscoveredAnnotation
 {
-    
+	private static final Logger LOG = Log.getLogger(SipListenerAnnotation.class);
+	
     public SipListenerAnnotation (SipAppContext context, String className)
     {
         super(context, className);
@@ -41,13 +41,13 @@ public class SipListenerAnnotation extends DiscoveredAnnotation
         
         if (clazz == null)
         {
-            Log.warn(_className+" cannot be loaded");
+            LOG.warn(_className+" cannot be loaded");
             return;
         }
         
         if (!EventListener.class.isAssignableFrom(clazz))
         {
-            Log.warn(clazz.getName()+" is not assignable from java.util.EventListener");
+            LOG.warn(clazz.getName()+" is not assignable from java.util.EventListener");
             return;
         }
         

@@ -13,20 +13,17 @@
 // ========================================================================
 package org.cipango.annotations;
 
-import java.util.EventListener;
-
 import javax.servlet.sip.annotation.SipApplication;
-import javax.servlet.sip.annotation.SipListener;
-import javax.servlet.sip.annotation.SipServlet;
 
-import org.cipango.servlet.SipServletHolder;
 import org.cipango.sipapp.SipAppContext;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.DiscoveredAnnotation;
 
 public class SipApplicationAnnotation extends DiscoveredAnnotation
 {
-    
+	private static final Logger LOG = Log.getLogger(SipApplicationAnnotation.class);
+	
     public SipApplicationAnnotation (SipAppContext context, String className)
     {
         super(context, className);
@@ -42,7 +39,7 @@ public class SipApplicationAnnotation extends DiscoveredAnnotation
         
         if (clazz == null)
         {
-            Log.warn(_className+" cannot be loaded");
+            LOG.warn(_className+" cannot be loaded");
             return;
         }
         

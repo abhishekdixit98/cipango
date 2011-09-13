@@ -43,9 +43,12 @@ import org.cipango.sip.SipStatus;
 import org.cipango.sip.Via;
 import org.cipango.sip.security.Authenticate;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class SipResponse extends SipMessage implements SipServletResponse
 {
+	private static final Logger LOG = Log.getLogger(SipResponse.class);
+	
     private SipRequest _request;
     private int _status;
     private String _reason;
@@ -247,7 +250,7 @@ public class SipResponse extends SipMessage implements SipServletResponse
         } 
         catch (IOException e)
         {
-            Log.debug(e);
+            LOG.debug(e);
         }
 	}
 	
@@ -395,7 +398,7 @@ public class SipResponse extends SipMessage implements SipServletResponse
         } 
         catch (Exception e) 
         {
-            Log.warn(e);
+            LOG.warn(e);
             if (e instanceof IOException)
                 throw (IOException) e; 
             throw new IllegalStateException(e.getMessage());

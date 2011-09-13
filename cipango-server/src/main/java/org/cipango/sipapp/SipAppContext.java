@@ -83,12 +83,15 @@ import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 public class SipAppContext extends WebAppContext implements SipHandler
 {
+	private static final Logger LOG = Log.getLogger(SipAppContext.class);
+	
 	public static final int VERSION_10 = 10;
 	public static final int VERSION_11 = 11;
 	
@@ -279,7 +282,7 @@ public class SipAppContext extends WebAppContext implements SipHandler
 			}
 			catch (Throwable t)
 			{
-				Log.debug(t);
+				LOG.debug(t);
 			}
 		}
 	}
@@ -391,7 +394,7 @@ public class SipAppContext extends WebAppContext implements SipHandler
 			}
 			catch (Throwable t)
 			{
-				Log.debug(t);
+				LOG.debug(t);
 			}
 		}
 		if (getClassLoader() != null)
@@ -736,7 +739,7 @@ public class SipAppContext extends WebAppContext implements SipHandler
 		}
 		catch (Throwable e)
 		{
-			Log.debug("Fail to get SipApplicationKey", e);
+			LOG.debug("Fail to get SipApplicationKey", e);
 			return null;
 		}
 	}

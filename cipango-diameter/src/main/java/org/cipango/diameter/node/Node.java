@@ -45,6 +45,7 @@ import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 /**
@@ -54,6 +55,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class Node extends AbstractLifeCycle implements DiameterHandler, Dumpable
 {
+	private static final Logger LOG = Log.getLogger(Node.class);
+	
 	public static String[] __dictionaryClasses = 
 	{
 		"org.cipango.diameter.base.Common", 
@@ -233,14 +236,14 @@ public class Node extends AbstractLifeCycle implements DiameterHandler, Dumpable
 					}
 					catch (Exception e) 
 					{ 
-						Log.warn("failed to start peer: " + peer, e);
+						LOG.warn("failed to start peer: " + peer, e);
 					}
 				}
 			}
 		}	
 		
 		_scheduler.scheduleAtFixedRate(new WatchdogTimeout(), 5000, 5000, TimeUnit.MILLISECONDS);
-		Log.info("Started {}", this);
+		LOG.info("Started {}", this);
 	}
 	
 	@Override
@@ -260,7 +263,7 @@ public class Node extends AbstractLifeCycle implements DiameterHandler, Dumpable
 					}
 					catch (Exception e) 
 					{ 
-						Log.warn("failed to stop peer: " + peer, e);
+						LOG.warn("failed to stop peer: " + peer, e);
 					}
 				}
 				
@@ -277,7 +280,7 @@ public class Node extends AbstractLifeCycle implements DiameterHandler, Dumpable
 							if (!peer.isClosed())
 							{
 								allClosed = false;
-								Log.info("Wait 50ms for " + peer + " closing");
+								LOG.info("Wait 50ms for " + peer + " closing");
 								Thread.sleep(50);
 								break;
 							}
@@ -286,7 +289,7 @@ public class Node extends AbstractLifeCycle implements DiameterHandler, Dumpable
 				} 
 				catch (Exception e) 
 				{
-					Log.ignore(e);
+					LOG.ignore(e);
 				}
 			}
 		}	
@@ -411,7 +414,7 @@ public class Node extends AbstractLifeCycle implements DiameterHandler, Dumpable
 		{
 			if (message.getCommand() != Common.CER)
 			{
-				Log.debug("non CER as first message: " + message.getCommand());
+				LOG.debug("non CER as first message: " + message.getCommand());
 				message.getConnection().stop();
 				return;
 			}
@@ -421,14 +424,14 @@ public class Node extends AbstractLifeCycle implements DiameterHandler, Dumpable
 				
 				if (originHost == null)
 				{
-					Log.debug("No Origin-Host in CER");
+					LOG.debug("No Origin-Host in CER");
 					message.getConnection().stop();
 					return;
 				}
 				String realm = message.getOriginRealm();
 				if (realm == null)
 				{
-					Log.debug("No Origin-Realm in CER");
+					LOG.debug("No Origin-Realm in CER");
 					message.getConnection().stop();
 					return;
 				}
@@ -437,7 +440,7 @@ public class Node extends AbstractLifeCycle implements DiameterHandler, Dumpable
 				
 				if (peer == null)
 				{
-					Log.warn("Unknown peer " + originHost);
+					LOG.warn("Unknown peer " + originHost);
 					peer = new Peer(originHost);
 					peer.setNode(this);
 					addPeer(peer);
@@ -481,16 +484,16 @@ public class Node extends AbstractLifeCycle implements DiameterHandler, Dumpable
                     Peer peer = getPeer(redirectHost);
                     if (peer != null) 
                     {
-                        Log.debug("Redirecting request to: " + peer);
+                        LOG.debug("Redirecting request to: " + peer);
                         peer.send(answer.getRequest());
                     }
                     else
-                    	Log.warn("Unknown peer {} indicating in redirect-host AVP", redirectHost);
+                    	LOG.warn("Unknown peer {} indicating in redirect-host AVP", redirectHost);
                     return;
                 } 
                 catch (Exception e)
                 {
-                    Log.warn("Failed to redirect request", e);
+                    LOG.warn("Failed to redirect request", e);
                     return;
                 }
 			}
@@ -631,7 +634,7 @@ public class Node extends AbstractLifeCycle implements DiameterHandler, Dumpable
         if (on && _statsStartedAt.get() != -1)
             return;
 
-        Log.debug("Statistics on = " + on + " for " + this);
+        LOG.debug("Statistics on = " + on + " for " + this);
 
         statsReset();
         _statsStartedAt.set(on?System.currentTimeMillis():-1);
@@ -691,14 +694,14 @@ public class Node extends AbstractLifeCycle implements DiameterHandler, Dumpable
 				{
 					if (!_peer.isStopped() && !_peer.isOpen())
 					{
-						Log.debug("restarting peer: " + _peer);
+						LOG.debug("restarting peer: " + _peer);
 						_peer.start();
 					}
 				}
 			}
 			catch (Exception e)
 			{
-				Log.warn("failed to reconnect to peer {} : {}", _peer, e);
+				LOG.warn("failed to reconnect to peer {} : {}", _peer, e);
 			}
 		}
 	}

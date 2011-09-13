@@ -37,12 +37,15 @@ import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.bio.SocketEndPoint;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * TCP Diameter Connector using BIO
  */
 public class DiameterSocketConnector extends AbstractDiameterConnector
 {
+	private static final Logger LOG = Log.getLogger(DiameterSocketConnector.class);
+	
 	public static final int DEFAULT_PORT = 3868;
 	
 	private ServerSocket _serverSocket;
@@ -144,7 +147,7 @@ public class DiameterSocketConnector extends AbstractDiameterConnector
 		
 		public void stop()
 		{
-			try { close(); } catch (IOException e) { Log.ignore(e); }
+			try { close(); } catch (IOException e) { LOG.ignore(e); }
 		}
 		
 		public void write(DiameterMessage message) throws IOException
@@ -235,18 +238,18 @@ public class DiameterSocketConnector extends AbstractDiameterConnector
 			}
 			catch (EofException e)
 			{
-				Log.debug(e);
-				try { close(); } catch (IOException e2) { Log.ignore(e2); }
+				LOG.debug(e);
+				try { close(); } catch (IOException e2) { LOG.ignore(e2); }
 			}
 			catch (IOException e)
 			{
-				Log.debug(e); // TODO
-				try { close(); } catch (IOException e2) { Log.ignore(e2); }
+				LOG.debug(e); // TODO
+				try { close(); } catch (IOException e2) { LOG.ignore(e2); }
 			}
 			catch (Throwable t)
 			{
-				Log.warn("handle failed", t);
-				try { close(); } catch (IOException e2) { Log.ignore(e2); }
+				LOG.warn("handle failed", t);
+				try { close(); } catch (IOException e2) { LOG.ignore(e2); }
 			}
 			finally
 			{
