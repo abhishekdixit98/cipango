@@ -47,6 +47,11 @@
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>
+				<groupId>org.cipango</groupId>
+				<artifactId>cipango-client</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
         <groupId>org.eclipse.osgi</groupId>
         <artifactId>org.eclipse.osgi</artifactId>
         <version>${osgi-version}</version>
