@@ -19,7 +19,6 @@ public class SipServiceFactory implements ServiceFactory {
     {
         Object srv = new SipServiceImpl(bundle, _server); 
         Activator.debug("** sip service get:" + bundle + ", service: " + srv);
-        System.out.println(">>>>>>>>>Return " + srv);
         return srv;
     }
 

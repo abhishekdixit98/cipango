@@ -18,6 +18,7 @@ package org.cipango.osgi.test;
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
 import static org.ops4j.pax.exam.CoreOptions.options;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -28,12 +29,20 @@ import java.util.Map;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.sip.ServletTimer;
+import javax.servlet.sip.SipApplicationSession;
 import javax.servlet.sip.SipFactory;
 import javax.servlet.sip.SipServlet;
+import javax.servlet.sip.SipServletRequest;
+import javax.servlet.sip.SipServletResponse;
 import javax.servlet.sip.TimerListener;
 import javax.servlet.sip.TimerService;
 
+import org.cipango.client.MessageHandler;
+import org.cipango.client.SipClient;
+import org.cipango.client.SipProfile;
+import org.cipango.client.UserAgent;
 import org.cipango.osgi.api.SipService;
+import org.cipango.sip.SipURIImpl;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -64,7 +73,7 @@ public class TestSipService
     {
         return Arrays.asList(options(
                 //get the jetty home config from the osgi boot bundle.
-                PaxRunnerOptions.vmOptions("-Dsip.port=5058"),
+                PaxRunnerOptions.vmOptions("-Dsip.port=5058 -Dsip.host=localhost"),
                 
         		mavenBundle().groupId( "org.mortbay.jetty" ).artifactId( "servlet-api" ).versionAsInProject().noStart(),
                 mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-server" ).versionAsInProject().noStart(),   
@@ -85,6 +94,7 @@ public class TestSipService
         return Arrays.asList(options(
               mavenBundle().groupId( "javax.servlet" ).artifactId( "sip-api" ).versionAsInProject().noStart(),
               mavenBundle().groupId( "org.cipango" ).artifactId( "cipango-server" ).versionAsInProject().noStart(),
+              mavenBundle().groupId( "org.cipango" ).artifactId( "cipango-client" ).versionAsInProject().noStart(),
               mavenBundle().groupId( "org.cipango" ).artifactId( "cipango-dar" ).versionAsInProject().noStart()
          ));
         
@@ -113,69 +123,104 @@ public class TestSipService
         return options.toArray(new Option[options.size()]);
     }
 
-    /**
-     * You will get a list of bundles installed by default
-     * plus your testcase, wrapped into a bundle called pax-exam-probe
-     */
+
     @Test
-    public void testSipService() throws Exception
+    public void testSipServlet() throws Exception
     {
     	
         Map<String,Bundle> bundlesIndexedBySymbolicName = new HashMap<String, Bundle>();
         for( Bundle b : bundleContext.getBundles() )
-        {
             bundlesIndexedBySymbolicName.put(b.getSymbolicName(), b);
-          System.err.println("got " + b.getSymbolicName());
-        }
+
         Bundle bundle = bundlesIndexedBySymbolicName.get("org.cipango.osgi.sipservice");
-        Assert.assertNotNull("Could not find the cipango-osgi-sip-service", bundle);
+        Assert.assertNotNull("Could not find the cipango-osgi-sipservice", bundle);
         Assert.assertTrue(bundle.getState() == Bundle.ACTIVE);
 
         SipService sipService = getSipService();
         Assert.assertNotNull(sipService);
         
+        SipServlet servlet = new SipServlet()
+        {
+
+			@Override
+			protected void doRequest(SipServletRequest request) throws ServletException, IOException
+			{
+				request.createResponse(SipServletResponse.SC_OK).send();
+			}
+        	
+        };
+        sipService.registerServlet(servlet);
         
-        sipService.registerServlet(new TestServlet());
+        SipClient client = new SipClient("localhost", 5057);
+        client.start();
         
-        
-        
-        /*
-        sipService.registerServlet("/greetings", new HttpServlet() {
-            private static final long serialVersionUID = 1L;
-            protected void doGet(HttpServletRequest req,
-                    HttpServletResponse resp) throws ServletException,
-                    IOException {
-                resp.getWriter().append("Hello");
-            }
-        }, null, null);
-        
-        //now test the servlet
-        HttpClient client = new HttpClient();
-        client.setConnectorType(HttpClient.CONNECTOR_SELECT_CHANNEL);
         try
         {
-            client.start();
-            
-            ContentExchange getExchange = new ContentExchange();
-            getExchange.setURL("http://127.0.0.1:9876/greetings");
-            getExchange.setMethod(HttpMethods.GET);
-     
-            client.send(getExchange);
-            int state = getExchange.waitForDone();
-            Assert.assertEquals("state should be done", HttpExchange.STATUS_COMPLETED, state);
-     
-            String content = null;
-            int responseStatus = getExchange.getResponseStatus();
-            Assert.assertEquals(HttpStatus.OK_200, responseStatus);
-            if (responseStatus == HttpStatus.OK_200) {
-                content = getExchange.getResponseContent();
-            }
-            Assert.assertEquals("Hello", content);
+	        SipFactory factory = client.getFactory();
+	        SipServletRequest request = 
+	        	factory.createRequest(factory.createApplicationSession(), "MESSAGE", "sip:test@cipango.org", "sip:osgi@localhost:5058");
+	        
+	        ResponseHandler handler = new ResponseHandler();
+	        request.getSession().setAttribute(MessageHandler.class.getName(), handler);
+	        request.send();
+	        synchronized (handler)
+			{
+				if (handler.getResponse() == null)
+					handler.wait(1000);
+			}
+	        
+	        SipServletResponse response = handler.getResponse();
+	        Assert.assertNotNull(response);
+	        Assert.assertEquals(SipServletResponse.SC_OK, response.getStatus());
         }
         finally
         {
-            client.stop();
-        }*/
+        	client.stop();
+        }
+
+    }
+    
+    
+    @Test
+    public void testListener() throws Exception
+    {
+        SipService sipService = getSipService();
+        
+        TestServlet servlet = new TestServlet();
+        sipService.registerServlet(servlet);
+        sipService.registerListener(servlet);
+        
+        SipClient client = new SipClient("localhost", 5057);
+        client.start();
+        
+        try
+        {
+	        SipFactory factory = client.getFactory();
+	        SipServletRequest request = 
+	        	factory.createRequest(factory.createApplicationSession(), "MESSAGE", "sip:test@cipango.org", "sip:osgi@localhost:5058");
+	        
+	        ResponseHandler handler = new ResponseHandler();
+	        request.getSession().setAttribute(MessageHandler.class.getName(), handler);
+	        request.send();
+	        synchronized (handler)
+			{
+	        	System.out.println(">>>>>>Wait");
+	        	Thread.sleep(1500);
+				if (handler.getResponse() == null)
+					handler.wait(1000);
+				System.out.println(">>>>>>Done");
+			}
+	        
+	        SipServletResponse response = handler.getResponse();
+	        Assert.assertNotNull(response);
+	        Assert.assertEquals(SipServletResponse.SC_OK, response.getStatus());
+	        Assert.assertNotNull(response.getHeader("Info"));
+        }
+        finally
+        {
+        	client.stop();
+        }
+
     }
     
     private SipService getSipService()
@@ -226,7 +271,6 @@ public class TestSipService
 	
 	static class TestServlet extends SipServlet implements TimerListener {
 
-		private SipFactory _factory;
 		private TimerService _timerService;
 		
 		public void destroy() {
@@ -235,21 +279,66 @@ public class TestSipService
 
 		public void init(ServletConfig config) throws ServletException {
 			super.init(config);
-			_factory = (SipFactory) getServletContext().getAttribute(SIP_FACTORY);
 			_timerService = (TimerService) getServletContext().getAttribute(TIMER_SERVICE);
 		}
 		
-		public void launchTimer() {
-			_timerService.createTimer(_factory.createApplicationSession(), 1000, false, 
+		@Override
+		protected void doRequest(SipServletRequest request) throws ServletException, IOException
+		{
+			request.getApplicationSession().setAttribute(SipServletRequest.class.getName(), request);
+			_timerService.createTimer(request.getApplicationSession(), 100, false, 
 					"Timer set at " + new Date());
 		}
-
-		public void timeout(ServletTimer timer) {
-			System.out.println("Timer fired at " + new Date()
-						+ " with info: " + timer.getInfo());
+		
+		public void launchTimer() {
+			
 		}
+
+		public void timeout(ServletTimer timer) 
+		{
+			try
+			{
+				System.out.println("Timer fire: " + timer.getInfo());
+				SipServletRequest request = (SipServletRequest) timer.getApplicationSession().getAttribute(SipServletRequest.class.getName());
+				SipServletResponse response = request.createResponse(SipServletResponse.SC_OK);
+				response.setHeader("Info", timer.getInfo().toString());
+				response.send();
+			}
+			catch (Exception e)
+			{
+				e.printStackTrace();
+			}
+		}
+
+
 		
 	}
 
+	
+	static class ResponseHandler implements MessageHandler
+	{
+		private SipServletResponse _response;
+
+		public void handleRequest(SipServletRequest request) throws IOException, ServletException
+		{
+		}
+
+		public void handleResponse(SipServletResponse response) throws IOException, ServletException
+		{
+			
+			System.out.println("Got response " + response);
+			_response = response;
+			synchronized (this)
+			{
+				notify();
+			}
+		}
+
+		public SipServletResponse getResponse()
+		{
+			return _response;
+		}
+		
+	}
     
 }
