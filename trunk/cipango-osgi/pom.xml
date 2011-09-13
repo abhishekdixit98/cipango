@@ -17,7 +17,9 @@
   <modules>
     <module>osgi-sipservice</module>
     <module>cipango-osgi-sipservice</module>
+		<module>cipango-osgi-client</module>
 		<module>test-cipango-osgi</module>
+		<module>test-cipango-osgi-client</module>
   </modules>
 	
   <build>
