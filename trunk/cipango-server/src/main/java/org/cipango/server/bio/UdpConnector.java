@@ -253,7 +253,7 @@ public class UdpConnector extends AbstractSipConnector
 		}
 	}
 	
-	class EventHandler extends SipParser.EventHandler
+	public static class EventHandler extends SipParser.EventHandler
 	{
 		private SipMessage _message;
 		

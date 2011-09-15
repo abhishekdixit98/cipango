@@ -26,10 +26,14 @@ public abstract class SipConnectors
 	public static final String UDP = "UDP";
 	public static final String TCP = "TCP";
 	public static final String TLS = "TLS";
+	public static final String WS = "WS";
+	public static final String WSS = "WSS";
 	
 	public static final int UDP_ORDINAL = 1;
 	public static final int TCP_ORDINAL = 2;
 	public static final int TLS_ORDINAL = 3;
+	public static final int WS_ORDINAL  = 4;
+	public static final int WSS_ORDINAL = 5;
 	
 	public static String getName(int ordinal) 
 	{
@@ -41,6 +45,10 @@ public abstract class SipConnectors
 			return TCP;
 		case TLS_ORDINAL:
 			return TLS;
+		case WS_ORDINAL:
+			return WS;
+		case WSS_ORDINAL:
+			return WSS;
 		default:
 			return null;
 		}
@@ -54,6 +62,10 @@ public abstract class SipConnectors
 			return TCP_ORDINAL;
 		else if (TLS.equalsIgnoreCase(name))
 			return TLS_ORDINAL;
+		else if (WS.equalsIgnoreCase(name))
+			return WS_ORDINAL;
+		else if (WSS.equalsIgnoreCase(name))
+			return WSS_ORDINAL;
 		else 
 			return -1;
 	}
@@ -67,6 +79,8 @@ public abstract class SipConnectors
 		case TCP_ORDINAL:
 			return TcpConnector.RELIABLE;
 		case TLS_ORDINAL:
+		case WS_ORDINAL:
+		case WSS_ORDINAL:
 			return true;
 		default:
 			throw new IllegalArgumentException("Unknown connector: " + ordinal);
@@ -83,6 +97,10 @@ public abstract class SipConnectors
 			return TcpConnector.DEFAULT_PORT;
 		case TLS_ORDINAL:
 			return TlsConnector.DEFAULT_PORT;
+		case WS_ORDINAL:
+			return 80;
+		case WSS_ORDINAL:
+			return 443;
 		default:
 			throw new IllegalArgumentException("Unknown connector: " + ordinal);
 		}

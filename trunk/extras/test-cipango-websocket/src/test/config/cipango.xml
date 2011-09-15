@@ -21,8 +21,8 @@
     <Call name="addConnector">
       <Arg>
           <New class="org.eclipse.jetty.server.nio.SelectChannelConnector" id="SelectChannelConnector">
-            <Set name="host"><Property name="jetty.host" /></Set>
-            <Set name="port"><Property name="jetty.port" default="8080"/></Set>
+            <Set name="host"><Property name="jetty.host" default="localhost"/></Set>
+            <Set name="port"><Property name="jetty.port" default="8078"/></Set>
             <Set name="maxIdleTime">300000</Set>
             <Set name="Acceptors">2</Set>
             <Set name="statsOn">false</Set>
@@ -54,6 +54,13 @@
         <New class="org.cipango.server.bio.TcpConnector">
           <Set name="port"><Property default="5060" name="sip.port"/></Set>
           <Set name="host"><Property name="sip.host"/></Set>
+        </New>
+      </Arg>
+    </Call>
+		<Call name="addConnector">
+      <Arg>
+        <New class="org.cipango.websocket.WebSocketConnector" id="WebSocketConnector">
+          <Arg><Ref id="SelectChannelConnector"/></Arg>
         </New>
       </Arg>
     </Call>
@@ -94,8 +101,12 @@
       <Set name="detailedDump">false</Set>
     </New>
   </Set>
+	
+	<Call name="setAttribute">
+    <Arg>org.cipango.websocket.WebSocketConnector</Arg>
+    <Arg><Ref id="WebSocketConnector"/></Arg>
+  </Call>
   
-
   <!-- =========================================================== -->
   <!-- extra options                                               -->
   <!-- =========================================================== -->
