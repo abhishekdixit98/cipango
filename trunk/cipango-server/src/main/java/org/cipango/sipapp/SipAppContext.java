@@ -111,7 +111,8 @@ public class SipAppContext extends WebAppContext implements SipHandler
 		"3327", // SIP) Extension Header Field for Registering Non-Adjacent Contacts (Path header)
 		"3428", // SIP Extension for Instant Messaging  
 		"3515", // SIP Refer Method
-		"3903", // SIP Extension for Event State Publication=
+		"3903", // SIP Extension for Event State Publication
+		"5658", // Addressing Record-Route Issues in SIP
 		"6026"	// Correct Transaction Handling for 2xx Responses to Session Initiation Protocol (SIP) INVITE Requests
 	};
 	

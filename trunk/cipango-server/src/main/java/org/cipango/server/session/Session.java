@@ -40,6 +40,7 @@ import javax.servlet.sip.SipSessionBindingEvent;
 import javax.servlet.sip.SipSessionBindingListener;
 import javax.servlet.sip.SipSessionEvent;
 import javax.servlet.sip.SipSessionListener;
+import javax.servlet.sip.SipURI;
 import javax.servlet.sip.TooManyHopsException;
 import javax.servlet.sip.UAMode;
 import javax.servlet.sip.URI;
@@ -47,6 +48,8 @@ import javax.servlet.sip.ar.SipApplicationRoutingRegion;
 
 import org.cipango.server.ID;
 import org.cipango.server.Server;
+import org.cipango.server.SipConnection;
+import org.cipango.server.SipConnector;
 import org.cipango.server.SipConnectors;
 import org.cipango.server.SipMessage;
 import org.cipango.server.SipRequest;
@@ -65,9 +68,11 @@ import org.cipango.sip.SipFields;
 import org.cipango.sip.SipHeaders;
 import org.cipango.sip.SipMethods;
 import org.cipango.sip.SipParams;
+import org.cipango.sip.SipURIImpl;
 import org.cipango.sipapp.SipAppContext;
 import org.cipango.util.ReadOnlyAddress;
 import org.cipango.util.TimerTask;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -777,7 +782,12 @@ public class Session implements SessionIf
 	
 	public Address getContact()
 	{
-		Address address = getServer().getConnectorManager().getContact(SipConnectors.TCP_ORDINAL);
+		return getContact(getServer().getConnectorManager().findConnector(SipConnectors.TCP_ORDINAL, null));
+	}
+	
+	public Address getContact(SipConnector connector)
+	{
+		Address address = new NameAddr((URI) connector.getSipUri().clone());
 		address.getURI().setParameter(ID.APP_SESSION_ID_PARAMETER, _appSession.getAppId());
 		return address;
 	}
@@ -1370,6 +1380,23 @@ public class Session implements SessionIf
 				return list;
 		}
 		
+
+		public void customizeRequest(SipRequest request, SipConnection connection)
+		{
+			if (request.needsContact())
+			{
+				SipURI uri = connection.getConnector().getSipUri();
+				Address contact = request.getFields().getAddress(SipHeaders.CONTACT_BUFFER);
+				SipURI contactUri = (SipURI) contact.getURI();
+				contactUri.setHost(uri.getHost());
+				contactUri.setPort(uri.getPort());
+				if (uri.getTransportParam() != null)
+					contactUri.setTransportParam(uri.getTransportParam());	
+				else
+					contactUri.removeParameter(SipURIImpl.TRANSPORT_PARAM);
+			}
+		}
+		
 		class ClientInvite
 		{
 			private long _cseq;
@@ -1583,5 +1610,6 @@ public class Session implements SessionIf
 				}
 			}
 		}
+
 	}
 }

@@ -14,9 +14,13 @@
 
 package org.cipango.server.transaction;
 
+import org.cipango.server.SipConnection;
+import org.cipango.server.SipRequest;
 import org.cipango.server.SipResponse;
 
 public interface ClientTransactionListener extends TransactionListener
 {
     void handleResponse(SipResponse response);
+    
+    void customizeRequest(SipRequest request, SipConnection connection);
 }

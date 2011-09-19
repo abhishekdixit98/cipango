@@ -72,7 +72,7 @@ public class WebSocketConnector extends AbstractLifeCycle implements SipConnecto
     protected void doStart() throws Exception 
     {    	
     	_sipUri = new SipURIImpl(null, getHost(), getPort());
-    	_sipUri.setTransportParam(getTransport());
+    	_sipUri.setTransportParam(getTransport().toLowerCase());
     	
     	if (_threadPool == null && _server != null)
         	_threadPool = _server.getSipThreadPool();

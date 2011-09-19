@@ -46,6 +46,7 @@ import org.cipango.server.transaction.Transaction;
 import org.cipango.sip.NameAddr;
 import org.cipango.sip.SipGrammar;
 import org.cipango.sip.SipHeaders;
+import org.cipango.sip.SipParams;
 import org.cipango.util.TimerTask;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.log.Log;
@@ -441,8 +442,11 @@ public class SipProxy implements Proxy, ServerTransactionListener, Serializable
 	
 	private SipURI newProxyURI(boolean applicationId)
 	{
-		SipConnector connector = _tx.getRequest().getConnection().getConnector();
-		        
+		return newProxyURI(_tx.getRequest().getConnection().getConnector(), applicationId);
+	}
+	
+	private SipURI newProxyURI(SipConnector connector, boolean applicationId)
+	{		        
 		SipURI rrUri = (SipURI) connector.getSipUri().clone();
 		rrUri.setParameter("lr", "");
 		
@@ -1023,6 +1027,22 @@ public class SipProxy implements Proxy, ServerTransactionListener, Serializable
 		
 		public void transactionTerminated(Transaction transaction)
 		{	
+		}
+
+		public void customizeRequest(SipRequest request, SipConnection connection)
+		{
+			SipConnector connector = _tx.getRequest().getConnection().getConnector();
+			if (getRecordRoute() && connection.getConnector() != connector)
+			{
+				SipURI rrUri = newProxyURI(connection.getConnector(), true);
+				rrUri.setParameter(SipParams.DRR, "");
+				_branchRRUri.setParameter(SipParams.DRR, "");
+				if (connector.getTransportOrdinal() == SipConnectors.TCP_ORDINAL)
+					_branchRRUri.setTransportParam("tcp");
+				if (connection.getConnector().getTransportOrdinal() == SipConnectors.TCP_ORDINAL)
+					rrUri.setTransportParam("tcp");
+				request.addRecordRoute(new NameAddr(rrUri));
+			}
 		}
     }
 	

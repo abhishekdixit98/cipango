@@ -15,10 +15,13 @@ package org.cipango.websocket;
 
 import java.io.IOException;
 
+import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.sip.SipServlet;
 import javax.servlet.sip.SipServletRequest;
 import javax.servlet.sip.SipServletResponse;
+import javax.servlet.sip.SipURI;
+import javax.servlet.sip.URI;
 
 public class MainServlet extends SipServlet
 {
@@ -26,8 +29,23 @@ public class MainServlet extends SipServlet
 	@Override
 	protected void doRequest(SipServletRequest request) throws ServletException, IOException
 	{
-		System.out.println("Got request: " + request);
-		request.createResponse(SipServletResponse.SC_OK).send();
+		String user = getUser(request);
+		RequestDispatcher dispatcher = getServletContext().getNamedDispatcher(user);
+		if (dispatcher != null)
+		{
+			request.getSession().setHandler(user);
+			dispatcher.forward(request, null);
+		}
+		else
+			request.createResponse(SipServletResponse.SC_NOT_FOUND).send();
+	}
+	
+	public String getUser(SipServletRequest origRequest)
+	{
+		URI uri = origRequest.getTo().getURI();
+		if (uri.isSipURI())
+			return ((SipURI) uri).getUser();
+		return null;
 	}
 
 }
