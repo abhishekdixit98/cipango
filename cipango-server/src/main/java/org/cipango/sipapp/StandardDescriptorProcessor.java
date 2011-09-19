@@ -13,7 +13,14 @@
 
 package org.cipango.sipapp;
 
+import java.io.File;
+import java.io.IOException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.util.EventListener;
 import java.util.Iterator;
+
+import javax.servlet.ServletException;
 
 import org.cipango.servlet.SipServletHolder;
 import org.cipango.sipapp.rules.AndRule;
@@ -24,8 +31,9 @@ import org.cipango.sipapp.rules.MatchingRule;
 import org.cipango.sipapp.rules.NotRule;
 import org.cipango.sipapp.rules.OrRule;
 import org.cipango.sipapp.rules.SubdomainRule;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.Descriptor;
 import org.eclipse.jetty.webapp.IterativeDescriptorProcessor;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -38,8 +46,6 @@ import org.eclipse.jetty.xml.XmlParser;
  */
 public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
 {
-	private static final Logger LOG = Log.getLogger(StandardDescriptorProcessor.class);
-	
     public static final String STANDARD_PROCESSOR = "org.eclipse.jetty.standardDescriptorProcessor";
         
     public StandardDescriptorProcessor ()
@@ -75,6 +81,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
      */
     public void start(WebAppContext context, Descriptor descriptor)
     { 
+    	if (descriptor instanceof SipDescriptor)
+    		((SipAppContext) context).setSpecVersion(((SipDescriptor) descriptor).getVersion());
     }
     
     
@@ -98,8 +106,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
  
         context.getInitParams().put(name, value);
     
-        if (LOG.isDebugEnabled()) 
-        	LOG.debug("ContextParam: " + name + "=" + value);
+        if (Log.isDebugEnabled()) Log.debug("ContextParam: " + name + "=" + value);
 
     }
     
@@ -154,7 +161,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
 				} 
 				catch (NumberFormatException e) 
 				{
-					LOG.warn("Cannot parse load-on-startup " + s);
+					Log.warn("Cannot parse load-on-startup " + s);
 				}
 			}
 			holder.setInitOrder(order);
@@ -292,7 +299,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
     
 	public void visitAppName(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
-    	((SipAppContext) context).getSipMetaData().setAppName(node.toString(false, true)); 
+    	((SipAppContext) context).setName(node.toString(false, true)); 
     }
     
 	public void visitServletSelection(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
@@ -327,7 +334,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
              }
              catch (NumberFormatException e)
              {
-                 LOG.warn("Invalid sequential-search-timeout value: " + s);
+                 Log.warn("Invalid sequential-search-timeout value: " + s);
              }
          }
     }
@@ -340,6 +347,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
 	public void visitListener(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
         String className = node.getString("listener-class", false, true);
+        EventListener listener = null;
         try
         {
             if (className != null && className.length()> 0)
@@ -349,7 +357,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         }
         catch (Exception e)
         {
-            LOG.warn("Could not instantiate listener " + className, e);
+            Log.warn("Could not instantiate listener " + className, e);
             return;
         }
     }

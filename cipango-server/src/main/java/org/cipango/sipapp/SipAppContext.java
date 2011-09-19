@@ -83,15 +83,12 @@ import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 public class SipAppContext extends WebAppContext implements SipHandler
 {
-	private static final Logger LOG = Log.getLogger(SipAppContext.class);
-	
 	public static final int VERSION_10 = 10;
 	public static final int VERSION_11 = 11;
 	
@@ -100,7 +97,7 @@ public class SipAppContext extends WebAppContext implements SipHandler
     
     public final static String SIP_DEFAULTS_XML="org/cipango/sipapp/sipdefault.xml";
         
-    public final static String[] EXTENSIONS = { "MESSAGE", "INFO", "SUBSCRIBE", "NOTIFY", "UPDATE", "PUBLISH", "REFER",  "100rel" };
+    public final static String[] EXTENSIONS = { "100rel" };
     
 	public static final String[] SUPPORTED_RFC = new String[] {
 		"2976", // The SIP INFO Method
@@ -108,14 +105,8 @@ public class SipAppContext extends WebAppContext implements SipHandler
 		"3262", // Reliability of Provisional Responses
 		"3265", // (SIP)-Specific Event Notification. 
 		"3311", // (SIP) UPDATE Method
-		"3327", // SIP) Extension Header Field for Registering Non-Adjacent Contacts (Path header)
-		"3428", // SIP Extension for Instant Messaging  
-		"3515", // SIP Refer Method
-		"3903", // SIP Extension for Event State Publication=
-		"6026"	// Correct Transaction Handling for 2xx Responses to Session Initiation Protocol (SIP) INVITE Requests
+		"3428"  // SIP Extension for Instant Messaging  
 	};
-	
-	public static final String EXTERNAL_INTERFACES = "org.cipango.externalOutboundInterfaces";
     
     /*
     public final CLFireEvent<SipErrorListener, SipErrorEvent> _noAck = new CLFireEvent<SipErrorListener, SipErrorEvent>()
@@ -219,8 +210,8 @@ public class SipAppContext extends WebAppContext implements SipHandler
 		}
 	}
 	
-	public void serverStarted()
-	{	
+	public void initialized()
+	{
 		ClassLoader oldClassLoader = null;
 		Thread currentThread = null;
 		
@@ -232,25 +223,6 @@ public class SipAppContext extends WebAppContext implements SipHandler
 		}
 		try
 		{
-			List<SipURI> outbounds = new ArrayList<SipURI>();
-			List<SipURI> externals = new ArrayList<SipURI>();
-
-			SipConnector[] connectors = getServer().getConnectorManager().getConnectors();
-			
-			if (connectors != null)
-			{
-				for (SipConnector connector : connectors) 
-				{
-					SipURI uri = new SipURIImpl(null, connector.getAddr().getHostAddress(), connector.getLocalPort());
-					if (!outbounds.contains(uri))
-						outbounds.add(new ReadOnlySipURI(uri));
-					if (!externals.contains(connector.getSipUri()))
-						externals.add(new ReadOnlySipURI(connector.getSipUri()));
-				}
-			}
-			setAttribute(SipServlet.OUTBOUND_INTERFACES, Collections.unmodifiableList(outbounds));
-			setAttribute(EXTERNAL_INTERFACES, Collections.unmodifiableList(externals));
-			
 			SipServletHolder[] holders = getSipServletHandler().getSipServlets();
 			if (holders != null)
 			{
@@ -282,7 +254,7 @@ public class SipAppContext extends WebAppContext implements SipHandler
 			}
 			catch (Throwable t)
 			{
-				LOG.debug(t);
+				Log.debug(t);
 			}
 		}
 	}
@@ -394,7 +366,7 @@ public class SipAppContext extends WebAppContext implements SipHandler
 			}
 			catch (Throwable t)
 			{
-				LOG.debug(t);
+				Log.debug(t);
 			}
 		}
 		if (getClassLoader() != null)
@@ -411,12 +383,30 @@ public class SipAppContext extends WebAppContext implements SipHandler
 		setAttribute(SipServlet.SIP_FACTORY, getSipFactory());
 		setAttribute(SipServlet.TIMER_SERVICE, getTimerService());
 		setAttribute(SipServlet.SIP_SESSIONS_UTIL, getSipSessionsUtil());
+		
+		List<SipURI> outbounds = new ArrayList<SipURI>();
+
+		SipConnector[] connectors = getSipServer().getConnectorManager().getConnectors();
+		
+		if (connectors != null)
+		{
+			for (SipConnector connector : connectors) 
+			{
+				SipURI uri = connector.getSipUri();
+				if (!outbounds.contains(uri))
+					outbounds.add(new ReadOnlySipURI(uri));
+			}
+		}
+		setAttribute(SipServlet.OUTBOUND_INTERFACES, Collections.unmodifiableList(outbounds));
 		setAttribute(SipServlet.SUPPORTED, Collections.unmodifiableList(Arrays.asList(EXTENSIONS)));
 		setAttribute(SipServlet.SUPPORTED_RFCs, Collections.unmodifiableList(Arrays.asList(SUPPORTED_RFC)));
 		
 		
 		super.startContext();
-		      		
+		      
+		if (_name == null)
+			_name = getDefaultName();		
+		
 		if (_servletHandler != null && _servletHandler.isStarted())
     	{
     	    for (Decorator decorator : getDecorators())
@@ -461,16 +451,14 @@ public class SipAppContext extends WebAppContext implements SipHandler
         			+ ": " + getUnavailableException().getMessage());
     	}
     	else if (hasSipServlets())
-    	{
-    		getServer().applicationStarted(this);
-    	}
+    		getSipServer().applicationDeployed(this);
     }
     
 	@Override
 	protected void doStop() throws Exception
 	{
 		if (hasSipServlets() && isAvailable())
-			getServer().applicationStopped(this);
+			getSipServer().applicationUndeployed(this);
 		
 		if (_sipMetaData != null)
 			_sipMetaData.clear();
@@ -524,12 +512,9 @@ public class SipAppContext extends WebAppContext implements SipHandler
         return _sessionTimeStats.getMax();
     }
     
-    /**
-     * Reset statistics values
-     */
     public void statsReset()
     {
-    	_sessionsStats.reset(getSessions());
+    	_sessionsStats.reset();
     	_sessionTimeStats.reset();
     }
 
@@ -739,7 +724,7 @@ public class SipAppContext extends WebAppContext implements SipHandler
 		}
 		catch (Throwable e)
 		{
-			LOG.debug("Fail to get SipApplicationKey", e);
+			Log.debug("Fail to get SipApplicationKey", e);
 			return null;
 		}
 	}
@@ -758,29 +743,15 @@ public class SipAppContext extends WebAppContext implements SipHandler
 	{
 		return _specVersion;
 	}
-    
-    public String getSpecVersionAsString()
-	{
-		switch (_specVersion)
-		{
-		case VERSION_10:
-			return "1.0";
-		case VERSION_11:
-			return "1.1";
-		default:
-			return String.valueOf(_specVersion);
-		}
-	}
 
 	public void setSpecVersion(int specVersion)
 	{
 		_specVersion = specVersion;
 	}
 	
-	@Override
-	public Server getServer()
+	public Server getSipServer()
 	{
-		return (Server) super.getServer();
+		return (Server) getServer();
 	}
 	
 	public SipMetaData getSipMetaData()
@@ -913,7 +884,7 @@ public class SipAppContext extends WebAppContext implements SipHandler
         
         public SipApplicationSession createApplicationSession()
         {
-        	Server server = getServer();
+        	Server server = getSipServer();
         	
         	SessionScope scope = server.getSessionManager().openScope(ID.newCallId());
 	        try
@@ -956,7 +927,7 @@ public class SipAppContext extends WebAppContext implements SipHandler
 			
 			String id = applicationSessionId.substring(0, i);
 			
-			CallSession callSession = getServer().getSessionManager().get(id);
+			CallSession callSession = getSipServer().getSessionManager().get(id);
 			if (callSession == null)
 				return null;
 			
@@ -974,7 +945,7 @@ public class SipAppContext extends WebAppContext implements SipHandler
 			
 			String id = ID.getIdFromKey(getName(), key);
 
-			SessionScope tx = getServer().getSessionManager().openScope(id);
+			SessionScope tx = getSipServer().getSessionManager().openScope(id);
 			try
 			{
 				AppSession appSession = tx.getCallSession().getAppSession(id);

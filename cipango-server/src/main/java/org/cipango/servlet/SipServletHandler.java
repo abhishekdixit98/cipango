@@ -19,6 +19,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 
 import javax.servlet.Servlet;
@@ -28,35 +29,37 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.sip.SipServlet;
+
 import javax.servlet.sip.SipServletMessage;
 import javax.servlet.sip.SipServletRequest;
 
+import org.cipango.server.Server;
 import org.cipango.server.SipHandler;
 import org.cipango.server.SipMessage;
 import org.cipango.server.session.Session;
 import org.cipango.sipapp.SipAppContext;
 import org.cipango.sipapp.SipServletMapping;
+
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
-import org.eclipse.jetty.servlet.ServletContextHandler.Decorator;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.servlet.ServletMapping;
+import org.eclipse.jetty.servlet.ServletContextHandler.Decorator;
+
 import org.eclipse.jetty.util.LazyList;
-import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.MultiException;
 
 public class SipServletHandler extends ServletHandler implements SipHandler
 {
-	private static final Logger LOG = Log.getLogger(SipServletHandler.class);
-	
     private SipServletHolder _defaultServlet;
     private SipServletHolder _mainServlet;
 	private SipServletHolder[] _sipServlets;
 	private SipServletMapping[] _sipServletMappings;
-	private Map<String, SipServletHolder> _sipServletNameMap;
+	private Map _sipServletNameMap;
     
     private SipAppContext _context;
     
@@ -113,7 +116,7 @@ public class SipServletHandler extends ServletHandler implements SipHandler
         _context = servletContext == null ? null: (SipAppContext) servletContext.getContextHandler();
         
         if (_context == null)
-            LOG.warn("Null context for sip handler: " + this);
+            Log.warn("Null context for sip handler: " + this);
         
         if (_sipServlets != null && _sipServlets.length > 0)
             _defaultServlet = _sipServlets[0];
@@ -146,7 +149,7 @@ public class SipServletHandler extends ServletHandler implements SipHandler
 	            }
 	            catch(Exception e) 
 	            {
-	                LOG.warn(Log.EXCEPTION, e);
+	                Log.warn(Log.EXCEPTION, e);
 	                //mx.add(e);
 	            }
 	        } 
@@ -171,6 +174,12 @@ public class SipServletHandler extends ServletHandler implements SipHandler
         }
         super.setServer(server);
     }
+
+    
+	protected void servletInitialized(SipServlet servlet)
+	{
+		((Server) getServer()).servletInitialized(_context, servlet);
+	}
 	
     public SipServletHolder getDefaultServlet()
     {
@@ -185,7 +194,7 @@ public class SipServletHandler extends ServletHandler implements SipHandler
         return _mainServlet;
     }
 	
-	protected void updateSipMappings() throws ServletException
+	protected void updateSipMappings() 
     {
         if (_sipServlets == null)
         {
@@ -193,12 +202,10 @@ public class SipServletHandler extends ServletHandler implements SipHandler
         }
         else
         {   
-            Map<String, SipServletHolder> nm = new HashMap<String, SipServletHolder>();
+            HashMap nm = new HashMap();
             
             for (int i = 0; i < _sipServlets.length; i++)
             {
-            	if (nm.containsKey(_sipServlets[i].getName()))
-            		throw new ServletException("A servlet with name " + _sipServlets[i].getName() + " is already registered");
                 nm.put(_sipServlets[i].getName(), _sipServlets[i]);
                 _sipServlets[i].setServletHandler(this);
             }
@@ -224,7 +231,7 @@ public class SipServletHandler extends ServletHandler implements SipHandler
 	            catch(Exception e)
 	            {
 
-	            	LOG.debug(Log.EXCEPTION, e);
+	            	Log.debug(Log.EXCEPTION, e);
 	                mx.add(e);
 	            }
 	        } 
@@ -260,7 +267,7 @@ public class SipServletHandler extends ServletHandler implements SipHandler
 	}
 	
 	
-	public SipServletHolder newSipServletHolder(Class<SipServlet> servlet)
+	public SipServletHolder newSipServletHolder(Class servlet)
 	{
 		return new SipServletHolder(servlet);
 	}
@@ -331,7 +338,7 @@ public class SipServletHandler extends ServletHandler implements SipHandler
 	        	String name = mappings[i].getServletName();
 	        	if (servletName.equals(name)) 
 	        	    setSipServletMappings(
-	        	    	(SipServletMapping[])LazyList.removeFromArray(getSipServletMappings(), mappings[i]));
+	        	    	(SipServletMapping[])LazyList.removeFromArray(getServletMappings(), mappings[i]));
         	}
         }
         
@@ -340,24 +347,11 @@ public class SipServletHandler extends ServletHandler implements SipHandler
 	
 	public void setSipServlets(SipServletHolder[] holders) 
 	{
-		SipServletHolder[] oldHolders = getSipServlets();
-        if (oldHolders!=null)
-        	oldHolders = oldHolders.clone();
-		
-        try
-        {
-			_sipServlets = holders;
-			updateSipMappings();
-			if (getServer() != null) 
-				getServer().getContainer().update(this, oldHolders, _sipServlets, "sipServlets", true);
-        }
-        catch (Exception e) 
-        {
-			_sipServlets = oldHolders;
-			if (e instanceof RuntimeException)
-				throw (RuntimeException) e;
-			throw new RuntimeException(e);
-		}
+		if (getServer() != null) 
+			getServer().getContainer().update(this, _sipServlets, holders, "sipServlets", true);
+	
+		_sipServlets = holders;
+		updateSipMappings();
 	}
 	
 	public void setSipServletMappings(SipServletMapping[] sipServletMappings)

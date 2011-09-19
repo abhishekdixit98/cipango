@@ -70,12 +70,9 @@ import org.cipango.util.ReadOnlyAddress;
 import org.cipango.util.TimerTask;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
 public class Session implements SessionIf
 {
-	private static final Logger LOG = Log.getLogger(Session.class);
-	
 	protected String _id;
 	private AppSession _appSession;
 	protected boolean _invalidateWhenReady = true;
@@ -300,8 +297,8 @@ public class Session implements SessionIf
 	{
 		checkValid();
 		
-		if (LOG.isDebugEnabled())
-			LOG.debug("invalidating SipSession " + this);
+		if (Log.isDebugEnabled())
+			Log.debug("invalidating SipSession " + this);
 		
 		_valid = false;
 		_appSession.removeSession(this);
@@ -476,8 +473,8 @@ public class Session implements SessionIf
 		
 		if (request.isInitial())
 		{
-			if (LOG.isDebugEnabled())
-				LOG.debug("initial request {} for session {}", request.getRequestLine(), this);
+			if (Log.isDebugEnabled())
+				Log.debug("initial request {} for session {}", request.getRequestLine(), this);
 			
 			_localParty = (NameAddr) request.to().clone();
 			_remoteParty = (NameAddr) request.from().clone();
@@ -485,8 +482,8 @@ public class Session implements SessionIf
 		}
 		else
 		{
-			if (LOG.isDebugEnabled())
-				LOG.debug("subsequent request {} for session {}", request.getRequestLine(), this);
+			if (Log.isDebugEnabled())
+				Log.debug("subsequent request {} for session {}", request.getRequestLine(), this);
 			
 			if (isUA())
 			{
@@ -559,7 +556,7 @@ public class Session implements SessionIf
 		}
 		catch (Throwable t)
 		{
-			LOG.debug(t);
+			Log.debug(t);
 		}
 	}
 	
@@ -571,8 +568,8 @@ public class Session implements SessionIf
 	
 	public void setState(State newState) 
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("{} -> {}", this, newState);
+        if (Log.isDebugEnabled())
+            Log.debug("{} -> {}", this, newState);
 		_state = newState;
 	}
 	
@@ -817,7 +814,9 @@ public class Session implements SessionIf
 	}
 	
 	public class UA implements ClientTransactionListener, ServerTransactionListener
-	{		
+	{
+		private UAMode _mode;
+		
 		protected long _localCSeq = 1;
 		protected long _remoteCSeq = -1;
 		protected URI _remoteTarget;
@@ -879,9 +878,6 @@ public class Session implements SessionIf
 			setDialogHeaders(request, cseq);
 			
 			request.setSession(Session.this);
-			
-			if (_state == State.INITIAL)
-				request.setInitial(true);
 			return request;
 		}
 		
@@ -928,8 +924,8 @@ public class Session implements SessionIf
 				ServerInvite invite = getServerInvite(_remoteCSeq, false);
 				if (invite == null)
 				{
-					if (LOG.isDebugEnabled())
-						LOG.debug("dropping ACK without INVITE context");
+					if (Log.isDebugEnabled())
+						Log.debug("dropping ACK without INVITE context");
 					request.setHandled(true);
 				}
 				else
@@ -966,7 +962,7 @@ public class Session implements SessionIf
 			cancel.setSession(Session.this);
 			if (transaction.isCompleted())
 			{
-				LOG.debug("ignoring late cancel {}", transaction);
+				Log.debug("ignoring late cancel {}", transaction);
 			}
 			else
 			{
@@ -977,7 +973,7 @@ public class Session implements SessionIf
 				}
 				catch (Exception e)
 				{
-					LOG.debug("failed to cancel request", e);
+					Log.debug("failed to cancel request", e);
 				}
 			}
 			invokeServlet(cancel);
@@ -1025,7 +1021,7 @@ public class Session implements SessionIf
 						}
 						catch (Exception e)
 						{
-							LOG.ignore(e);
+							Log.ignore(e);
 						}
 					}
 					return;
@@ -1040,8 +1036,8 @@ public class Session implements SessionIf
 				long rseq = response.getRSeq();
 				if (_remoteRSeq != -1 && (_remoteRSeq + 1 != rseq))
 				{
-					if (LOG.isDebugEnabled())
-						LOG.debug("Dropping 100rel with rseq {} since expecting {}", rseq, _remoteRSeq+1);
+					if (Log.isDebugEnabled())
+						Log.debug("Dropping 100rel with rseq {} since expecting {}", rseq, _remoteRSeq+1);
 					return;
 				}
 				_remoteRSeq = rseq;
@@ -1143,7 +1139,7 @@ public class Session implements SessionIf
 					}
 					catch (ServletParseException e)
 					{
-						LOG.ignore(e);
+						Log.ignore(e);
 					}
 				}
 			}
@@ -1244,8 +1240,8 @@ public class Session implements SessionIf
 				ServerInvite invite = new ServerInvite(cseq);
 				_serverInvites = LazyList.add(_serverInvites, invite);
 				
-				if (LOG.isDebugEnabled())
-					LOG.debug("added server invite context with cseq " + cseq);
+				if (Log.isDebugEnabled())
+					Log.debug("added server invite context with cseq " + cseq);
 				
 				return invite;
 			}
@@ -1261,8 +1257,8 @@ public class Session implements SessionIf
 				{
 					_serverInvites = LazyList.remove(_serverInvites, i);
             	
-					if (LOG.isDebugEnabled())
-						LOG.debug("removed server invite context for cseq " + cseq);
+					if (Log.isDebugEnabled())
+						Log.debug("removed server invite context for cseq " + cseq);
 					return invite;
 				}
 			}
@@ -1282,8 +1278,8 @@ public class Session implements SessionIf
 				ClientInvite invite = new ClientInvite(cseq);
 				_clientInvites = LazyList.add(_clientInvites, invite);
 				
-				if (LOG.isDebugEnabled())
-					LOG.debug("added client invite context with cseq " + cseq);
+				if (Log.isDebugEnabled())
+					Log.debug("added client invite context with cseq " + cseq);
 				return invite;
 			}
 			return null;
@@ -1556,7 +1552,7 @@ public class Session implements SessionIf
 						getServer().getConnectorManager().sendResponse(getResponse());
 					}
 					catch (IOException e) {
-						LOG.debug(e);
+						Log.debug(e);
 					}
 				}
 				return Math.min(delay*2, Transaction.__T2);

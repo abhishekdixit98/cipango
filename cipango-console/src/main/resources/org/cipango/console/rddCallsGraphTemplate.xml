@@ -6,11 +6,12 @@
          <end>${end}</end>
      </span>
      <options>
-         <title>Current Call Sessions</title>
-         <image_format>png</image_format>
-         <min_value>0</min_value>
-         <width>717</width>
-         <height>300</height>
+         <title>Running calls</title>
+         <grid_range>
+             <lower>0</lower>
+             <upper>U</upper>
+             <rigid>false</rigid>
+         </grid_range>
      </options>
      <datasources>
          <def>
@@ -19,33 +20,22 @@
              <source>calls</source>
              <cf>AVERAGE</cf>
          </def>
-         <def>
-             <name>calls-max</name>
-             <rrd>${rrd}</rrd>
-             <source>calls</source>
-             <cf>MAX</cf>
-         </def>
      </datasources>
      <graph>
          <line>
              <datasource>calls</datasource>
              <color>#FF0000</color>
-             <legend>call sessions</legend>
+             <legend>Calls</legend>
          </line>
          <gprint>
-           <datasource>calls-max</datasource>
+           <datasource>calls</datasource>
            <cf>MAX</cf>
-           <format>max = %7.2f</format>
+           <format>max calls = @3@s</format>
          </gprint>
          <gprint>
            <datasource>calls</datasource>
-           <cf>AVERAGE</cf>
-           <format>avg = %7.2f</format>
-         </gprint>
-         <gprint>
-           <datasource>calls</datasource>
-           <cf>LAST</cf>
-           <format>current = %7.2f\r</format>
+           <cf>Average</cf>
+           <format>avg calls = @3@s@r</format>
          </gprint>
      </graph>
 </rrd_graph_def>
