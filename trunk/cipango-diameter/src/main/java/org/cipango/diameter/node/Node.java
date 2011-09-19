@@ -483,12 +483,16 @@ public class Node extends AbstractLifeCycle implements DiameterHandler, Dumpable
                     String redirectHost = answer.get(Common.REDIRECT_HOST);
                     Peer peer = getPeer(redirectHost);
                     if (peer != null) 
-                    {
                         LOG.debug("Redirecting request to: " + peer);
-                        peer.send(answer.getRequest());
-                    }
                     else
-                    	LOG.warn("Unknown peer {} indicating in redirect-host AVP", redirectHost);
+                    {
+                    	peer = new Peer(redirectHost);
+            			peer.start();
+            			addPeer(peer);
+
+                    	LOG.debug("Redirecting request to new peer: " + peer);
+                    }
+        			peer.send(answer.getRequest());
                     return;
                 } 
                 catch (Exception e)

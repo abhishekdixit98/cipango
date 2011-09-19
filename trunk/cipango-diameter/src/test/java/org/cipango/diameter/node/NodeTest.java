@@ -112,6 +112,7 @@ public class NodeTest
 	
 				assertFalse(message.isRequest());
 				assertEquals(Sh.UDA, uda.getCommand());
+				assertEquals(Common.DIAMETER_SUCCESS, uda.getResultCode());
 				assertEquals(uda.getApplicationId(), Sh.SH_APPLICATION_ID.getId());
 
 			}
@@ -133,6 +134,99 @@ public class NodeTest
 		udr.send();
 		serverHandler.assertDone();
 		clientHandler.assertDone();
+	}
+	
+	@Test
+	public void testRedirect() throws Throwable
+	{
+		//Log.getLog().setDebugEnabled(true);
+		Node server2 = null;
+		try
+		{
+			TestDiameterHandler redirectHandler = new TestDiameterHandler()
+			{
+	
+				@Override
+				public void doHandle(DiameterMessage message) throws Throwable
+				{
+					DiameterServletAnswer uda;
+					DiameterServletRequest request = (DiameterServletRequest) message;
+	
+					assertEquals(true, message.isRequest());
+					assertEquals(Sh.UDR, request.getCommand());
+					uda = request.createAnswer(Common.DIAMETER_REDIRECT_INDICATION);
+					uda.add(Common.REDIRECT_HOST, "localhost");
+					uda.add(Common.REDIRECT_HOST, "server3");
+					uda.send();
+				}
+				
+			};
+			_server.setHandler(redirectHandler);
+			_server.start();
+			
+			
+			server2 = new Node(3868);
+			server2.getConnectors()[0].setHost("127.0.0.1");
+			server2.setIdentity("localhost");
+			TestDiameterHandler serverHandler = new TestDiameterHandler()
+			{
+	
+				@Override
+				public void doHandle(DiameterMessage message) throws Throwable
+				{
+					DiameterServletAnswer uda;
+					DiameterServletRequest request = (DiameterServletRequest) message;
+	
+					assertEquals(true, message.isRequest());
+					assertEquals(Sh.UDR, request.getCommand());
+					assertEquals(request.getApplicationId(), Sh.SH_APPLICATION_ID.getId());
+					assertEquals(request.getDestinationHost(), "server");
+					uda = request.createAnswer(Common.DIAMETER_SUCCESS);
+					uda.send();
+				}
+				
+			};
+			server2.setHandler(serverHandler);
+			server2.start();
+			
+			TestDiameterHandler clientHandler = new TestDiameterHandler()
+			{
+				
+				@Override
+				public void doHandle(DiameterMessage message) throws Throwable
+				{
+					DiameterServletAnswer uda = (DiameterServletAnswer) message;
+		
+					assertFalse(message.isRequest());
+					assertEquals(Sh.UDA, uda.getCommand());
+					assertEquals(Common.DIAMETER_SUCCESS, uda.getResultCode());
+					assertEquals(uda.getApplicationId(), Sh.SH_APPLICATION_ID.getId());
+	
+				}
+			};
+			_client.setHandler(clientHandler);
+			_client.start();
+			
+			waitPeerOpened();
+					
+			DiameterRequest udr = new DiameterRequest(_client, Sh.UDR, Sh.SH_APPLICATION_ID.getId(), _client.getSessionManager().newSessionId());
+			udr.getAVPs().add(Common.DESTINATION_REALM, "server");
+			udr.getAVPs().add(Common.DESTINATION_HOST, "server");
+			udr.getAVPs().add(Sh.DATA_REFERENCE, DataReference.SCSCFName);
+			AVP<AVPList> userIdentity = new AVP<AVPList>(Sh.USER_IDENTITY, new AVPList());
+	        userIdentity.getValue().add(Cx.PUBLIC_IDENTITY, "sip:alice@cipango.org");
+			udr.getAVPs().add(userIdentity);
+			udr.getAVPs().add(Common.AUTH_SESSION_STATE, AuthSessionState.NO_STATE_MAINTAINED);
+			udr.getSession();
+			udr.send();
+			redirectHandler.assertDone();
+			clientHandler.assertDone();
+		}
+		finally
+		{
+			if (server2 != null)
+				server2.stop();
+		}
 	}
 	
 	protected DiameterFactory createFactory(Node node)
