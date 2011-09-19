@@ -319,7 +319,7 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
     	}
     }
     
-    public SipConnection sendRequest(SipRequest request, int transport, InetAddress address, int port) throws IOException
+    public SipConnection getConnection(SipRequest request, int transport, InetAddress address, int port) throws IOException
     {   
     	SipConnector connector = findConnector(transport, address);
     	
@@ -332,7 +332,8 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
         // TODO mtu
 
         SipConnection connection = connector.getConnection(address, port);
-        send(request, connection);
+        if (connection == null)
+        	throw new IOException("Could not find connection to " + address + ":" + port + "/" + connector.getTransport());
         
         return connection;
     }
@@ -384,6 +385,10 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
 	                port = connection.getConnector().getDefaultPort();
 	        }
 	        connection = connector.getConnection(address, port);
+	        
+	        if (connection == null)
+	        	throw new IOException("Could not found any SIP connection to " 
+	        			+ address + ":" + port + "/" + connector.getTransport());
     	}
     	send(response, connection);
     }

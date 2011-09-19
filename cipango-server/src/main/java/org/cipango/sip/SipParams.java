@@ -19,5 +19,6 @@ public class SipParams
 	public static final String
 		TAG = "tag",
 		RPORT = "rport",
-        REL_100 = "100rel";
+        REL_100 = "100rel",
+        DRR = "drr"; // Double record route (see RFC 5658)
 }

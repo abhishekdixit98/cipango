@@ -67,7 +67,7 @@
     <Call name="setAccessLog">
       <Arg>
         <New class="org.cipango.server.log.FileMessageLog" id="FileMessageLog">
-          <Set name="filename"><Property default="." name="jetty.home"/>/logs/yyyy_mm_dd.message.log</Set>
+          <Set name="filename"><Property default="." name="jetty.home"/>/target/logs/yyyy_mm_dd.message.log</Set>
           <Set name="append">true</Set>
           <Set name="retainDays">31</Set>
         </New>

@@ -152,6 +152,22 @@ public class SipContextHandlerCollection extends ContextHandlerCollection implem
 		if (route != null && getConnectorManager().isLocalUri(route.getURI()))
 		{
 			request.removeTopRoute();
+			
+			if (route.getURI().getParameter(SipParams.DRR) != null)
+			{
+				// Case double record route, see RFC 5658
+				Address route2 = request.getTopRoute();
+				String appId = route.getURI().getParameter(ID.APP_SESSION_ID_PARAMETER);
+				if (route2 != null 
+						&& appId != null 
+						&& appId.equals(route2.getURI().getParameter(ID.APP_SESSION_ID_PARAMETER))
+						&& getConnectorManager().isLocalUri(route2.getURI()))
+				{
+					LOG.debug("Remove second top route {} due to RFC 5658", route2);
+					request.removeTopRoute();
+					route = route2;
+				}
+			}
 			return route;
 		}
 		return null;

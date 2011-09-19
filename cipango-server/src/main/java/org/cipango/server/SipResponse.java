@@ -85,7 +85,12 @@ public class SipResponse extends SipMessage implements SipServletResponse
 			_fields.copy(reqFields, SipHeaders.RECORD_ROUTE_BUFFER);
         
 		if (needsContact() && _session != null)
-			setContact(_session.getContact());
+		{
+			if (request.getConnection() != null)
+				setContact(_session.getContact(request.getConnection().getConnector()));
+			else 
+				setContact(_session.getContact());
+		}
         // TODO Server
 	}
 	
