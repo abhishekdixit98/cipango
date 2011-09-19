@@ -1,4 +1,3 @@
-// ========================================================================
 // Copyright 2008-2009 NEXCOM Systems
 // ------------------------------------------------------------------------
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -421,23 +420,26 @@ public class Node extends AbstractLifeCycle implements DiameterHandler
 			if (Common.DIAMETER_REDIRECT_INDICATION.equals(answer.getResultCode()))
 			{
 				try 
-                {
-                    String redirectHost = answer.get(Common.REDIRECT_HOST);
-                    Peer peer = getPeer(redirectHost);
-                    if (peer != null) 
-                    {
-                        Log.debug("Redirecting request to: " + peer);
-                        peer.send(answer.getRequest());
-                    }
-                    else
-                    	Log.warn("Unknown peer {} indicating in redirect-host AVP", redirectHost);
-                    return;
-                } 
-                catch (Exception e)
-                {
-                    Log.warn("Failed to redirect request", e);
-                    return;
-                }
+				{
+					String redirectHost = answer.get(Common.REDIRECT_HOST);
+					Peer peer = getPeer(redirectHost);
+					if (peer != null) 
+							Log.debug("Redirecting request to: " + peer);
+					else
+					{
+						peer = new Peer(redirectHost);
+						peer.start();
+						addPeer(peer);
+						Log.debug("Redirecting request to new peer: " + peer);
+					}
+					peer.send(answer.getRequest());
+					return;
+				} 
+				catch (Exception e)
+				{
+						Log.warn("Failed to redirect request", e);
+						return;
+				}
 			}
 		}
 		
