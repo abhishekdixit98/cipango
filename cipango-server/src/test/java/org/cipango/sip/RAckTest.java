@@ -1,11 +1,9 @@
 package org.cipango.sip;
 
-import static junit.framework.Assert.assertEquals;
+import junit.framework.TestCase;
 
-import org.junit.Test;
-public class RAckTest
+public class RAckTest extends TestCase
 {
-	@Test
 	public void testParse() throws Exception
 	{
 		String s = "   775656    1    INVITE  ";

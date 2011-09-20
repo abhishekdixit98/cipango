@@ -30,7 +30,7 @@ public class AVPCodec extends AbstractCodec<AVP<?>>
 	private static final int AVP_VENDOR_FLAG = 0x80;
 	private static final int AVP_MANDATORY_FLAG = 0x40;
 	
-	@SuppressWarnings({ "unchecked", "rawtypes" })
+	@SuppressWarnings("unchecked")
 	public AVP<?> decode(Buffer buffer) throws IOException
 	{
 		int code = getInt(buffer);
@@ -67,7 +67,7 @@ public class AVPCodec extends AbstractCodec<AVP<?>>
 		return avp;	
 	}
 
-	@SuppressWarnings({ "unchecked", "rawtypes" })
+	@SuppressWarnings("unchecked")
 	public Buffer encode(Buffer buffer, AVP avp) throws IOException
 	{
 		buffer = ensureSpace(buffer, 12);

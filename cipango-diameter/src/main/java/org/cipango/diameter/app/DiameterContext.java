@@ -29,15 +29,11 @@ import org.cipango.diameter.node.DiameterMessage;
 import org.cipango.diameter.node.DiameterRequest;
 import org.cipango.server.session.AppSessionIf;
 import org.cipango.sipapp.SipAppContext;
-import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 public class DiameterContext implements DiameterHandler
 {
-	private static final Logger LOG = Log.getLogger(DiameterContext.class);
-	
 	private SipAppContext _defaultContext;
 	private Map<String, DiameterAppContext> _diameterListeners = new ConcurrentHashMap<String, DiameterAppContext>();
 
@@ -62,54 +58,6 @@ public class DiameterContext implements DiameterHandler
 		_diameterListeners.put(context.getContextPath(), new DiameterAppContext(listeners, errorListeners));
 		if (_defaultContext == null)
 			_defaultContext = (SipAppContext) context;
-	}
-	
-	public void addListener(WebAppContext context, DiameterListener listener)
-	{
-		DiameterAppContext diameterAppContext = _diameterListeners.get(context.getContextPath());
-		if (diameterAppContext == null)
-		{
-			diameterAppContext = new DiameterAppContext();
-			_diameterListeners.put(context.getContextPath(), diameterAppContext);
-		}
-		
-		diameterAppContext.addDiameterListener(listener);
-		
-		if (_defaultContext == null)
-			_defaultContext = (SipAppContext) context;
-	}
-	
-	public void removeListener(WebAppContext context, DiameterListener listener)
-	{
-		DiameterAppContext diameterAppContext = _diameterListeners.get(context.getContextPath());
-		if (diameterAppContext == null)
-			return;
-		
-		diameterAppContext.removeDiameterListener(listener);
-	}
-	
-	public void addErrorListener(WebAppContext context, DiameterErrorListener listener)
-	{
-		DiameterAppContext diameterAppContext = _diameterListeners.get(context.getContextPath());
-		if (diameterAppContext == null)
-		{
-			diameterAppContext = new DiameterAppContext();
-			_diameterListeners.put(context.getContextPath(), diameterAppContext);
-		}
-		
-		diameterAppContext.addErrorListener(listener);
-		
-		if (_defaultContext == null)
-			_defaultContext = (SipAppContext) context;
-	}
-	
-	public void removeErrorListener(WebAppContext context, DiameterErrorListener listener)
-	{
-		DiameterAppContext diameterAppContext = _diameterListeners.get(context.getContextPath());
-		if (diameterAppContext == null)
-			return;
-		
-		diameterAppContext.removeErrorListener(listener);
 	}
 	
 	public void removeListeners(WebAppContext context)
@@ -148,7 +96,7 @@ public class DiameterContext implements DiameterHandler
 		if (listeners != null && listeners.length != 0)
 			context.fire(listeners, _handleMsg, message);
 		else
-			LOG.warn("No diameter listeners for context {} to handle message {}", 
+			Log.warn("No diameter listeners for context {} to handle message {}", 
 					context == null ? "" : context.getName(), message);	
 	}
 	
@@ -178,34 +126,10 @@ class DiameterAppContext
 	private DiameterListener[] _diameterListeners;
 	private DiameterErrorListener[] _errorListeners;
 	
-	public DiameterAppContext()
-	{
-	}
-	
 	public DiameterAppContext(DiameterListener[] listeners, DiameterErrorListener[] errorListeners)
 	{
 		_diameterListeners = listeners;
 		_errorListeners = errorListeners;
-	}
-	
-	public void addDiameterListener(DiameterListener l)
-	{
-		_diameterListeners = (DiameterListener[]) LazyList.addToArray(_diameterListeners, l, DiameterListener.class);
-	}
-	
-	public void removeDiameterListener(DiameterListener l)
-	{
-		_diameterListeners = (DiameterListener[]) LazyList.removeFromArray(_diameterListeners, l);
-	}
-	
-	public void addErrorListener(DiameterErrorListener l)
-	{
-		_errorListeners = (DiameterErrorListener[]) LazyList.addToArray(_errorListeners, l, DiameterErrorListener.class);
-	}
-	
-	public void removeErrorListener(DiameterErrorListener l)
-	{
-		_errorListeners = (DiameterErrorListener[]) LazyList.removeFromArray(_errorListeners, l);
 	}
 
 	public DiameterListener[] getDiameterListeners()

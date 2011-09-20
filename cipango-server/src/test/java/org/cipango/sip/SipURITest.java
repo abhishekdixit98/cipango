@@ -13,11 +13,6 @@
 // ========================================================================
 
 package org.cipango.sip;
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertFalse;
-import static junit.framework.Assert.assertNull;
-import static junit.framework.Assert.assertTrue;
-import static junit.framework.Assert.fail;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -25,9 +20,11 @@ import java.util.Iterator;
 import javax.servlet.sip.ServletParseException;
 import javax.servlet.sip.SipURI;
 
-import org.junit.Test;
+import org.cipango.sip.SipURIImpl;
 
-public class SipURITest
+import junit.framework.TestCase;
+
+public class SipURITest extends TestCase 
 {
 	static String[][] __equal = 
 	{
@@ -54,22 +51,19 @@ public class SipURITest
 	};
 	
 
-	@Test
 	public void testSipUser() throws Exception
 	{
 		SipURI uri = sipURI("sip:user@host.com:3261");
 		assertEquals("user", uri.getUser());
 		assertEquals("host.com", uri.getHost());
 	}
-
-	@Test
+	
 	public void testPassword() throws Exception
 	{
 		SipURI uri = sipURI("sip:user:passwd@host.com");
 		assertEquals("passwd", uri.getUserPassword());
 	}
-
-	@Test
+	
 	public void testSipHost() throws Exception
 	{
 		assertEquals("192.168.1.1", sipURI("sip:user@192.168.1.1:3261").getHost());
@@ -87,8 +81,7 @@ public class SipURITest
 		assertEquals("chair-dnrc.example.com", uri.getHost());
 		assertEquals("TCP", uri.getParameter("transport"));
 	}
-
-	@Test
+	
 	public void testParam() throws Exception
 	{
 		SipURI uri = sipURI("sip:1234@foo.com;user=phone;lr");
@@ -109,8 +102,7 @@ public class SipURITest
 		}
 		assertTrue(params.isEmpty());
 	}
-
-	@Test
+	
 	public void testHeader() throws Exception
 	{
 		SipURI uri = sipURI("sip:1234@foo.com?Subject=nexcom");
@@ -173,8 +165,7 @@ public class SipURITest
 			
 		}
 	}*/
-
-	@Test
+	
 	public void testEqual() throws Exception 
 	{
 		for (int i = 0; i < __equal.length; i++) 
@@ -185,8 +176,7 @@ public class SipURITest
 			assertEquals(uri2, uri1);
 		}
 	}
-
-	@Test
+	
 	public void testDifferent() throws Exception 
 	{
 		for (int i = 0; i < __different.length; i++) 
@@ -197,8 +187,7 @@ public class SipURITest
 			assertFalse(uri2.equals(uri1));
 		}
 	}
-
-	@Test
+	
 	public void testClone() throws Exception 
 	{
 		SipURI uri = sipURI("sip:user@host.com:1234;foo=bar");
@@ -209,8 +198,7 @@ public class SipURITest
 		assertFalse(clone.getLrParam());
 		assertTrue(uri.getLrParam());
 	}
-
-	@Test
+	
 	public void testEscape() throws Exception
 	{
 		SipURI uri = sipURI("sip:+1234@example.com;user=phone;f%3Doo=%22bar%22?Subject=hello%20world");		
@@ -232,15 +220,13 @@ public class SipURITest
 		assertEquals(uri.toString(), uri1b.toString());
 
 	}
-
-	@Test
+	
 	public void testNew() throws Exception
 	{
 		SipURI uri = new SipURIImpl("foo", "bar.com", 5060);
 		assertEquals("sip:foo@bar.com:5060", uri.toString());
 	}
-
-	@Test
+	
 	public void testHttp() throws Exception 
 	{
 		SipURI uri = sipURI("sip:mrf;voicexml=http://foo.bar.com/vxml/play.jsp%3Fuser%3Dsip:foo%40bar.com");

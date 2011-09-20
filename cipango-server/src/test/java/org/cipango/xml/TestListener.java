@@ -16,9 +16,6 @@ package org.cipango.xml;
 
 import javax.servlet.sip.ServletTimer;
 
-import org.junit.Ignore;
-
-@Ignore
 public class TestListener implements javax.servlet.sip.TimerListener
 {
 	public void timeout(ServletTimer timer)

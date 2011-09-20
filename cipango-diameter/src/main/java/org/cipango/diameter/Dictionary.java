@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
 /**
  * Contains all loaded diameter types (commands, AVP types ...)
@@ -14,8 +13,6 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class Dictionary 
 {
-	private static final Logger LOG = Log.getLogger(Dictionary.class);
-	
 	private static final Dictionary __dictionary = new Dictionary();
 	
 	public static Dictionary getInstance()
@@ -62,13 +59,13 @@ public class Dictionary
 					{
 			
 						Type<?> type = (Type<?>) field.get(null);
-						LOG.debug("Loaded type: " + type);
+						Log.debug("Loaded type: " + type);
 						_types.put(id(type.getVendorId(), type.getCode()), type);
 					} 
 					else if (DiameterCommand.class.isAssignableFrom(field.getType())) 
 					{
 						DiameterCommand command = (DiameterCommand) field.get(null);
-						LOG.debug("Loaded command: " + command);
+						Log.debug("Loaded command: " + command);
 						if (command.isRequest()) 
 							_requests.put(command.getCode(), command);
 						else 
@@ -77,13 +74,13 @@ public class Dictionary
 					else if (ResultCode.class.isAssignableFrom(field.getType()))
 					{
 						ResultCode rc = (ResultCode) field.get(null);
-						LOG.debug("Loaded result code: " + rc);
+						Log.debug("Loaded result code: " + rc);
 						_resultCodes.put(id(rc.getVendorId(), rc.getCode()), rc);
 					}
 				} 
 				catch (Exception e) 
 				{
-					LOG.warn(e);
+					Log.warn(e);
 				}
 			}
 		}

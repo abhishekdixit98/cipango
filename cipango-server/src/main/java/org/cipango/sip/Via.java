@@ -41,7 +41,7 @@ public class Via implements Serializable, Cloneable
     private String _host;
     private int _port = -1;
     
-    private HashMap<String, String> _params = new HashMap<String, String>();
+    private HashMap _params = new HashMap();
     
     public Via(String via) throws ServletParseException 
     {
@@ -244,14 +244,13 @@ public class Via implements Serializable, Cloneable
         return (String) _params.get(name);
     }
 
-    @SuppressWarnings("unchecked")
-	public Object clone() 
+    public Object clone() 
     {
         try 
         {
             Via clone = (Via) super.clone();
             if (_params != null)
-                clone._params = (HashMap<String, String>) _params.clone();
+                clone._params = (HashMap) _params.clone();
             
             return clone;
         } 
@@ -275,10 +274,10 @@ public class Via implements Serializable, Cloneable
             sb.append(_port);
         }
         
-        Iterator<String> iter = _params.keySet().iterator();
+        Iterator iter = _params.keySet().iterator();
         while (iter.hasNext()) 
         {
-            String name = iter.next();
+            String name = (String) iter.next();
             String value = getParameter(name);
             sb.append(';');
             sb.append(name);

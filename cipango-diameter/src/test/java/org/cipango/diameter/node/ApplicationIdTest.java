@@ -13,20 +13,20 @@
 // ========================================================================
 package org.cipango.diameter.node;
 
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertFalse;
-import static junit.framework.Assert.assertTrue;
+import java.lang.reflect.Field;
+
+import junit.framework.TestCase;
 
 import org.cipango.diameter.AVPList;
 import org.cipango.diameter.ApplicationId;
 import org.cipango.diameter.base.Accounting;
+import org.cipango.diameter.base.Common;
 import org.cipango.diameter.ims.Cx;
-import org.junit.Test;
+import org.cipango.diameter.node.DiameterRequest;
 
-public class ApplicationIdTest
+public class ApplicationIdTest extends TestCase
 {
 
-	@Test
 	public void testOfAvp() throws Exception
 	{
 		DiameterRequest request = new DiameterRequest();
@@ -36,16 +36,15 @@ public class ApplicationIdTest
 		request.setCommand(Cx.LIR);
 		request.setAVPList(new AVPList());
 		request.getAVPs().add(Cx.CX_APPLICATION_ID.getAVP());
-		// System.out.println(request);
+		System.out.println(request);
 		ApplicationId appId = ApplicationId.ofAVP(request);
-		// System.out.println(appId);
+		System.out.println(appId);
 		assertTrue(appId.isVendorSpecific());
 		assertTrue(appId.isAuth());
 		assertEquals(Cx.CX_APPLICATION_ID, appId);
 		assertEquals(Cx.CX_APPLICATION_ID.getId(), request.getApplicationId());
 	}
 	
-	@Test
 	public void test2() throws Exception
 	{
 		DiameterRequest request = new DiameterRequest();
@@ -55,9 +54,9 @@ public class ApplicationIdTest
 		request.setCommand(Accounting.ACR);
 		request.setAVPList(new AVPList());
 		request.getAVPs().add(Accounting.ACCOUNTING_ID.getAVP());
-		// System.out.println(request);
+		System.out.println(request);
 		ApplicationId appId = ApplicationId.ofAVP(request);
-		// System.out.println(appId);
+		System.out.println(appId);
 		assertFalse(appId.isVendorSpecific());
 		assertTrue(appId.isAcct());
 		assertEquals(Accounting.ACCOUNTING_ID, appId);
