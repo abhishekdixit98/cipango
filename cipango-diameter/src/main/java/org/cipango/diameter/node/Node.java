@@ -31,6 +31,7 @@ import org.cipango.diameter.bio.DiameterSocketConnector;
 import org.cipango.diameter.log.BasicMessageLog;
 import org.cipango.diameter.router.DefaultRouter;
 import org.cipango.diameter.router.DiameterRouter;
+import org.cipango.diameter.util.AAAUri;
 import org.cipango.server.Server;
 import org.cipango.server.session.SessionManager.SessionScope;
 import org.eclipse.jetty.util.LazyList;
@@ -421,19 +422,27 @@ public class Node extends AbstractLifeCycle implements DiameterHandler
 			{
 				try 
 				{
-					String redirectHost = answer.get(Common.REDIRECT_HOST);
-					Peer peer = getPeer(redirectHost);
-					if (peer != null) 
-							Log.debug("Redirecting request to: " + peer);
-					else
-					{
-						peer = new Peer(redirectHost);
-						peer.start();
-						addPeer(peer);
-						Log.debug("Redirecting request to new peer: " + peer);
-					}
-					peer.send(answer.getRequest());
-					return;
+						String redirectHost = answer.get(Common.REDIRECT_HOST);
+						if (redirectHost == null)
+							Log.warn("Missing required REDIRECT_HOST AVP in redirect response: {}", answer);
+						else
+						{
+							AAAUri uri = new AAAUri(redirectHost);
+							Peer peer = getPeer(uri.getFQDN());
+							if (peer != null) 
+									Log.debug("Redirecting request to: " + peer);
+							else
+							{
+								peer = new Peer(uri.getFQDN());
+								peer.setPort(uri.getPort());
+								peer.start();
+								addPeer(peer);
+
+								Log.debug("Redirecting request to new peer: " + peer);
+							}
+							peer.send(answer.getRequest());
+						}
+						return;
 				} 
 				catch (Exception e)
 				{
