@@ -131,7 +131,18 @@ public class NodeTest extends TestCase
 		clientHandler.assertDone();
 	}
 	
-	public void testRedirect() throws Throwable
+	public void testRedirectDefaultPort() throws Throwable
+	{
+		testRedirect(3868);
+	}
+	
+	public void testRedirectCustomPort() throws Throwable
+	{
+		testRedirect(38682);
+	}
+	
+	
+	public void testRedirect(final int port) throws Throwable
 	{
 		//Log.getLog().setDebugEnabled(true);
 		Node server2 = null;
@@ -149,8 +160,11 @@ public class NodeTest extends TestCase
 					assertEquals(true, message.isRequest());
 					assertEquals(Sh.UDR, request.getCommand());
 					uda = request.createAnswer(Common.DIAMETER_REDIRECT_INDICATION);
-					uda.add(Common.REDIRECT_HOST, "localhost");
-					uda.add(Common.REDIRECT_HOST, "server3");
+					if (port == 3868)
+						uda.add(Common.REDIRECT_HOST, "aaa://localhost");
+					else
+						uda.add(Common.REDIRECT_HOST, "aaa://localhost:" + port);
+					uda.add(Common.REDIRECT_HOST, "aaa://server3");
 					uda.send();
 				}
 				
@@ -159,7 +173,7 @@ public class NodeTest extends TestCase
 			_server.start();
 			
 			
-			server2 = new Node(3868);
+			server2 = new Node(port);
 			server2.getConnectors()[0].setHost("127.0.0.1");
 			server2.setIdentity("localhost");
 			TestDiameterHandler serverHandler = new TestDiameterHandler()
