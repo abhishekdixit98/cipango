@@ -40,7 +40,6 @@ import javax.servlet.sip.SipSessionBindingEvent;
 import javax.servlet.sip.SipSessionBindingListener;
 import javax.servlet.sip.SipSessionEvent;
 import javax.servlet.sip.SipSessionListener;
-import javax.servlet.sip.SipURI;
 import javax.servlet.sip.TooManyHopsException;
 import javax.servlet.sip.UAMode;
 import javax.servlet.sip.URI;
@@ -48,8 +47,6 @@ import javax.servlet.sip.ar.SipApplicationRoutingRegion;
 
 import org.cipango.server.ID;
 import org.cipango.server.Server;
-import org.cipango.server.SipConnection;
-import org.cipango.server.SipConnector;
 import org.cipango.server.SipConnectors;
 import org.cipango.server.SipMessage;
 import org.cipango.server.SipRequest;
@@ -68,19 +65,14 @@ import org.cipango.sip.SipFields;
 import org.cipango.sip.SipHeaders;
 import org.cipango.sip.SipMethods;
 import org.cipango.sip.SipParams;
-import org.cipango.sip.SipURIImpl;
 import org.cipango.sipapp.SipAppContext;
 import org.cipango.util.ReadOnlyAddress;
 import org.cipango.util.TimerTask;
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
 public class Session implements SessionIf
 {
-	private static final Logger LOG = Log.getLogger(Session.class);
-	
 	protected String _id;
 	private AppSession _appSession;
 	protected boolean _invalidateWhenReady = true;
@@ -305,8 +297,8 @@ public class Session implements SessionIf
 	{
 		checkValid();
 		
-		if (LOG.isDebugEnabled())
-			LOG.debug("invalidating SipSession " + this);
+		if (Log.isDebugEnabled())
+			Log.debug("invalidating SipSession " + this);
 		
 		_valid = false;
 		_appSession.removeSession(this);
@@ -481,8 +473,8 @@ public class Session implements SessionIf
 		
 		if (request.isInitial())
 		{
-			if (LOG.isDebugEnabled())
-				LOG.debug("initial request {} for session {}", request.getRequestLine(), this);
+			if (Log.isDebugEnabled())
+				Log.debug("initial request {} for session {}", request.getRequestLine(), this);
 			
 			_localParty = (NameAddr) request.to().clone();
 			_remoteParty = (NameAddr) request.from().clone();
@@ -490,8 +482,8 @@ public class Session implements SessionIf
 		}
 		else
 		{
-			if (LOG.isDebugEnabled())
-				LOG.debug("subsequent request {} for session {}", request.getRequestLine(), this);
+			if (Log.isDebugEnabled())
+				Log.debug("subsequent request {} for session {}", request.getRequestLine(), this);
 			
 			if (isUA())
 			{
@@ -564,7 +556,7 @@ public class Session implements SessionIf
 		}
 		catch (Throwable t)
 		{
-			LOG.debug(t);
+			Log.debug(t);
 		}
 	}
 	
@@ -576,8 +568,8 @@ public class Session implements SessionIf
 	
 	public void setState(State newState) 
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("{} -> {}", this, newState);
+        if (Log.isDebugEnabled())
+            Log.debug("{} -> {}", this, newState);
 		_state = newState;
 	}
 	
@@ -782,12 +774,7 @@ public class Session implements SessionIf
 	
 	public Address getContact()
 	{
-		return getContact(getServer().getConnectorManager().findConnector(SipConnectors.TCP_ORDINAL, null));
-	}
-	
-	public Address getContact(SipConnector connector)
-	{
-		Address address = new NameAddr((URI) connector.getSipUri().clone());
+		Address address = getServer().getConnectorManager().getContact(SipConnectors.TCP_ORDINAL);
 		address.getURI().setParameter(ID.APP_SESSION_ID_PARAMETER, _appSession.getAppId());
 		return address;
 	}
@@ -827,7 +814,9 @@ public class Session implements SessionIf
 	}
 	
 	public class UA implements ClientTransactionListener, ServerTransactionListener
-	{		
+	{
+		private UAMode _mode;
+		
 		protected long _localCSeq = 1;
 		protected long _remoteCSeq = -1;
 		protected URI _remoteTarget;
@@ -889,9 +878,6 @@ public class Session implements SessionIf
 			setDialogHeaders(request, cseq);
 			
 			request.setSession(Session.this);
-			
-			if (_state == State.INITIAL)
-				request.setInitial(true);
 			return request;
 		}
 		
@@ -938,8 +924,8 @@ public class Session implements SessionIf
 				ServerInvite invite = getServerInvite(_remoteCSeq, false);
 				if (invite == null)
 				{
-					if (LOG.isDebugEnabled())
-						LOG.debug("dropping ACK without INVITE context");
+					if (Log.isDebugEnabled())
+						Log.debug("dropping ACK without INVITE context");
 					request.setHandled(true);
 				}
 				else
@@ -976,7 +962,7 @@ public class Session implements SessionIf
 			cancel.setSession(Session.this);
 			if (transaction.isCompleted())
 			{
-				LOG.debug("ignoring late cancel {}", transaction);
+				Log.debug("ignoring late cancel {}", transaction);
 			}
 			else
 			{
@@ -987,7 +973,7 @@ public class Session implements SessionIf
 				}
 				catch (Exception e)
 				{
-					LOG.debug("failed to cancel request", e);
+					Log.debug("failed to cancel request", e);
 				}
 			}
 			invokeServlet(cancel);
@@ -1035,7 +1021,7 @@ public class Session implements SessionIf
 						}
 						catch (Exception e)
 						{
-							LOG.ignore(e);
+							Log.ignore(e);
 						}
 					}
 					return;
@@ -1050,8 +1036,8 @@ public class Session implements SessionIf
 				long rseq = response.getRSeq();
 				if (_remoteRSeq != -1 && (_remoteRSeq + 1 != rseq))
 				{
-					if (LOG.isDebugEnabled())
-						LOG.debug("Dropping 100rel with rseq {} since expecting {}", rseq, _remoteRSeq+1);
+					if (Log.isDebugEnabled())
+						Log.debug("Dropping 100rel with rseq {} since expecting {}", rseq, _remoteRSeq+1);
 					return;
 				}
 				_remoteRSeq = rseq;
@@ -1153,7 +1139,7 @@ public class Session implements SessionIf
 					}
 					catch (ServletParseException e)
 					{
-						LOG.ignore(e);
+						Log.ignore(e);
 					}
 				}
 			}
@@ -1254,8 +1240,8 @@ public class Session implements SessionIf
 				ServerInvite invite = new ServerInvite(cseq);
 				_serverInvites = LazyList.add(_serverInvites, invite);
 				
-				if (LOG.isDebugEnabled())
-					LOG.debug("added server invite context with cseq " + cseq);
+				if (Log.isDebugEnabled())
+					Log.debug("added server invite context with cseq " + cseq);
 				
 				return invite;
 			}
@@ -1271,8 +1257,8 @@ public class Session implements SessionIf
 				{
 					_serverInvites = LazyList.remove(_serverInvites, i);
             	
-					if (LOG.isDebugEnabled())
-						LOG.debug("removed server invite context for cseq " + cseq);
+					if (Log.isDebugEnabled())
+						Log.debug("removed server invite context for cseq " + cseq);
 					return invite;
 				}
 			}
@@ -1292,8 +1278,8 @@ public class Session implements SessionIf
 				ClientInvite invite = new ClientInvite(cseq);
 				_clientInvites = LazyList.add(_clientInvites, invite);
 				
-				if (LOG.isDebugEnabled())
-					LOG.debug("added client invite context with cseq " + cseq);
+				if (Log.isDebugEnabled())
+					Log.debug("added client invite context with cseq " + cseq);
 				return invite;
 			}
 			return null;
@@ -1378,23 +1364,6 @@ public class Session implements SessionIf
 				return Collections.emptyList();
 			else
 				return list;
-		}
-		
-
-		public void customizeRequest(SipRequest request, SipConnection connection)
-		{
-			if (request.needsContact())
-			{
-				SipURI uri = connection.getConnector().getSipUri();
-				Address contact = request.getFields().getAddress(SipHeaders.CONTACT_BUFFER);
-				SipURI contactUri = (SipURI) contact.getURI();
-				contactUri.setHost(uri.getHost());
-				contactUri.setPort(uri.getPort());
-				if (uri.getTransportParam() != null)
-					contactUri.setTransportParam(uri.getTransportParam());	
-				else
-					contactUri.removeParameter(SipURIImpl.TRANSPORT_PARAM);
-			}
 		}
 		
 		class ClientInvite
@@ -1583,7 +1552,7 @@ public class Session implements SessionIf
 						getServer().getConnectorManager().sendResponse(getResponse());
 					}
 					catch (IOException e) {
-						LOG.debug(e);
+						Log.debug(e);
 					}
 				}
 				return Math.min(delay*2, Transaction.__T2);
@@ -1610,6 +1579,5 @@ public class Session implements SessionIf
 				}
 			}
 		}
-
 	}
 }
