@@ -15,14 +15,14 @@ package org.cipango.diameter.util;
 
 
 
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.fail;
+import junit.framework.TestCase;
 
-import org.junit.Test;
+import junit.framework.Assert;
 
-public class AAAUriTest
+
+public class AAAUriTest extends TestCase
 {
-	@Test
+
 	public void testParse()
 	{
 		AAAUri uri = new AAAUri("aaa://cipango.org:3869");
@@ -42,7 +42,6 @@ public class AAAUriTest
 		try { new AAAUri("aaa://cipango.org:aa"); fail(); } catch (IllegalArgumentException e) {}
 	}
 	
-	@Test
 	public void testParameters()
 	{
 		AAAUri uri = new AAAUri("aaa://host.example.com;transport=tcp");

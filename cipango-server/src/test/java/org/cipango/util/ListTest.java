@@ -1,12 +1,12 @@
 package org.cipango.util;
+
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.Test;
+import junit.framework.TestCase;
 
-public class ListTest
+public class ListTest extends TestCase
 {
-	@Test
 	public void testList()
 	{
 		List<String> list = new ArrayList<String>();

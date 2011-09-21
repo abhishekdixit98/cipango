@@ -1,4 +1,3 @@
-// ========================================================================
 // Copyright 2008-2009 NEXCOM Systems
 // ------------------------------------------------------------------------
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,10 +15,7 @@ package org.cipango.diameter.node;
 
 import java.io.IOException;
 import java.net.InetAddress;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -42,11 +38,8 @@ import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.component.AggregateLifeCycle;
-import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
 
 /**
@@ -54,10 +47,8 @@ import org.eclipse.jetty.util.log.Logger;
  * and acts either as a Client, Agent or Server.
  * Can be used standalone or linked to a {@link Server}.
  */
-public class Node extends AbstractLifeCycle implements DiameterHandler, Dumpable
+public class Node extends AbstractLifeCycle implements DiameterHandler
 {
-	private static final Logger LOG = Log.getLogger(Node.class);
-	
 	public static String[] __dictionaryClasses = 
 	{
 		"org.cipango.diameter.base.Common", 
@@ -237,67 +228,21 @@ public class Node extends AbstractLifeCycle implements DiameterHandler, Dumpable
 					}
 					catch (Exception e) 
 					{ 
-						LOG.warn("failed to start peer: " + peer, e);
+						Log.warn("failed to start peer: " + peer, e);
 					}
 				}
 			}
 		}	
 		
 		_scheduler.scheduleAtFixedRate(new WatchdogTimeout(), 5000, 5000, TimeUnit.MILLISECONDS);
-		LOG.info("Started {}", this);
+		Log.info("Started {}", this);
 	}
 	
 	@Override
 	protected void doStop() throws Exception 
 	{	
 		MultiException mex = new MultiException();
-		
-		synchronized (this)
-		{
-			if (_peers != null)
-			{
-				for (Peer peer : _peers)
-				{
-					try 
-					{
-						peer.stop(); 
-					}
-					catch (Exception e) 
-					{ 
-						LOG.warn("failed to stop peer: " + peer, e);
-					}
-				}
-				
-				// Wait at most 1 seconds for DPA reception
-				try 
-				{
-					boolean allClosed = false;
-					int iter = 20;
-					while (iter-- > 0 && allClosed)
-					{
-						allClosed = true;
-						for (Peer peer : _peers)
-						{
-							if (!peer.isClosed())
-							{
-								allClosed = false;
-								LOG.info("Wait 50ms for " + peer + " closing");
-								Thread.sleep(50);
-								break;
-							}
-						} 
-					}
-				} 
-				catch (Exception e) 
-				{
-					LOG.ignore(e);
-				}
-			}
-		}	
-		
-		if (_scheduler != null)
-			_scheduler.shutdown();
-		
+
 		for (int i = 0; _connectors != null && i < _connectors.length; i++)
 		{
 			if (_connectors[i] instanceof LifeCycle) 	
@@ -312,10 +257,6 @@ public class Node extends AbstractLifeCycle implements DiameterHandler, Dumpable
 				}
 			}
 		}
-				
-		if (_router != null && _router instanceof LifeCycle)
-			((LifeCycle) _router).stop();
-		
 		mex.ifExceptionThrow();
 	}
 	
@@ -415,7 +356,7 @@ public class Node extends AbstractLifeCycle implements DiameterHandler, Dumpable
 		{
 			if (message.getCommand() != Common.CER)
 			{
-				LOG.debug("non CER as first message: " + message.getCommand());
+				Log.debug("non CER as first message: " + message.getCommand());
 				message.getConnection().stop();
 				return;
 			}
@@ -425,14 +366,14 @@ public class Node extends AbstractLifeCycle implements DiameterHandler, Dumpable
 				
 				if (originHost == null)
 				{
-					LOG.debug("No Origin-Host in CER");
+					Log.debug("No Origin-Host in CER");
 					message.getConnection().stop();
 					return;
 				}
 				String realm = message.getOriginRealm();
 				if (realm == null)
 				{
-					LOG.debug("No Origin-Realm in CER");
+					Log.debug("No Origin-Realm in CER");
 					message.getConnection().stop();
 					return;
 				}
@@ -441,7 +382,7 @@ public class Node extends AbstractLifeCycle implements DiameterHandler, Dumpable
 				
 				if (peer == null)
 				{
-					LOG.warn("Unknown peer " + originHost);
+					Log.warn("Unknown peer " + originHost);
 					peer = new Peer(originHost);
 					peer.setNode(this);
 					addPeer(peer);
@@ -480,34 +421,34 @@ public class Node extends AbstractLifeCycle implements DiameterHandler, Dumpable
 			if (Common.DIAMETER_REDIRECT_INDICATION.equals(answer.getResultCode()))
 			{
 				try 
-                {
-                    String redirectHost = answer.get(Common.REDIRECT_HOST);
-                    if (redirectHost == null)
-                    	LOG.warn("Missing required REDIRECT_HOST AVP in redirect response: {}", answer);
-                    else
-                    {
-                    	AAAUri uri = new AAAUri(redirectHost);
-	                    Peer peer = getPeer(uri.getFQDN());
-	                    if (peer != null) 
-	                        LOG.debug("Redirecting request to: " + peer);
-	                    else
-	                    {
-	                    	peer = new Peer(uri.getFQDN());
-	                    	peer.setPort(uri.getPort());
-	            			peer.start();
-	            			addPeer(peer);
-	
-	                    	LOG.debug("Redirecting request to new peer: " + peer);
-	                    }
-	        			peer.send(answer.getRequest());
-                    }
-                    return;
-                } 
-                catch (Exception e)
-                {
-                    LOG.warn("Failed to redirect request", e);
-                    return;
-                }
+				{
+					String redirectHost = answer.get(Common.REDIRECT_HOST);
+					if (redirectHost == null)
+						Log.warn("Missing required REDIRECT_HOST AVP in redirect response: {}", answer);
+					else
+					{
+						AAAUri uri = new AAAUri(redirectHost);
+						Peer peer = getPeer(uri.getFQDN());
+						if (peer != null) 
+								Log.debug("Redirecting request to: " + peer);
+						else
+						{
+							peer = new Peer(uri.getFQDN());
+							peer.setPort(uri.getPort());
+							peer.start();
+							addPeer(peer);
+
+							Log.debug("Redirecting request to new peer: " + peer);
+						}
+						peer.send(answer.getRequest());
+					}
+					return;
+				}
+				catch (Exception e)
+				{
+						Log.warn("Failed to redirect request", e);
+						return;
+				}
 			}
 		}
 		
@@ -588,9 +529,7 @@ public class Node extends AbstractLifeCycle implements DiameterHandler, Dumpable
 	
 	public ScheduledFuture<?> schedule(Runnable runnable, long ms)
 	{
-		if (isRunning())
-			return _scheduler.schedule(runnable, ms, TimeUnit.MILLISECONDS);
-		return null;
+		return _scheduler.schedule(runnable, ms, TimeUnit.MILLISECONDS);
 	}
 	
 	public void scheduleReconnect(Peer peer)
@@ -646,7 +585,7 @@ public class Node extends AbstractLifeCycle implements DiameterHandler, Dumpable
         if (on && _statsStartedAt.get() != -1)
             return;
 
-        LOG.debug("Statistics on = " + on + " for " + this);
+        Log.debug("Statistics on = " + on + " for " + this);
 
         statsReset();
         _statsStartedAt.set(on?System.currentTimeMillis():-1);
@@ -672,23 +611,6 @@ public class Node extends AbstractLifeCycle implements DiameterHandler, Dumpable
 		_requestTimeout = requestTimeout;
 	}
 	
-	public String dump()
-	{
-		return AggregateLifeCycle.dump(this);
-	}
-
-	public void dump(Appendable out, String indent) throws IOException
-	{
-		out.append("Node ").append(_identity).append(' ').append(getState()).append('\n');
-		List<Object> l = new ArrayList<Object>();
-		l.add("Realm=" + _realm);
-		l.add("ProductName=" + _productName);
-		l.add(_router);
-		l.add(_sessionManager);
-		
-		AggregateLifeCycle.dump(out,indent,l, Arrays.asList(_peers), Arrays.asList(_connectors), _supportedApplications);
-	}
-	
 	class ConnectPeerTimeout implements Runnable
 	{
 		private Peer _peer;
@@ -706,14 +628,14 @@ public class Node extends AbstractLifeCycle implements DiameterHandler, Dumpable
 				{
 					if (!_peer.isStopped() && !_peer.isOpen())
 					{
-						LOG.debug("restarting peer: " + _peer);
+						Log.debug("restarting peer: " + _peer);
 						_peer.start();
 					}
 				}
 			}
 			catch (Exception e)
 			{
-				LOG.warn("failed to reconnect to peer {} : {}", _peer, e);
+				Log.warn("failed to reconnect to peer {} : {}", _peer, e);
 			}
 		}
 	}
@@ -729,4 +651,5 @@ public class Node extends AbstractLifeCycle implements DiameterHandler, Dumpable
 			}
 		}
 	}
+
 }

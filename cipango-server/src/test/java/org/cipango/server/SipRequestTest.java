@@ -14,11 +14,6 @@
 
 package org.cipango.server;
 
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertFalse;
-import static junit.framework.Assert.assertTrue;
-import static junit.framework.Assert.fail;
-
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -29,16 +24,19 @@ import javax.servlet.sip.Address;
 import javax.servlet.sip.Parameterable;
 import javax.servlet.sip.SipURI;
 
+import junit.framework.TestCase;
+
+import org.cipango.server.SipMessage;
+import org.cipango.server.SipRequest;
 import org.cipango.server.AbstractSipConnector.EventHandler;
 import org.cipango.sip.NameAddr;
 import org.cipango.sip.SipParser;
-import org.eclipse.jetty.io.ByteArrayBuffer;
-import org.junit.Test;
 
-public class SipRequestTest
+import org.eclipse.jetty.io.ByteArrayBuffer;
+
+public class SipRequestTest extends TestCase
 {
 
-	@Test
 	public void testPushRoute() throws Exception
 	{		
 		SipRequest request = (SipRequest) getMessage(INVITE);
@@ -106,8 +104,7 @@ public class SipRequestTest
 		assertTrue(request.isNextHopStrictRouting());
 	
 	}
-
-	@Test
+	
 	public void testContact() throws Exception
 	{
 		SipRequest request = (SipRequest) getMessage(INVITE);
@@ -168,8 +165,7 @@ public class SipRequestTest
 		parser.parse();
 		return handler.getMessage();
 	}
-
-	@Test
+	
 	public void testGetParameterable() throws Exception
 	{
 		SipRequest request = (SipRequest) getMessage(INVITE);
@@ -209,8 +205,7 @@ public class SipRequestTest
 		}
 		assertEquals(3, it.nextIndex());
 	}
-
-	@Test
+	
 	public void testMultipleLineHeaders() throws Exception
 	{
 		EventHandler handler = new EventHandler();

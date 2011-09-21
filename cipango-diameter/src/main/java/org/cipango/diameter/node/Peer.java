@@ -17,7 +17,6 @@ package org.cipango.diameter.node;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -28,18 +27,14 @@ import org.cipango.diameter.app.DiameterContext;
 import org.cipango.diameter.base.Common;
 import org.cipango.diameter.base.Common.DisconnectCause;
 import org.cipango.diameter.bio.DiameterSocketConnector;
-import org.eclipse.jetty.util.component.AggregateLifeCycle;
-import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
 /**
  *  A Diameter Peer is a Diameter Node to which a given Diameter Node
  *  has a direct transport connection.
  */
-public class Peer implements Dumpable
+public class Peer 
 {
-	private static final Logger LOG = Log.getLogger(Peer.class);
 	private Node _node;
 	
 	private String _host;
@@ -108,7 +103,7 @@ public class Peer implements Dumpable
 			} 
 			catch (UnknownHostException e) 
 			{
-				LOG.debug("Host {} is not resolvable", _host);
+				Log.debug("Host {} is not resolvable", _host);
 			}
 		}
 		return _address;
@@ -265,7 +260,7 @@ public class Peer implements Dumpable
 		}
 		catch (Exception e)
 		{
-			LOG.ignore(e);
+			Log.ignore(e);
 		}
 	}
 	
@@ -273,7 +268,7 @@ public class Peer implements Dumpable
 	
 	private void setState(State state)
 	{
-		LOG.debug(this + " " + _state + " > " + state);
+		Log.debug(this + " " + _state + " > " + state);
 		_state = state;
 		
 		if (_state == OPEN)
@@ -285,7 +280,7 @@ public class Peer implements Dumpable
 		DiameterConnection connection = getConnection();
 		if (connection == null || !connection.isOpen())
 		{
-			LOG.warn("State is open but no open connection");
+			Log.warn("State is open but no open connection");
 			return;
 		}
 			
@@ -305,7 +300,7 @@ public class Peer implements Dumpable
 			}
 			catch (IOException e)
 			{
-				LOG.debug("Unable to sent waiting requests: {}", e);
+				Log.debug("Unable to sent waiting requests: {}", e);
 			}
 		}
 	}
@@ -316,12 +311,12 @@ public class Peer implements Dumpable
     	{
     		if ((System.currentTimeMillis() - _lastAccessed) > 2*_node.getTw())
     		{
-    			LOG.warn("closing peer {} since watchdog timer expires", this);
+    			Log.warn("closing peer {} since watchdog timer expires", this);
     			close();
     		}
     		else if (((System.currentTimeMillis() - _lastAccessed) > _node.getTw()) && !_pending)
     		{
-    			LOG.debug("sending DWR");
+    			Log.debug("sending DWR");
     			try
 				{
 					DiameterRequest request = new DiameterRequest(_node, Common.DWR, 0, null);
@@ -335,7 +330,7 @@ public class Peer implements Dumpable
 				catch (IOException e)
 				{
 					// Ignore exception as 
-					LOG.ignore(e);
+					Log.ignore(e);
 				}
     		}
     	}
@@ -398,7 +393,7 @@ public class Peer implements Dumpable
 			} 
 			catch (IOException e) 
 			{
-				LOG.warn("Unable to send DPR on shutdown", e);
+				Log.warn("Unable to send DPR on shutdown", e);
 			}
 		} 
 		else if (_state != CLOSING)
@@ -442,8 +437,8 @@ public class Peer implements Dumpable
 				}
 				catch (IOException e)
 				{
-					LOG.ignore(e);
-					LOG.debug("Failed to connect to peer {} due to {}", Peer.this, e);
+					Log.ignore(e);
+					Log.debug("Failed to connect to peer {} due to {}", Peer.this, e);
 				}
 				synchronized (Peer.this)
 				{
@@ -463,7 +458,7 @@ public class Peer implements Dumpable
         
         boolean won = (local.compareTo(other) > 0);
         if (won)
-            LOG.debug("Won election (" + local + ">" + other + ")");
+            Log.debug("Won election (" + local + ">" + other + ")");
         return won;      
     }
     
@@ -478,7 +473,7 @@ public class Peer implements Dumpable
 		}
 		catch (IOException e)
 		{
-			LOG.debug(e);
+			Log.debug(e);
 		}
     }
     
@@ -487,7 +482,7 @@ public class Peer implements Dumpable
         if (_iConnection != null) 
         {
             try { _iConnection.close(); } 
-            catch (IOException e) { LOG.debug("Failed to disconnect " + _iConnection + " on peer " + this + ": " + e); }
+            catch (IOException e) { Log.debug("Failed to disconnect " + _iConnection + " on peer " + this + ": " + e); }
             _iConnection = null;
         }
     }
@@ -497,7 +492,7 @@ public class Peer implements Dumpable
         if (_rConnection != null) 
         {
         	try { _rConnection.close(); } 
-        	catch (IOException e) { LOG.debug("Failed to disconnect " + _rConnection + " on peer " + this + ": " + e); }
+        	catch (IOException e) { Log.debug("Failed to disconnect " + _rConnection + " on peer " + this + ": " + e); }
         	_rConnection = null;
         }
     }
@@ -511,7 +506,7 @@ public class Peer implements Dumpable
 		}
 		catch (IOException e)
 		{
-			LOG.debug(e);
+			Log.debug(e);
 		}
     	
     }
@@ -541,17 +536,6 @@ public class Peer implements Dumpable
     {
     	_maxPendings.set(0);
     }
-    
-	public String dump()
-	{
-		return AggregateLifeCycle.dump(this);
-	}
-
-	public void dump(Appendable out, String indent) throws IOException
-	{
-		 out.append(String.valueOf(this)).append("\n");
-		 AggregateLifeCycle.dump(out,indent,Arrays.asList("port=" + _port, "address=" + _address));
-	}
     
     // peer states 
     
@@ -810,13 +794,11 @@ public class Peer implements Dumpable
 		@Override
 		public synchronized void rcvDPR(DiameterRequest dpr)
 		{
-			try 
-			{
+			try {
 				DiameterAnswer dpa = dpr.createAnswer(Common.DIAMETER_SUCCESS);
 				dpr.getConnection().write(dpa);
-			} catch (IOException e)
-			{
-				LOG.warn("Unable to send DPA");
+			} catch (IOException e) {
+				Log.warn("Unable to send DPA");
 			}
 			
 			setState(CLOSED);
@@ -852,22 +834,6 @@ public class Peer implements Dumpable
 		{
 			setState(CLOSED);
 		}
-		
-		@Override
-		public synchronized void rcvDPR(DiameterRequest dpr)
-		{
-			try 
-			{
-				DiameterAnswer dpa = dpr.createAnswer(Common.DIAMETER_SUCCESS);
-				dpr.getConnection().write(dpa);
-			} catch (IOException e) 
-			{
-				LOG.warn("Unable to send DPA");
-			}
-			
-			setState(CLOSED);
-			_rConnection = _iConnection = null;
-		}	
 	};
 	
 	class Pending implements Runnable
@@ -893,7 +859,7 @@ public class Peer implements Dumpable
 		
 		public void run()
 		{
-			LOG.debug("Diameter request timeout for {}", _request);
+			Log.debug("Diameter request timeout for {}", _request);
 			// FIXME should not use class cast
 			if (_node.getHandler() instanceof DiameterContext)
 				((DiameterContext) _node.getHandler()).fireNoAnswerReceived(_request, _node.getRequestTimeout());

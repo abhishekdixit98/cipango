@@ -13,43 +13,39 @@
 // ========================================================================
 package org.cipango.annotations;
 
-import static junit.framework.Assert.assertEquals;
+import junit.framework.TestCase;
 
 import org.cipango.annotations.resources.AnnotedServlet;
 import org.cipango.servlet.SipServletHandler;
 import org.cipango.servlet.SipServletHolder;
 import org.cipango.sipapp.SipAppContext;
-import org.eclipse.jetty.annotations.AbstractDiscoverableAnnotationHandler;
+import org.cipango.sipapp.SipXmlProcessor;
 import org.eclipse.jetty.annotations.AnnotationParser;
-import org.junit.Before;
-import org.junit.Test;
 
-public class SipServletAnnotationHandlerTest
+public class SipServletAnnotationHandlerTest extends TestCase
 {
 	private SipAppContext _sac;
 	private AnnotationParser _parser;
 
-	@Before
-	public void setUp() throws Exception
+	@Override
+	protected void setUp() throws Exception
 	{
+		super.setUp();
 		_sac = new SipAppContext();
+		_sac.setServletHandler(new org.cipango.plus.servlet.SipServletHandler());
 		_parser = new AnnotationParser();
         _parser.registerAnnotationHandler("javax.servlet.sip.annotation.SipServlet",
-        		new SipServletAnnotationHandler(_sac));
+        		new SipServletAnnotationHandler(_sac, new SipXmlProcessor(_sac)));
 	}
 	
-	@Test
 	public void testAnnotedServlet() throws Exception
 	{	
         _parser.parse(AnnotedServlet.class.getName(), new SimpleResolver());
-        AbstractDiscoverableAnnotationHandler annotHandler = (AbstractDiscoverableAnnotationHandler) _parser.getAnnotationHandlers().get(0);
-        _sac.getSipMetaData().addDiscoveredAnnotations(annotHandler.getAnnotationList());    
-        _sac.getSipMetaData().resolve(_sac);
         SipServletHandler handler = (SipServletHandler) _sac.getServletHandler();
         SipServletHolder[] holders = handler.getSipServlets();
         assertEquals(1, holders.length);
         assertEquals("AnnotedServlet", holders[0].getName());
-        assertEquals(-1, holders[0].getInitOrder());
+        assertFalse(holders[0].isInitOnStartup());
 	}
 	
 }

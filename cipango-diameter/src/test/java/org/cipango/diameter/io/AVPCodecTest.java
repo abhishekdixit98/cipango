@@ -1,20 +1,18 @@
 package org.cipango.diameter.io;
 
-import static junit.framework.Assert.assertEquals;
-
 import java.io.IOException;
+
+import junit.framework.TestCase;
 
 import org.cipango.diameter.AVP;
 import org.cipango.diameter.ims.Cx;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.View;
-import org.junit.Test;
 
-public class AVPCodecTest
+public class AVPCodecTest extends TestCase
 {
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	@Test
 	public void testAVPCodec() throws IOException
 	{
 		AVP avp = new AVP(Cx.PUBLIC_IDENTITY, "sip:alice@cipango.org");
@@ -29,7 +27,6 @@ public class AVPCodecTest
 	}
 	
 	@SuppressWarnings("unchecked")
-	@Test
 	public void testPadding() throws IOException
 	{
 		byte[] b = { 13 };

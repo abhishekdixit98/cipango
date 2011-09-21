@@ -20,9 +20,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 
 import org.eclipse.jetty.util.LazyList;
-import org.junit.Ignore;
 
-@Ignore
 public class TreeTest 
 {
 	static class Branch

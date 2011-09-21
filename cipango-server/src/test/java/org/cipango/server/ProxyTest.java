@@ -13,16 +13,12 @@
 // ========================================================================
 package org.cipango.server;
 
-
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 
 import javax.servlet.sip.SipApplicationSessionListener;
 
-import org.junit.Ignore;
-
-@Ignore
 public class ProxyTest 
 {
 	static class ServletHolder implements InvocationHandler
