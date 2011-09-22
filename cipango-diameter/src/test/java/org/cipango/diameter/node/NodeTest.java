@@ -6,6 +6,8 @@ import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertTrue;
 
 import java.net.InetAddress;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import junit.framework.Assert;
@@ -16,6 +18,7 @@ import org.cipango.diameter.api.DiameterFactory;
 import org.cipango.diameter.api.DiameterServletAnswer;
 import org.cipango.diameter.api.DiameterServletRequest;
 import org.cipango.diameter.api.DiameterSession;
+import org.cipango.diameter.app.DiameterContext;
 import org.cipango.diameter.base.Common;
 import org.cipango.diameter.base.Common.AuthSessionState;
 import org.cipango.diameter.ims.Cx;
@@ -34,6 +37,7 @@ public class NodeTest
 	@Before
 	public void setUp() throws Exception
 	{
+		//Log.getLog().setDebugEnabled(true);
 		_client = new Node(38681);
 		_client.getConnectors()[0].setHost("127.0.0.1");
 		_client.setIdentity("client");
@@ -122,16 +126,7 @@ public class NodeTest
 		
 		waitPeerOpened();
 				
-		DiameterRequest udr = new DiameterRequest(_client, Sh.UDR, Sh.SH_APPLICATION_ID.getId(), _client.getSessionManager().newSessionId());
-		udr.getAVPs().add(Common.DESTINATION_REALM, "server");
-		udr.getAVPs().add(Common.DESTINATION_HOST, "server");
-		udr.getAVPs().add(Sh.DATA_REFERENCE, DataReference.SCSCFName);
-		AVP<AVPList> userIdentity = new AVP<AVPList>(Sh.USER_IDENTITY, new AVPList());
-        userIdentity.getValue().add(Cx.PUBLIC_IDENTITY, "sip:alice@cipango.org");
-		udr.getAVPs().add(userIdentity);
-		udr.getAVPs().add(Common.AUTH_SESSION_STATE, AuthSessionState.NO_STATE_MAINTAINED);
-		udr.getSession();
-		udr.send();
+		newUdr().send();
 		serverHandler.assertDone();
 		clientHandler.assertDone();
 	}
@@ -139,19 +134,23 @@ public class NodeTest
 	@Test
 	public void testRedirectDefaultPort() throws Throwable
 	{
-		testRedirect(3868);
+		testRedirect(3868, Arrays.asList("aaa://localhost"));
 	}
 	
 	@Test
 	public void testRedirectCustomPort() throws Throwable
 	{
-		testRedirect(38682);
+		testRedirect(38682, Arrays.asList("aaa://localhost:38682"));
 	}
 	
-	
-	public void testRedirect(final int port) throws Throwable
+	@Test
+	public void testRedirectBadFirstHost() throws Throwable
 	{
-		//Log.getLog().setDebugEnabled(true);
+		testRedirect(38682, Arrays.asList("aaa://invalid", "aaa://localhost:38682"));
+	}
+		
+	public void testRedirect(final int port, final List<String> redirectHosts) throws Throwable
+	{
 		Node server2 = null;
 		try
 		{
@@ -167,11 +166,8 @@ public class NodeTest
 					assertEquals(true, message.isRequest());
 					assertEquals(Sh.UDR, request.getCommand());
 					uda = request.createAnswer(Common.DIAMETER_REDIRECT_INDICATION);
-					if (port == 3868)
-						uda.add(Common.REDIRECT_HOST, "aaa://localhost");
-					else
-						uda.add(Common.REDIRECT_HOST, "aaa://localhost:" + port);
-					uda.add(Common.REDIRECT_HOST, "aaa://server3");
+					for (String uri : redirectHosts)
+						uda.add(Common.REDIRECT_HOST, uri);
 					uda.send();
 				}
 				
@@ -224,16 +220,7 @@ public class NodeTest
 			
 			waitPeerOpened();
 					
-			DiameterRequest udr = new DiameterRequest(_client, Sh.UDR, Sh.SH_APPLICATION_ID.getId(), _client.getSessionManager().newSessionId());
-			udr.getAVPs().add(Common.DESTINATION_REALM, "server");
-			udr.getAVPs().add(Common.DESTINATION_HOST, "server");
-			udr.getAVPs().add(Sh.DATA_REFERENCE, DataReference.SCSCFName);
-			AVP<AVPList> userIdentity = new AVP<AVPList>(Sh.USER_IDENTITY, new AVPList());
-	        userIdentity.getValue().add(Cx.PUBLIC_IDENTITY, "sip:alice@cipango.org");
-			udr.getAVPs().add(userIdentity);
-			udr.getAVPs().add(Common.AUTH_SESSION_STATE, AuthSessionState.NO_STATE_MAINTAINED);
-			udr.getSession();
-			udr.send();
+			newUdr().send();
 			redirectHandler.assertDone();
 			clientHandler.assertDone();
 		}
@@ -242,6 +229,76 @@ public class NodeTest
 			if (server2 != null)
 				server2.stop();
 		}
+	}
+	
+	/**
+	 * Ensure that a new DiameterErrorEvent is thrown if unable to send the request after a redirect.
+	 * @throws Throwable
+	 */
+	@Test
+	public void testRedirectBad() throws Throwable
+	{
+		Node server2 = null;
+		try
+		{
+			TestDiameterHandler redirectHandler = new TestDiameterHandler()
+			{
+	
+				@Override
+				public void doHandle(DiameterMessage message) throws Throwable
+				{
+					DiameterServletAnswer uda;
+					DiameterServletRequest request = (DiameterServletRequest) message;
+	
+					assertEquals(true, message.isRequest());
+					assertEquals(Sh.UDR, request.getCommand());
+					uda = request.createAnswer(Common.DIAMETER_REDIRECT_INDICATION);
+					uda.add(Common.REDIRECT_HOST, "aaa://invalid");
+					uda.send();
+				}
+				
+			};
+			_server.setHandler(redirectHandler);
+			_server.start();
+			
+						
+			TestDiameterHandler clientHandler = new TestDiameterHandler()
+			{
+				@Override
+				public void doHandle(DiameterMessage message) throws Throwable
+				{
+				}
+			};
+			_client.setHandler(clientHandler);
+			_client.start();
+			
+			waitPeerOpened();
+					
+			
+			newUdr().send();
+			redirectHandler.assertDone();
+			clientHandler.assertDone(0);
+			assertEquals(1, clientHandler.getNbNoAnswer());
+		}
+		finally
+		{
+			if (server2 != null)
+				server2.stop();
+		}
+	}
+	
+	private DiameterRequest newUdr()
+	{
+		DiameterRequest udr = new DiameterRequest(_client, Sh.UDR, Sh.SH_APPLICATION_ID.getId(), _client.getSessionManager().newSessionId());
+		udr.getAVPs().add(Common.DESTINATION_REALM, "server");
+		udr.getAVPs().add(Common.DESTINATION_HOST, "server");
+		udr.getAVPs().add(Sh.DATA_REFERENCE, DataReference.SCSCFName);
+		AVP<AVPList> userIdentity = new AVP<AVPList>(Sh.USER_IDENTITY, new AVPList());
+        userIdentity.getValue().add(Cx.PUBLIC_IDENTITY, "sip:alice@cipango.org");
+		udr.getAVPs().add(userIdentity);
+		udr.getAVPs().add(Common.AUTH_SESSION_STATE, AuthSessionState.NO_STATE_MAINTAINED);
+		udr.getSession();
+		return udr;
 	}
 	
 	protected DiameterFactory createFactory(Node node)
@@ -421,11 +478,13 @@ public class NodeTest
 		clientHandler.assertDone(2);
 	}
 		
-	public static abstract class TestDiameterHandler implements DiameterHandler
+	public static abstract class TestDiameterHandler extends DiameterContext
 	{
 		private Throwable _e;
 		private AtomicInteger _msgReceived = new AtomicInteger(0);
-				
+		private int _nbNoAnswer = 0;	
+		
+		@Override
 		public void handle(DiameterMessage message)
 		{
 			try
@@ -449,7 +508,15 @@ public class NodeTest
 		
 		public abstract void doHandle(DiameterMessage message) throws Throwable;
 		
-		
+		@Override
+		public void fireNoAnswerReceived(DiameterRequest request, long timeout)
+		{
+			_nbNoAnswer++;
+			synchronized (this)
+			{
+				notify();
+			}
+		}
 		public void assertDone() throws Throwable
 		{
 			assertDone(1);
@@ -479,6 +546,21 @@ public class NodeTest
 				throw _e;
 			if (_msgReceived.get() != msgExpected)
 				Assert.fail("Received " + _msgReceived + " messages when expected " + msgExpected);
+		}
+
+		public int getNbNoAnswer()
+		{
+			synchronized (this)
+			{
+				try
+				{
+					wait(5000);
+				}
+				catch (InterruptedException e)
+				{
+				}
+			}
+			return _nbNoAnswer;
 		}
 	}
 	
