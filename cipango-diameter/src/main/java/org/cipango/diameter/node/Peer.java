@@ -17,8 +17,11 @@ package org.cipango.diameter.node;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -33,7 +36,7 @@ import org.eclipse.jetty.util.log.Log;
  *  A Diameter Peer is a Diameter Node to which a given Diameter Node
  *  has a direct transport connection.
  */
-public class Peer 
+public class Peer implements PeerStateListener
 {
 	private Node _node;
 	
@@ -51,6 +54,8 @@ public class Peer
 	
 	private AtomicInteger _maxPendings = new AtomicInteger();
 	
+	private ArrayList<PeerStateListener> _listeners = new ArrayList<PeerStateListener>();
+	
 	private long _lastAccessed;
 	private volatile boolean _pending;
 	
@@ -61,6 +66,7 @@ public class Peer
 	{
 		_state = CLOSED;
 		_port = DiameterSocketConnector.DEFAULT_PORT;
+		addListener(this);
 	}
 	
 	public Peer(String host)
@@ -272,10 +278,18 @@ public class Peer
 		_state = state;
 		
 		if (_state == OPEN)
-			onOpen();
+		{
+			synchronized (_listeners)
+			{
+				@SuppressWarnings("unchecked")
+				List<PeerStateListener> listeners = (List<PeerStateListener>) _listeners.clone();
+				for (PeerStateListener l : listeners)
+					l.onPeerOpened(this);
+			}
+		}
 	}
 	
-	private void onOpen()
+	public void onPeerOpened(Peer peer)
 	{
 		DiameterConnection connection = getConnection();
 		if (connection == null || !connection.isOpen())
@@ -536,6 +550,24 @@ public class Peer
     {
     	_maxPendings.set(0);
     }
+    
+    public void addListener(PeerStateListener l)
+    {
+    	synchronized (_listeners)
+		{
+    		if (!_listeners.contains(l))
+    			_listeners.add(l);
+		}
+    }
+    
+    public void removeListener(PeerStateListener l)
+    {
+    	synchronized (_listeners)
+		{
+    		_listeners.remove(l);
+		}
+    }
+    
     
     // peer states 
     
