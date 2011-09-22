@@ -1,17 +1,13 @@
 package org.cipango.diameter.io;
 
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertFalse;
-import static junit.framework.Assert.assertTrue;
+import junit.framework.TestCase;
 
 import org.cipango.diameter.base.Common;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
-import org.junit.Test;
 
-public class CodecTest
+public class CodecTest extends TestCase
 {
-	@Test
 	public void testSize() throws Exception
 	{
 		Buffer buffer = new ByteArrayBuffer(1);

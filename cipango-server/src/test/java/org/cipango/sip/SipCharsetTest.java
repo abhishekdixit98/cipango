@@ -13,14 +13,12 @@
 // ========================================================================
 package org.cipango.sip;
 
-import static junit.framework.Assert.assertFalse;
-import static junit.framework.Assert.assertTrue;
+import org.cipango.sip.SipCharset;
 
-import org.junit.Test;
+import junit.framework.TestCase;
 
-public class SipCharsetTest
+public class SipCharsetTest extends TestCase
 {
-	@Test
 	public void testCharset()
 	{
 		SipCharset charset = new SipCharset("cipango");

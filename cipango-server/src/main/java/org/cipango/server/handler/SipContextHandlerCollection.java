@@ -50,7 +50,6 @@ import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
 /**
  * Handler responsible for application selection based on application router result. In addition, it also 
@@ -62,8 +61,6 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class SipContextHandlerCollection extends ContextHandlerCollection implements SipHandler
 {  
-	private static final Logger LOG = Log.getLogger(SipContextHandlerCollection.class);
-	
     private SipAppContext[] _sipContexts;
     private SipHandler _handler;
     
@@ -76,30 +73,20 @@ public class SipContextHandlerCollection extends ContextHandlerCollection implem
 	@Override
 	protected void doStart() throws Exception
 	{
-		if (_handler == null)
-		{
-			CallSessionHandler callSessionHandler = new CallSessionHandler();
-			SipSessionHandler sipSessionHandler = new SipSessionHandler();
-			
-			TransactionManager transactionManager = ((Server) getServer()).getTransactionManager();
-			callSessionHandler.setHandler(transactionManager);
-			
-			transactionManager.setHandler(sipSessionHandler);
-			
-			_handler = callSessionHandler;
-		}
-
+		CallSessionHandler callSessionHandler = new CallSessionHandler();
+		SipSessionHandler sipSessionHandler = new SipSessionHandler();
+		
+		TransactionManager transactionManager = ((Server) getServer()).getTransactionManager();
+		callSessionHandler.setHandler(transactionManager);
+		transactionManager.setHandler(sipSessionHandler);
+		
+		_handler = callSessionHandler;
 		_handler.setServer(getServer());
 		
 		if (_handler instanceof LifeCycle)
 			((LifeCycle) _handler).start();
 		super.doStart();
 	}
-	
-	 public void setHandler(SipHandler handler)
-	 {
-		 _handler = handler;
-	 }
 	
 	public SipAppContext[] getSipContexts()
 	{
@@ -152,22 +139,6 @@ public class SipContextHandlerCollection extends ContextHandlerCollection implem
 		if (route != null && getConnectorManager().isLocalUri(route.getURI()))
 		{
 			request.removeTopRoute();
-			
-			if (route.getURI().getParameter(SipParams.DRR) != null)
-			{
-				// Case double record route, see RFC 5658
-				Address route2 = request.getTopRoute();
-				String appId = route.getURI().getParameter(ID.APP_SESSION_ID_PARAMETER);
-				if (route2 != null 
-						&& appId != null 
-						&& appId.equals(route2.getURI().getParameter(ID.APP_SESSION_ID_PARAMETER))
-						&& getConnectorManager().isLocalUri(route2.getURI()))
-				{
-					LOG.debug("Remove second top route {} due to RFC 5658", route2);
-					request.removeTopRoute();
-					route = route2;
-				}
-			}
 			return route;
 		}
 		return null;
@@ -240,7 +211,7 @@ public class SipContextHandlerCollection extends ContextHandlerCollection implem
 						}
 						catch (ServletParseException e)
 						{
-							LOG.debug(e);
+							Log.debug(e);
 						}
 					}
 					
@@ -254,26 +225,23 @@ public class SipContextHandlerCollection extends ContextHandlerCollection implem
 						{
 							String sessionKey = (String) method.invoke(null, request);
 							
-							if (LOG.isDebugEnabled())
-								LOG.debug("routing initial request to key {}", sessionKey);
+							if (Log.isDebugEnabled())
+								Log.debug("routing initial request to key {}", sessionKey);
 							
 							request.addHandlerAttribute(ID.SESSION_KEY_ATTRIBUTE, sessionKey);
 						}
 						catch (Exception e)
 						{
-							LOG.debug("failed to get SipApplicationKey", e);
+							Log.debug("failed to get SipApplicationKey", e);
 						}
 					}
 					
-					if (LOG.isDebugEnabled())
-						LOG.debug("application router returned application {} for initial request {}", applicationName, request.getMethod());
-					if (appContext == null && applicationName != null)
-						LOG.debug("No application with name {} returned by application router could be found", applicationName, null);
+					if (Log.isDebugEnabled())
+						Log.debug("application router returned application {} for initial request {}", applicationName, request.getMethod());
 				}
 				
 				if (appContext == null)
 				{
-					
 					if (!request.isAck())
 					{
 						SipResponse response = new SipResponse(request, SipServletResponse.SC_NOT_FOUND, null);
@@ -330,7 +298,7 @@ public class SipContextHandlerCollection extends ContextHandlerCollection implem
 			else if (routes == null 
 					&& (SipRouteModifier.ROUTE_BACK == routerInfo.getRouteModifier() || SipRouteModifier.ROUTE == routerInfo.getRouteModifier()))
 			{
-				LOG.debug("Router info set route modifier to {} but no route provided, assume NO_ROUTE", routerInfo.getRouteModifier());
+				Log.debug("Router info set route modifier to {} but no route provided, assume NO_ROUTE", routerInfo.getRouteModifier());
 			}
 			return false;
 		}
@@ -343,7 +311,7 @@ public class SipContextHandlerCollection extends ContextHandlerCollection implem
 	        			SipServletResponse.SC_SERVER_INTERNAL_ERROR,
 	        			"Error in handler: " + e.getMessage());
 				ExceptionUtil.fillStackTrace(response, e);
-				try { getConnectorManager().sendResponse(response); } catch (Exception e1) {LOG.ignore(e1); }
+				try { getConnectorManager().sendResponse(response); } catch (Exception e1) {Log.ignore(e1); }
 			}
         	return true;
 		}

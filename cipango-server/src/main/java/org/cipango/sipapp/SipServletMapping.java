@@ -45,10 +45,4 @@ public class SipServletMapping
     {
 		_rule = rule;
 	}
-	
-	@Override
-	public String toString()
-	{
-		return "[" + getMatchingRuleExpression() + "]==>" + getServletName();
-	}
 }

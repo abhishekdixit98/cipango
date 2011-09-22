@@ -14,12 +14,6 @@
 
 package org.cipango.server.bio;
 
-
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertFalse;
-import static junit.framework.Assert.assertNotNull;
-import static junit.framework.Assert.assertTrue;
-
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -31,20 +25,20 @@ import javax.servlet.sip.Address;
 import javax.servlet.sip.SipServletMessage;
 import javax.servlet.sip.SipURI;
 
+import junit.framework.TestCase;
+
 import org.cipango.server.SipHandler;
+import org.cipango.server.bio.UdpConnector;
+
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
 
-public class UdpConnectorTest
+public class UdpConnectorTest extends TestCase
 {
 	UdpConnector _connector;
 	SipServletMessage _message;
 	
-	@Before
-	public void setUp() throws Exception
+	protected void setUp() throws Exception
 	{
 		_connector = new UdpConnector();
 		_connector.setPort(5040);
@@ -54,15 +48,13 @@ public class UdpConnectorTest
 		_message = null;
 	}
 	
-	@After
-	public void tearDown() throws Exception
+	protected void tearDown() throws Exception
 	{
 		Thread.sleep(40);
 		_connector.stop();
 		Thread.sleep(10);
 	}
-
-	@Test
+	
 	public void testLifeCycle() throws Exception
 	{
 		UdpConnector connector = new UdpConnector();
@@ -78,8 +70,7 @@ public class UdpConnectorTest
 			Thread.sleep(10);
 		}
 	}
-
-	@Test
+	
 	public void testPing() throws Exception
 	{
 		for (int i = 0; i < 100; i++)
@@ -88,8 +79,7 @@ public class UdpConnectorTest
 			send(_pingEolEol);
 		}
 	}
-
-	@Test
+	
 	public void testMessage() throws Exception
 	{
 		send(_msg);
@@ -116,7 +106,6 @@ public class UdpConnectorTest
 		return null;
 	}
 
-	@Test
 	public void testRoute() throws Exception
 	{
 		
