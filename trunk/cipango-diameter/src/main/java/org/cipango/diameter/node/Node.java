@@ -19,6 +19,7 @@ import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
@@ -27,6 +28,7 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.cipango.diameter.AVP;
 import org.cipango.diameter.ApplicationId;
 import org.cipango.diameter.Dictionary;
 import org.cipango.diameter.app.DiameterContext;
@@ -75,6 +77,7 @@ public class Node extends AbstractLifeCycle implements DiameterHandler, Dumpable
 	public static final long DEFAULT_TW = 30000;
 	public static final long DEFAULT_TC = 30000;
 	public static final long DEFAULT_REQUEST_TIMEOUT = 10000;
+	public static final long DEFAULT_REDIRECT_TIMEOUT = 1000;
 	
 	private Server _server;
 	
@@ -479,35 +482,8 @@ public class Node extends AbstractLifeCycle implements DiameterHandler, Dumpable
 			DiameterAnswer answer = (DiameterAnswer) message;
 			if (Common.DIAMETER_REDIRECT_INDICATION.equals(answer.getResultCode()))
 			{
-				try 
-                {
-                    String redirectHost = answer.get(Common.REDIRECT_HOST);
-                    if (redirectHost == null)
-                    	LOG.warn("Missing required REDIRECT_HOST AVP in redirect response: {}", answer);
-                    else
-                    {
-                    	AAAUri uri = new AAAUri(redirectHost);
-	                    Peer peer = getPeer(uri.getFQDN());
-	                    if (peer != null) 
-	                        LOG.debug("Redirecting request to: " + peer);
-	                    else
-	                    {
-	                    	peer = new Peer(uri.getFQDN());
-	                    	peer.setPort(uri.getPort());
-	            			peer.start();
-	            			addPeer(peer);
-	
-	                    	LOG.debug("Redirecting request to new peer: " + peer);
-	                    }
-	        			peer.send(answer.getRequest());
-                    }
-                    return;
-                } 
-                catch (Exception e)
-                {
-                    LOG.warn("Failed to redirect request", e);
-                    return;
-                }
+				new RedirectHandler(answer).run();
+				return;
 			}
 		}
 		
@@ -726,6 +702,86 @@ public class Node extends AbstractLifeCycle implements DiameterHandler, Dumpable
 			{
 				for (Peer peer: _peers)
 					peer.watchdog();
+			}
+		}
+	}
+	
+	class RedirectHandler implements Runnable, PeerStateListener
+	{
+		private DiameterAnswer _answer;
+		private Peer _peer;
+		private Iterator<AVP<String>> _it;
+		private ScheduledFuture<?> _timeout;
+		
+		public RedirectHandler(DiameterAnswer answer)
+		{
+			_answer = answer;
+			_it = _answer.getAVPs().getAVPs(Common.REDIRECT_HOST);
+			 if (!_it.hasNext())
+             	LOG.warn("Missing required REDIRECT_HOST AVP in redirect response: {}", _answer);
+		}
+				
+		public void run()
+		{
+			try 
+            {   
+				if (_peer != null)
+				{
+					if (_peer.isOpen())
+					{
+						_peer.send(_answer.getRequest());
+						return;
+					}
+					_peer.removeListener(this);
+					_peer = null;
+				}
+				while (_it.hasNext())
+				{
+                	AAAUri uri = new AAAUri(_it.next().getValue());
+                    Peer peer = getPeer(uri.getFQDN());
+                    if (peer != null) 
+                    {
+                        if (peer.isOpen())
+                        {
+                        	LOG.debug("Redirecting request to: " + peer);
+                			peer.send(_answer.getRequest());
+                			return;
+                        }
+                    }
+                    else
+                    {
+                    	peer = new Peer(uri.getFQDN());
+                    	peer.setPort(uri.getPort());
+                    	peer.addListener(this);
+            			peer.start();
+            			addPeer(peer);
+            			_peer = peer;
+            			_timeout = schedule(this, DEFAULT_REDIRECT_TIMEOUT);
+                    	LOG.debug("Redirecting request to new peer: " + peer);
+                        return;
+                    }
+				}
+            } 
+            catch (Exception e)
+            {
+                LOG.warn("Failed to redirect request", e);
+            }	
+			if (getHandler() instanceof DiameterContext)
+				((DiameterContext) getHandler()).fireNoAnswerReceived(_answer.getRequest(), getRequestTimeout());
+
+		}
+
+		public void onPeerOpened(Peer peer)
+		{
+			_timeout.cancel(false);
+			peer.removeListener(this);
+			try
+			{
+				peer.send(_answer.getRequest());
+			}
+			catch (Exception e)
+			{
+				LOG.warn("Failed to redirect request", e);
 			}
 		}
 	}
