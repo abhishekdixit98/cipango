@@ -15,6 +15,7 @@
 package org.cipango.server;
 
 import java.io.IOException;
+import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.util.Arrays;
 
@@ -24,21 +25,37 @@ import org.cipango.io.SipBuffer;
 import org.cipango.sip.SipHeaders;
 import org.cipango.sip.SipParser;
 import org.cipango.sip.SipURIImpl;
-import org.eclipse.jetty.io.Buffer;
-import org.eclipse.jetty.io.BufferCache.CachedBuffer;
-import org.eclipse.jetty.io.ByteArrayBuffer;
+import org.cipango.sip.SipVersions;
+import org.cipango.sip.Via;
+import org.cipango.sip.SipParser.EventHandler;
+
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.ByteArrayBuffer;
+import org.eclipse.jetty.io.BufferCache.CachedBuffer;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ThreadPool;
 
 public abstract class AbstractSipConnector extends AbstractLifeCycle implements SipConnector, Dumpable
 {
-	private static final Logger LOG = Log.getLogger(AbstractSipConnector.class);
-	
+    public static String __localhost;
+    
+    static
+    {
+        try
+        {
+            __localhost = InetAddress.getLocalHost().getHostAddress();
+        }
+        catch (Exception e)
+        {
+            Log.ignore(e);
+            __localhost = "127.0.0.1";
+        }
+    }
+    
     private int _port;
     private String _host;
     private String _name;
@@ -47,6 +64,7 @@ public abstract class AbstractSipConnector extends AbstractLifeCycle implements 
     private int _externalPort = -1;
     
     private SipURI _sipUri;
+    private Via _via;
     
     private int _acceptors = 1;
     private Thread[] _acceptorThread;
@@ -54,13 +72,21 @@ public abstract class AbstractSipConnector extends AbstractLifeCycle implements 
     private SipHandler _handler;
     private Server _server;
     private ThreadPool _threadPool;
+
+    private boolean _transportParam = false;
     
     protected Object _statsLock = new Object();
     protected transient long _statsStartedAt = -1;
+    protected transient long _connectionsOpen;
+    protected transient long _connectionsOpenMax;
     protected transient long _nbParseErrors;
    
     public AbstractSipConnector() 
     {
+        _port = getDefaultPort();
+        setHost( __localhost);
+        
+        updateURI();
     }
     
     public void setPort(int port) 
@@ -68,7 +94,12 @@ public abstract class AbstractSipConnector extends AbstractLifeCycle implements 
     	if (isRunning())
     		throw new IllegalStateException("running");
     	
+    	if (port == -1)
+    		port = getDefaultPort();
+    	
         _port = port;
+        
+        updateURI();
     }
     
     public int getPort() 
@@ -80,11 +111,16 @@ public abstract class AbstractSipConnector extends AbstractLifeCycle implements 
     {
     	if (isRunning())
     		throw new IllegalStateException();
-
-    	if (host != null && host.contains(":") && !host.contains("["))
+    	
+    	if (host == null)
+    		host = __localhost;
+    	
+    	if (host.contains(":") && !host.contains("["))
     		_host = "[" + host + "]";
     	else
             _host = host;
+        
+        updateURI();
     }
     
     public String getHost() 
@@ -94,10 +130,12 @@ public abstract class AbstractSipConnector extends AbstractLifeCycle implements 
     
     public void setExternalHost(String externalHost)
     {
-    	if (isStarted())
+    	if (isRunning())
     		throw new IllegalStateException();
     	
     	_externalHost = externalHost;
+    	
+    	updateURI();
     }
     
     public String getExternalHost()
@@ -105,24 +143,13 @@ public abstract class AbstractSipConnector extends AbstractLifeCycle implements 
     	return _externalHost;
     }
     
-    public void setExternalPort(int port)
-    {
-    	if (isStarted())
-    		throw new IllegalStateException();
-    	
-    	_externalPort = port;
-    }
-    
-    public int getExternalPort()
-    {
-    	return _externalPort;
-    }
-    
     public void setName(String name) 
     {
     	if (isRunning())
     		throw new IllegalStateException();
         _name = name;
+        
+        updateURI();
     }
     
     public String getName() 
@@ -130,32 +157,49 @@ public abstract class AbstractSipConnector extends AbstractLifeCycle implements 
         return _name;
     }
     
+    public Via getVia() 
+    {
+        return _via;
+    }
+
+    public void setTransportParam(boolean b) 
+    {
+    	if (isRunning())
+    		throw new IllegalStateException();
+    	_transportParam = b;
+    }
+    
     public String getTransport() 
     {
         return SipConnectors.getName(getTransportOrdinal());
     }
     
+    public int getIpFamily()
+    {
+    	if (getAddr() instanceof Inet4Address)
+    		return SipConnectors.IPv4;
+    	else
+    		return SipConnectors.IPv6;
+    }
+    
+    protected void updateURI()
+    {
+    	String host = (_externalHost != null) ? _externalHost : _host;
+    	int port = (_externalPort != -1) ? _externalPort : _port;
+    	
+        _sipUri = new SipURIImpl(_name, host, port);
+    }
+    
     protected void doStart() throws Exception 
     {
-    	if (_port <= 0)
-    		_port = getDefaultPort();
-    	
-    	if (_host == null)
-    	{
-    		try
-    		{
-    			_host = InetAddress.getLocalHost().getHostAddress();
-    		}
-    		catch (Exception e)
-    		{
-    			LOG.ignore(e);
-    			_host = "127.0.0.1";
-    		}
-    	}
-    	
-    	_sipUri = new SipURIImpl(_name,
-    			_externalHost != null ? _externalHost : _host, 
-    			_externalPort != -1 ? _externalPort : _port);
+         if (_transportParam)
+             _sipUri.setTransportParam(getTransport().toLowerCase());
+        
+        _via = new Via(
+                SipVersions.SIP_2_0,
+                getTransport().toUpperCase(),
+                _sipUri.getHost(),
+                _sipUri.getPort());
         
         if (_threadPool == null && getServer() != null)
         	_threadPool = getServer().getSipThreadPool();
@@ -179,18 +223,18 @@ public abstract class AbstractSipConnector extends AbstractLifeCycle implements 
             {
                 if (!_threadPool.dispatch(new Acceptor(i)))
                 {
-                    LOG.warn("insufficient maxThreads configured for {}", this);
+                    Log.warn("insufficient maxThreads configured for {}", this);
                     break;
                 }
             }
         }
         
-        LOG.info("Started {}", this);
+        Log.info("Started {}", this);
     }
         
     protected void doStop() throws Exception 
     {
-    	try { close(); } catch(IOException e) { LOG.warn(e); }
+    	try { close(); } catch(IOException e) { Log.warn(e); }
         
         if (_server != null && _threadPool == _server.getSipThreadPool())
             _threadPool = null;
@@ -225,7 +269,7 @@ public abstract class AbstractSipConnector extends AbstractLifeCycle implements 
     	
     	if (!getThreadPool().dispatch(new MessageTask(message)))
 		{
-    		LOG.warn("No threads to dispatch message from {}:{}",
+    		Log.warn("No threads to dispatch message from {}:{}",
 					message.getRemoteAddr(), message.getRemotePort());
 		}
     }
@@ -300,6 +344,8 @@ public abstract class AbstractSipConnector extends AbstractLifeCycle implements 
 	{
 		_statsStartedAt = _statsStartedAt == -1 ? -1 : System.currentTimeMillis();
 		_nbParseErrors = 0;
+		_connectionsOpen = 0;
+		_connectionsOpenMax = 0;
 	}
 	
 	public void setStatsOn(boolean on) 
@@ -311,6 +357,16 @@ public abstract class AbstractSipConnector extends AbstractLifeCycle implements 
         _statsStartedAt = on ? System.currentTimeMillis() : -1;
     }
 
+	public long getConnectionsOpen()
+	{
+		return _connectionsOpen;
+	}
+
+	public long getConnectionsOpenMax()
+	{
+		return _connectionsOpenMax;
+	}
+	
     public String dump()
     {
         return AggregateLifeCycle.dump(this);
@@ -357,11 +413,11 @@ public abstract class AbstractSipConnector extends AbstractLifeCycle implements 
                     } 
                     catch (IOException ioe) 
                     {
-                        LOG.ignore(ioe);
+                        Log.ignore(ioe);
                     } 
                     catch (Exception e) 
                     {
-                        LOG.warn(e);
+                        Log.warn(e);
                     }
                 }
             } 
@@ -376,7 +432,7 @@ public abstract class AbstractSipConnector extends AbstractLifeCycle implements 
                 }
                 catch (IOException e)
                 {
-                    LOG.warn(e);
+                    Log.warn(e);
                 }
                 
                 synchronized(AbstractSipConnector.this)
@@ -405,7 +461,7 @@ public abstract class AbstractSipConnector extends AbstractLifeCycle implements 
     		}
     		catch (Exception e)
     		{
-    			LOG.warn(e);
+    			Log.warn(e);
     		}
     	}
     }
@@ -424,8 +480,8 @@ public abstract class AbstractSipConnector extends AbstractLifeCycle implements 
 				SipRequest request = new SipRequest();
 	            if (!(method instanceof CachedBuffer))
 	            {
-	            	if (LOG.isDebugEnabled())
-	            		LOG.debug("Unknown method: " + method);
+	            	if (Log.isDebugEnabled())
+	            		Log.debug("Unknown method: " + method);
 	            }
 	            
 				request.setMethod(method.toString());

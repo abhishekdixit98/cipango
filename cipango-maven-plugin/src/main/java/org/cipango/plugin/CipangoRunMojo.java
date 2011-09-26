@@ -24,6 +24,7 @@ import org.apache.maven.plugin.MojoFailureException;
 import org.cipango.server.SipConnector;
 import org.cipango.server.log.AccessLog;
 import org.mortbay.jetty.plugin.JettyRunMojo;
+import org.mortbay.jetty.plugin.JettyServer;
 
 /**
  *  <p>
@@ -146,7 +147,6 @@ public class CipangoRunMojo extends JettyRunMojo
 		super.finishConfigurationBeforeStart();
 	}
 
-	@SuppressWarnings("deprecation")
 	@Override
 	public void configureWebApplication () throws Exception
 	{
