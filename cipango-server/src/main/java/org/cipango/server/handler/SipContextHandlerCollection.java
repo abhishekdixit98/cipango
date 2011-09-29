@@ -165,7 +165,8 @@ public class SipContextHandlerCollection extends ContextHandlerCollection implem
 				{
 					LOG.debug("Remove second top route {} due to RFC 5658", route2);
 					request.removeTopRoute();
-					route = route2;
+					if ("2".equals(route.getParameter(SipParams.DRR)))
+						route = route2;
 				}
 			}
 			return route;

@@ -1035,7 +1035,7 @@ public class SipProxy implements Proxy, ServerTransactionListener, Serializable
 			if (getRecordRoute() && connection.getConnector() != connector)
 			{
 				SipURI rrUri = newProxyURI(connection.getConnector(), true);
-				rrUri.setParameter(SipParams.DRR, "");
+				rrUri.setParameter(SipParams.DRR, "2");
 				_branchRRUri.setParameter(SipParams.DRR, "");
 				if (connector.getTransportOrdinal() == SipConnectors.TCP_ORDINAL)
 					_branchRRUri.setTransportParam("tcp");
