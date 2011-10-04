@@ -227,8 +227,14 @@ public class ClientTransaction extends Transaction
         if (isInvite()) 
         {
 			setState(STATE_CALLING);
-			doSend();
-			startTimer(TIMER_B, 64L*__T1);
+			try
+			{
+				doSend();
+			}
+			finally
+			{
+				startTimer(TIMER_B, 64L*__T1);
+			}
 			if (!isTransportReliable())
 				startTimer(TIMER_A, _aDelay);
 		} 
@@ -240,8 +246,14 @@ public class ClientTransaction extends Transaction
         else 
         {
 			setState(STATE_TRYING);
-			doSend();
-			startTimer(TIMER_F, 64L*__T1);
+			try
+			{
+				doSend();
+			}
+			finally
+			{
+				startTimer(TIMER_F, 64L*__T1);
+			}
 			if (!isTransportReliable()) 
 				startTimer(TIMER_E, _eDelay);
 		}
@@ -458,30 +470,40 @@ public class ClientTransaction extends Transaction
 	
 	class TimeoutConnection implements SipConnection
 	{
+		private SipConnector _connector;
+		
+		public TimeoutConnection()
+		{
+			if (getConnection() == null)
+				_connector = getServer().getConnectorManager().getDefaultConnector();
+			else
+				_connector = getConnection().getConnector();
+		}
 		
 		public SipConnector getConnector()
-		{
-			return getConnection().getConnector();
+		{			
+			
+			return _connector;
 		}
 
 		public InetAddress getLocalAddress()
 		{
-			return getConnection().getLocalAddress();
+			return _connector.getAddr();
 		}
 
 		public int getLocalPort()
 		{
-			return getConnection().getLocalPort();
+			return _connector.getPort();
 		}
 
 		public InetAddress getRemoteAddress()
 		{
-			return getConnection().getLocalAddress();
+			return _connector.getAddr();
 		}
 
 		public int getRemotePort()
 		{
-			return getConnection().getLocalPort();
+			return _connector.getPort();
 		}
 
 		public void write(Buffer buffer) throws IOException
