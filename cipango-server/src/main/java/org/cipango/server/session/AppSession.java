@@ -464,7 +464,7 @@ public class AppSession implements AppSessionIf
         	_expiryTimer = null;
         }
         
-        if (_expiryDelay > 0) // TODO refactor
+        if (_expiryDelay > 0 && isValid()) // TODO refactor
         	_expiryTimer = _callSession.schedule(new ExpiryTimeout(), _expiryDelay * 60000l);
     }
     
