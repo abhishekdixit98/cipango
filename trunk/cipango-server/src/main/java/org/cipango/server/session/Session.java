@@ -1568,7 +1568,8 @@ public class Session implements SessionIf
 			
 			public void noAck() 
 			{
-				_appSession.noAck(getResponse().getRequest(), getResponse());
+				if (isValid())
+					_appSession.noAck(getResponse().getRequest(), getResponse());
 			}
 
 			public long retransmit(long delay) 
@@ -1606,7 +1607,8 @@ public class Session implements SessionIf
 				
 				public void noAck()
 				{
-					_appSession.noPrack(getResponse().getRequest(), getResponse());
+					if (isValid())
+						_appSession.noPrack(getResponse().getRequest(), getResponse());
 				}
 			}
 		}
