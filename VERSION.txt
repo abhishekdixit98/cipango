@@ -26,7 +26,7 @@ cipango-2.1 - 7 October 2011
  + CIPANGO-134 Extends the dump method to add SIP servlet infos
  + CIPANGO-152 Move to Atomic counters
 
-cipango-2.0.0 - 28 Janury 2010
+cipango-2.0.0 - 28 Janury 2011
  + CIPANGO-123 Subsequent diameter request does not belongs to the original session
  + CIPANGO-124 special character on console web filter
  + CIPANGO-121 Serlvet invoked when already invalidated
