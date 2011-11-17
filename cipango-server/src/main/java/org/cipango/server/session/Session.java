@@ -631,7 +631,7 @@ public class Session implements SessionIf
 				break;
 			}
 		}
-		else if (request.isBye())
+		else if (request.isBye() && response.is2xx())
 		{
 			setState(State.TERMINATED);
 		}
