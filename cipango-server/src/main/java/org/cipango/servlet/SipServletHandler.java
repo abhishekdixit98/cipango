@@ -33,7 +33,6 @@ import javax.servlet.sip.SipServletRequest;
 
 import org.cipango.server.SipHandler;
 import org.cipango.server.SipMessage;
-import org.cipango.server.session.Session;
 import org.cipango.sipapp.SipAppContext;
 import org.cipango.sipapp.SipServletMapping;
 import org.eclipse.jetty.server.Request;
@@ -66,12 +65,11 @@ public class SipServletHandler extends ServletHandler implements SipHandler
 			return;
 	
 		SipMessage baseMessage = (SipMessage) message;
-		Session session = baseMessage.session();
 		
-		SipServletHolder holder = session.getHandler();
+		SipServletHolder holder = baseMessage.getHandler();
 	
 		if (holder == null)
-			throw new IllegalStateException("No holder for session " + session);
+			throw new IllegalStateException("No holder for session " + baseMessage.session());
 		
 		/*
 		if (holder == null) 

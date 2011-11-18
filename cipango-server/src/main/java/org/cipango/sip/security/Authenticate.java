@@ -92,6 +92,16 @@ public class Authenticate
 		}
 	}
 	
+	public Authenticate(String scheme, String realm, String nonce, boolean stale, String algorithm)
+	{
+		_scheme = scheme;
+		_params[REALM_ORDINAL] = realm;
+		_params[NONCE_ORDINAL] = nonce;
+		_params[ALGORITHM_ORDINAL] = algorithm;
+		if (stale)
+			_params[STALE_ORDINAL] = "true";
+	}
+	
 	public String getParameter(String name)
 	{
 		CachedBuffer buffer = CACHE.get(name);

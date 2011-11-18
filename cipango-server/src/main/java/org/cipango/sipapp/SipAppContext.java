@@ -76,6 +76,7 @@ import org.cipango.sip.SipParams;
 import org.cipango.sip.SipURIImpl;
 import org.cipango.sip.URIFactory;
 import org.cipango.sip.security.AuthInfoImpl;
+import org.cipango.sip.security.ConstraintSecurityHandler;
 import org.cipango.util.ReadOnlySipURI;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
@@ -160,6 +161,8 @@ public class SipAppContext extends WebAppContext implements SipHandler
     
     private SipMetaData _sipMetaData = new SipMetaData();
     
+    private ConstraintSecurityHandler _sipSecurityHandler;
+    
 	public SipAppContext() 
 	{
 		super();
@@ -209,7 +212,10 @@ public class SipAppContext extends WebAppContext implements SipHandler
 		}
 		try
 		{
-			getSipServletHandler().handle(message);
+			if (_sipSecurityHandler != null)
+				_sipSecurityHandler.handle(message);
+			else
+				getSipServletHandler().handle(message);
 		}
 		finally
 		{
@@ -417,6 +423,15 @@ public class SipAppContext extends WebAppContext implements SipHandler
 		
 		
 		super.startContext();
+		
+        SipHandler handler = getSipServletHandler();
+        if (_sipSecurityHandler!=null)
+        {
+        	_sipSecurityHandler.setHandler(handler);
+            handler=_sipSecurityHandler;
+            
+            _sipSecurityHandler.start(); // FIXME when should it be started
+        }
 		      		
 		if (_servletHandler != null && _servletHandler.isStarted())
     	{
@@ -451,6 +466,9 @@ public class SipAppContext extends WebAppContext implements SipHandler
     @Override
     protected void doStart() throws Exception
     {
+    	if (getSipSecurityHandler() != null)
+    		_sipSecurityHandler.setServer(getServer());
+    	
     	super.doStart();
     	
     	if (!isAvailable())
@@ -476,6 +494,9 @@ public class SipAppContext extends WebAppContext implements SipHandler
 		if (_sipMetaData != null)
 			_sipMetaData.clear();
 		_sipMetaData =new SipMetaData();
+		
+		if (_sipSecurityHandler != null)
+			_sipSecurityHandler.stop();
 		
 		super.doStop();
 	}
@@ -788,6 +809,27 @@ public class SipAppContext extends WebAppContext implements SipHandler
 	{
 		return _sipMetaData;
 	}
+	
+	public ConstraintSecurityHandler getSipSecurityHandler()
+	{
+		if (_sipSecurityHandler == null && (_options & SECURITY) != 0 && !isStarted())
+			setSipSecurityHandler(newSipSecurityHandler());
+		return _sipSecurityHandler;
+	}
+	
+	protected ConstraintSecurityHandler newSipSecurityHandler()
+    {
+        return new ConstraintSecurityHandler();
+    }
+
+
+	public void setSipSecurityHandler(ConstraintSecurityHandler sipSecurityHandler)
+	{
+		if (getServer() != null)
+			getServer().getContainer().update(this, _sipSecurityHandler, sipSecurityHandler, "sipSecurityHandler");
+
+		_sipSecurityHandler = sipSecurityHandler;
+	}
 		
 	@Override
 	public String toString()
@@ -1009,7 +1051,7 @@ public class SipAppContext extends WebAppContext implements SipHandler
             {
                 SipServletHolder holder = ((SipServletHandler) _servletHandler).getHolder(name);
                 if (holder != null)
-                	return new SipDispatcher(holder);
+                	return new SipDispatcher(SipAppContext.this, holder);
             }
             return super.getNamedDispatcher(name);
         }
@@ -1065,5 +1107,7 @@ public class SipAppContext extends WebAppContext implements SipHandler
 	    	}
     	}
     }
+
+	
     
 }
