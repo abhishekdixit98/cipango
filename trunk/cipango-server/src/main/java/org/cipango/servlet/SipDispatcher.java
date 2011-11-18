@@ -20,7 +20,10 @@ import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.sip.SipServletMessage;
 
+import org.cipango.server.SipMessage;
+import org.cipango.sipapp.SipAppContext;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -29,9 +32,11 @@ public class SipDispatcher implements RequestDispatcher
 	private static final Logger LOG = Log.getLogger(SipDispatcher.class);
 	
     private SipServletHolder _holder;
+    private SipAppContext _context;
     
-    public SipDispatcher(SipServletHolder holder)
+    public SipDispatcher(SipAppContext context, SipServletHolder holder)
     {
+    	_context = context;
         _holder = holder;
     }
     
@@ -40,9 +45,13 @@ public class SipDispatcher implements RequestDispatcher
      */
     public void forward(ServletRequest request, ServletResponse response) throws ServletException, IOException
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("Forwarding to handler: " + _holder.getName());
-        _holder.handle(request, null);
+		if (LOG.isDebugEnabled())
+			LOG.debug("Forwarding to handler: " + _holder.getName());
+
+		SipMessage message = request != null ? (SipMessage) request : (SipMessage) response;
+		message.setHandler(_holder);
+		_context.handle(message);
+		message.setHandler(null);
     }
     
     /**

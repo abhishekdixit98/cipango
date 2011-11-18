@@ -37,6 +37,7 @@ import org.cipango.server.session.CallSession;
 import org.cipango.server.session.Session;
 import org.cipango.server.session.scope.ScopedSession;
 import org.cipango.server.transaction.Transaction;
+import org.cipango.servlet.SipServletHolder;
 import org.cipango.sip.CSeq;
 import org.cipango.sip.LazyParsingException;
 import org.cipango.sip.ParameterableImpl;
@@ -87,7 +88,7 @@ public abstract class SipMessage implements SipServletMessage, Cloneable
 	private Attributes _attributes;
 	
 	private HeaderForm _headerForm = HeaderForm.DEFAULT;
-
+	
 	public SipMessage() 
 	{
 	}
@@ -1150,6 +1151,24 @@ public abstract class SipMessage implements SipServletMessage, Cloneable
     }
     
     public abstract String getRequestLine();
+    
+    public SipServletHolder getHandler()
+    {
+    	Object holder = getAttribute(SipServletHolder.class.getName());
+    	if (holder != null && holder instanceof SipServletHolder)
+    		return (SipServletHolder) holder;
+    	if (_session != null)
+    		return _session.getHandler();
+    	return null;
+    }
+    
+    public void setHandler(SipServletHolder holder)
+    {
+    	if (holder == null)
+    		removeAttribute(SipServletHolder.class.getName());
+    	else
+    		setAttribute(SipServletHolder.class.getName(), holder);
+    }
     
     public String toString() 
     {

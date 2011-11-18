@@ -13,9 +13,15 @@
 
 package org.cipango.sipapp;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 import org.cipango.servlet.SipServletHolder;
+import org.cipango.sip.security.Constraint;
+import org.cipango.sip.security.ConstraintMapping;
+import org.cipango.sip.security.ConstraintSecurityHandler;
+import org.cipango.sip.security.SipSecurityHandler.IdentityAssertionScheme;
 import org.cipango.sipapp.rules.AndRule;
 import org.cipango.sipapp.rules.ContainsRule;
 import org.cipango.sipapp.rules.EqualsRule;
@@ -24,6 +30,7 @@ import org.cipango.sipapp.rules.MatchingRule;
 import org.cipango.sipapp.rules.NotRule;
 import org.cipango.sipapp.rules.OrRule;
 import org.cipango.sipapp.rules.SubdomainRule;
+import org.eclipse.jetty.security.UserDataConstraint;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.Descriptor;
@@ -47,20 +54,20 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
  
         try
         {
-        	registerVisitor("app-name", StandardDescriptorProcessor.class.getDeclaredMethod("visitAppName", __signature));
-        	registerVisitor("servlet-selection", StandardDescriptorProcessor.class.getDeclaredMethod("visitServletSelection", __signature));
-        	registerVisitor("proxy-config", StandardDescriptorProcessor.class.getDeclaredMethod("visitProxyConfig", __signature));
+        	registerVisitor("app-name", this.getClass().getDeclaredMethod("visitAppName", __signature));
+        	registerVisitor("servlet-selection", this.getClass().getDeclaredMethod("visitServletSelection", __signature));
+        	registerVisitor("proxy-config", this.getClass().getDeclaredMethod("visitProxyConfig", __signature));
         	
-            registerVisitor("context-param", StandardDescriptorProcessor.class.getDeclaredMethod("visitContextParam", __signature));
-            registerVisitor("display-name", StandardDescriptorProcessor.class.getDeclaredMethod("visitDisplayName", __signature));
-            registerVisitor("servlet", StandardDescriptorProcessor.class.getDeclaredMethod("visitServlet",  __signature));
-            registerVisitor("servlet-mapping", StandardDescriptorProcessor.class.getDeclaredMethod("visitServletMapping",  __signature));
-            registerVisitor("session-config", StandardDescriptorProcessor.class.getDeclaredMethod("visitSessionConfig",  __signature));
-            // FIXME registerVisitor("security-constraint", this.getClass().getDeclaredMethod("visitSecurityConstraint",  __signature));
-            // FIXME registerVisitor("login-config", this.getClass().getDeclaredMethod("visitLoginConfig",  __signature));
-            // FIXME registerVisitor("security-role", this.getClass().getDeclaredMethod("visitSecurityRole",  __signature));
-            registerVisitor("listener", StandardDescriptorProcessor.class.getDeclaredMethod("visitListener",  __signature));
-            registerVisitor("distributable", StandardDescriptorProcessor.class.getDeclaredMethod("visitDistributable",  __signature));
+            registerVisitor("context-param", this.getClass().getDeclaredMethod("visitContextParam", __signature));
+            registerVisitor("display-name", this.getClass().getDeclaredMethod("visitDisplayName", __signature));
+            registerVisitor("servlet", this.getClass().getDeclaredMethod("visitServlet",  __signature));
+            registerVisitor("servlet-mapping", this.getClass().getDeclaredMethod("visitServletMapping",  __signature));
+            registerVisitor("session-config", this.getClass().getDeclaredMethod("visitSessionConfig",  __signature));
+            registerVisitor("security-constraint", this.getClass().getDeclaredMethod("visitSecurityConstraint",  __signature));
+            registerVisitor("login-config", this.getClass().getDeclaredMethod("visitLoginConfig",  __signature));
+            registerVisitor("security-role", this.getClass().getDeclaredMethod("visitSecurityRole",  __signature));
+            registerVisitor("listener", this.getClass().getDeclaredMethod("visitListener",  __signature));
+            registerVisitor("distributable", this.getClass().getDeclaredMethod("visitDistributable",  __signature));
         }
         catch (Exception e)
         {
@@ -364,6 +371,127 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         // the element has no content, so its simple presence
         // indicates that the webapp is distributable...
         ((SipDescriptor)descriptor).setDistributable(true);
+    }
+	
+	   /**
+     * @param context
+     * @param descriptor
+     * @param node
+     */
+    public void visitSecurityConstraint(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
+    {
+        Constraint scBase = new Constraint();
+       ConstraintSecurityHandler securityHandler = ((SipAppContext) context).getSipSecurityHandler();
+
+        //ServletSpec 3.0, p74 security-constraints, as minOccurs > 1, are additive 
+        //across fragments
+        try
+        {
+            XmlParser.Node auths = node.get("auth-constraint");
+
+            if (auths != null)
+            {
+                scBase.setAuthenticate(true);
+                // auth-constraint
+                Iterator<XmlParser.Node> iter = auths.iterator("role-name");
+                List<String> roles = new ArrayList<String>();
+                while (iter.hasNext())
+                {
+                    String role = iter.next().toString(false, true);
+                    roles.add(role);
+                }
+                scBase.setRoles(roles.toArray(new String[roles.size()]));
+            }
+            
+            scBase.setProxyMode(node.get("proxy-authentication") != null);
+
+            XmlParser.Node data = node.get("user-data-constraint");
+            if (data != null)
+            {
+                data = data.get("transport-guarantee");
+                String guarantee = data.toString(false, true).toUpperCase();
+                if (guarantee == null || guarantee.length() == 0 || "NONE".equals(guarantee))
+                    scBase.setUserDataConstraint(UserDataConstraint.None);
+                else if ("INTEGRAL".equals(guarantee))
+                	scBase.setUserDataConstraint(UserDataConstraint.Integral);
+                else if ("CONFIDENTIAL".equals(guarantee))
+                	 scBase.setUserDataConstraint(UserDataConstraint.Confidential);
+                else
+                {
+                    LOG.warn("Unknown user-data-constraint:" + guarantee);
+                    scBase.setUserDataConstraint(UserDataConstraint.Confidential);
+                }
+            }
+            Iterator<XmlParser.Node> iter = node.iterator("resource-collection");
+            while (iter.hasNext())
+            {
+                XmlParser.Node collection =  iter.next();
+                String name = collection.getString("resource-name", false, true);
+                Constraint sc = (Constraint) scBase.clone();
+                sc.setName(name);
+
+                Iterator<XmlParser.Node> iter3 = collection.iterator("sip-method");
+                List<String> methods = null;
+                if (iter3.hasNext())
+                {
+                    methods = new ArrayList<String>();
+                    while (iter3.hasNext())
+                        methods.add(((XmlParser.Node) iter3.next()).toString(false, true));
+                }
+                
+                iter3 = collection.iterator("servlet-name");
+                List<String> servletNames = null;
+                if (iter3.hasNext())
+                {
+                	servletNames = new ArrayList<String>();
+                    while (iter3.hasNext())
+                    	servletNames.add(((XmlParser.Node) iter3.next()).toString(false, true));
+                }
+                
+                ConstraintMapping mapping = new ConstraintMapping();
+                mapping.setServletNames(servletNames);
+                mapping.setMethods(methods);
+                mapping.setConstraint(sc);
+                
+                securityHandler.addConstraintMapping(mapping);
+            }
+        }
+        catch (CloneNotSupportedException e)
+        {
+            LOG.warn(e);
+        }
+    }
+    
+    public void visitLoginConfig(WebAppContext context, Descriptor descriptor, XmlParser.Node node) throws Exception
+    {
+    	ConstraintSecurityHandler securityHandler = ((SipAppContext) context).getSipSecurityHandler();
+        XmlParser.Node method = node.get("auth-method");
+        if (method != null)
+        	securityHandler.setAuthMethod(method.toString(false, true));
+            
+            
+        //handle realm-name merge
+        XmlParser.Node name = node.get("realm-name");
+        String nameStr = (name == null ? "default" : name.toString(false, true));
+        securityHandler.setRealmName(nameStr);
+            
+ 
+        XmlParser.Node identityAssertion = node.get("identity-assertion");
+        if (identityAssertion != null)
+        {
+        	String scheme = identityAssertion.getString("identity-assertion-scheme", false, true);
+        	securityHandler.setIdentityAssertionScheme(IdentityAssertionScheme.getByName(scheme));
+        	String supported = identityAssertion.getString("identity-assertion-support", false, true);
+        	securityHandler.setIdentityAssertionRequired("REQUIRED".equalsIgnoreCase(supported));
+        }
+    }
+    
+    public void visitSecurityRole(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
+    {
+        XmlParser.Node roleNode = node.get("role-name");
+        String role = roleNode.toString(false, true);
+        ConstraintSecurityHandler securityHandler = ((SipAppContext) context).getSipSecurityHandler();
+        securityHandler.addRole(role);
     }
 
 }
