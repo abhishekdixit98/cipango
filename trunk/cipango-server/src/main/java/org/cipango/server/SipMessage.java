@@ -57,6 +57,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.BufferCache.CachedBuffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
+import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.LazyList;
@@ -88,6 +89,8 @@ public abstract class SipMessage implements SipServletMessage, Cloneable
 	private Attributes _attributes;
 	
 	private HeaderForm _headerForm = HeaderForm.DEFAULT;
+	
+	private UserIdentity _userIdentity;
 	
 	public SipMessage() 
 	{
@@ -529,6 +532,8 @@ public abstract class SipMessage implements SipServletMessage, Cloneable
 	 */
 	public String getRemoteUser() 
 	{
+		if (_userIdentity != null)
+			return _userIdentity.getUserPrincipal().getName(); // TODO check that this returns every time the right value
 		return null;
 	}
 	
@@ -571,6 +576,8 @@ public abstract class SipMessage implements SipServletMessage, Cloneable
 	 */
 	public Principal getUserPrincipal()
 	{
+		if (_userIdentity != null)
+			return _userIdentity.getUserPrincipal();
 		return null;
 	}
 	
@@ -595,6 +602,8 @@ public abstract class SipMessage implements SipServletMessage, Cloneable
 	 */
 	public boolean isUserInRole(String role)
 	{
+		if (_userIdentity != null)
+			return _userIdentity.isUserInRole(role, getHandler());
 		return false;
 	}
 	
@@ -1176,4 +1185,14 @@ public abstract class SipMessage implements SipServletMessage, Cloneable
     	new SipGenerator().generate(buffer, this);
     	return buffer.toString();
     }
+
+	public UserIdentity getUserIdentity()
+	{
+		return _userIdentity;
+	}
+
+	public void setUserIdentity(UserIdentity userIdentity)
+	{
+		_userIdentity = userIdentity;
+	}
 }

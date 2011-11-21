@@ -31,6 +31,7 @@ import org.cipango.sip.security.SipAuthenticator.AuthConfiguration;
 import org.eclipse.jetty.security.DefaultIdentityService;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.LoginService;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -298,9 +299,17 @@ public abstract class SipSecurityHandler<T> extends AggregateLifeCycle implement
             if (isAuthMandatory)
             {
 	            UserIdentity user = _authenticator.authenticate(request, isProxyMode(request, constraintInfo), isAuthMandatory);
-	
+	            request.setUserIdentity(user);
 	            if (user == null)
 	            	return;
+	            
+	            boolean authorized=checkSipResourcePermissions(holder, request, constraintInfo, user);
+                if (!authorized)
+                {
+                	SipServletResponse response = request.createResponse(SipServletResponse.SC_FORBIDDEN, "!role");
+                    response.send();
+                    return;
+                }
             }
 		}
 		

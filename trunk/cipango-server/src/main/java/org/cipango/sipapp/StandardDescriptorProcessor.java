@@ -34,7 +34,9 @@ import org.eclipse.jetty.security.UserDataConstraint;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.Descriptor;
+import org.eclipse.jetty.webapp.FragmentDescriptor;
 import org.eclipse.jetty.webapp.IterativeDescriptorProcessor;
+import org.eclipse.jetty.webapp.Origin;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlParser;
 
@@ -169,6 +171,28 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
 		
         // FIXME use same instance for listener and servlet
 		((SipAppContext) context).addSipServlet(holder);
+		
+		
+        Iterator sRefsIter = node.iterator("security-role-ref");
+        while (sRefsIter.hasNext())
+        {
+            XmlParser.Node securityRef = (XmlParser.Node) sRefsIter.next();
+            String roleName = securityRef.getString("role-name", false, true);
+            String roleLink = securityRef.getString("role-link", false, true);
+            if (roleName != null && roleName.length() > 0 && roleLink != null && roleLink.length() > 0)
+            	holder.setUserRoleLink(roleName, roleLink);             
+            else
+                LOG.warn("Ignored invalid security-role-ref element: " + "servlet-name=" + holder.getName() + ", " + securityRef);
+        }
+        
+        XmlParser.Node run_as = node.get("run-as");
+        if (run_as != null)
+        { 
+            String roleName = run_as.getString("role-name", false, true);
+
+            if (roleName != null)
+                holder.setRunAsRole(roleName);
+        }
     }
     
     
