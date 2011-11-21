@@ -24,6 +24,7 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 
+import org.cipango.server.SipConnector;
 import org.cipango.server.SipRequest;
 import org.cipango.servlet.SipServletHolder;
 import org.eclipse.jetty.security.UserDataConstraint;
@@ -228,19 +229,23 @@ public class ConstraintSecurityHandler extends SipSecurityHandler<RoleInfo>
 	
 	    if (constraintInfo.isForbidden())
 	        return false;
-	    
-	    return true;
-	
-	    /*
-	     * FIXME
-	    UserDataConstraint dataConstraint = constraintInfo.getDataConstraint();
+	    	
+
+	    UserDataConstraint dataConstraint = constraintInfo.getUserDataConstraint();
 	    if (dataConstraint == null || dataConstraint == UserDataConstraint.None)
 	    {
 	        return true;
 	    }
-	    HttpConnection connection = HttpConnection.getCurrentConnection();
-	    Connector connector = connection.getConnector();
+	    
+	    SipConnector connector = null;
+	    
+	    if (request.getConnection() != null)
+	    	connector = request.getConnection().getConnector();
+	    
+
+	    return true;
 	
+	    /* TODO
 	    if (dataConstraint == UserDataConstraint.Integral)
 	    {
 	        if (connector.isIntegral(request))
@@ -279,12 +284,14 @@ public class ConstraintSecurityHandler extends SipSecurityHandler<RoleInfo>
 	
 	        request.setHandled(true);
 	        return false;
+	        
 	    }
 	    else
 	    {
 	        throw new IllegalArgumentException("Invalid dataConstraint value: " + dataConstraint);
 	    }
 	    */
+	    
 	}
 
 	@Override
