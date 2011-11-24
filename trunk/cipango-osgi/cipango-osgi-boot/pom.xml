@@ -1,0 +1,159 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.cipango.osgi</groupId>
+    <artifactId>cipango-osgi-project</artifactId>
+    <version>2.2-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+  <artifactId>cipango-osgi-boot</artifactId>
+  <packaging>bundle</packaging> 
+  <name>Cipango :: OSGi :: Boot</name>
+	<properties>
+    <bundle-symbolic-name>${project.groupId}.boot</bundle-symbolic-name>
+  </properties>
+
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>unpack</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>unpack</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty.osgi</groupId>
+                  <artifactId>jetty-osgi-boot</artifactId>
+                  <classifier>sources</classifier>
+                  <overWrite>false</overWrite>
+                </artifactItem>
+              </artifactItems>
+              <outputDirectory>${project.build.directory}/jetty-osgi-boot</outputDirectory>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>add-source</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>add-source</goal>
+            </goals>
+            <configuration>
+              <sources>
+                <source>${project.build.directory}/jetty-osgi-boot</source>
+              </sources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      
+      <plugin>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>generate-sources</id>
+            <phase>process-sources</phase>  
+            <configuration>
+              <target>
+                <echo message="Fixing the patch file for local conventions..." />
+                <fixcrlf srcdir="${basedir}/src/main/patches/" includes="**/*.patch" />
+                <fixcrlf srcdir="${project.build.directory}/jetty-osgi-boot" includes="**/*.java,**/*.config" />
+                <echo message="Starting to applying patches... " />
+                <patch dir="${project.build.directory}/jetty-osgi-boot/" patchfile="${basedir}/src/main/patches/JettyBootstrapActivator.patch" ignorewhitespace="true" strip="0" />
+                <patch dir="${project.build.directory}/jetty-osgi-boot/" patchfile="${basedir}/src/main/patches/DefaultJettyAtJettyHomeHelper.patch" ignorewhitespace="true" strip="0" />
+                <echo message="Finished applying patches... " />
+              </target>
+            </configuration>
+            <goals>
+              <goal>run</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <extensions>true</extensions>
+        <executions>
+            <execution>
+                <id>bundle-manifest</id>
+                <phase>process-classes</phase>
+                <goals>
+                    <goal>manifest</goal> 
+                </goals>
+            </execution>
+        </executions>
+        <configuration>
+            <instructions>
+                <Bundle-SymbolicName>org.eclipse.jetty.osgi.boot;singleton:=true</Bundle-SymbolicName>
+                <!-- Bundle-SymbolicName>org.cipango.osgi.boot</Bundle-SymbolicName -->
+                <Export-Package>org.eclipse.jetty.osgi.boot;version="${jetty-version}",org.eclipse.jetty.osgi.boot.utils,org.eclipse.jetty.osgi.nested;version="${jetty-version}"</Export-Package> 
+                <Bundle-Activator>org.eclipse.jetty.osgi.boot.JettyBootstrapActivator</Bundle-Activator>
+                <Import-Package>javax.servlet;version="2.5.0",
+ javax.servlet.http;version="2.5.0",
+ javax.servlet.sip;version="1.1",
+ javax.servlet.sip.annotation;version="1.1",
+ javax.servlet.sip.ar;version="1.1",
+ javax.servlet.sip.ar.spi;version="1.1",
+ org.osgi.framework,
+ org.osgi.util.tracker;version="1.3.0",
+ org.slf4j;resolution:=optional,
+ org.slf4j.spi;resolution:=optional, 
+ org.slf4j.helpers;resolution:=optional,
+ org.xml.sax,
+ org.xml.sax.helpers,
+ org.eclipse.jetty.nested;resolution:=optional,
+ !org.junit,
+ *
+                  </Import-Package>
+                  <DynamicImport-Package>org.eclipse.jetty.*;version="[7.5,8)",
+ org.cipango.*;version="[2.1,3)"</DynamicImport-Package>
+                  <!-- Require-Bundle/ -->
+                  <Bundle-RequiredExecutionEnvironment>J2SE-1.5</Bundle-RequiredExecutionEnvironment> 
+              </instructions>
+          </configuration>
+      </plugin>
+    </plugins>
+  </build>
+  
+  <dependencies>
+    <dependency>
+      <groupId>org.cipango</groupId>
+      <artifactId>cipango-server</artifactId>
+    </dependency>
+   <dependency>
+      <groupId>org.cipango</groupId>
+      <artifactId>cipango-deploy</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.cipango</groupId>
+      <artifactId>cipango-dar</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.osgi</groupId>
+      <artifactId>org.eclipse.osgi</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.osgi</groupId>
+      <artifactId>org.eclipse.osgi.services</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-nested</artifactId>
+        <version>${jetty-version}</version>
+      </dependency>
+  </dependencies>
+</project>
