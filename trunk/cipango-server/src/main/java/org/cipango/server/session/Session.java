@@ -591,17 +591,20 @@ public class Session implements SessionIf
 			switch (_state)
 			{
 			case INITIAL:
-				if (status < 300 && response.getTo().getParameter(SipParams.TAG) != null)
+				if (status < 300)
 				{
-					if (_ua != null)
-						_ua.createDialog(response, uac);
-					else if (isProxy())
-						createProxyDialog(response);
-					
-					if (status < 200)
-						setState(State.EARLY);
-					else
-						setState(State.CONFIRMED);
+					if (response.getTo().getParameter(SipParams.TAG) != null)
+					{	
+						if (_ua != null)
+							_ua.createDialog(response, uac);
+						else if (isProxy())
+							createProxyDialog(response);
+						
+						if (status < 200)
+							setState(State.EARLY);
+						else
+							setState(State.CONFIRMED);
+					}
 				}
 				else
 				{
