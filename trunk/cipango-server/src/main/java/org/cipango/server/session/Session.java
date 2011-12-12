@@ -591,7 +591,7 @@ public class Session implements SessionIf
 			switch (_state)
 			{
 			case INITIAL:
-				if (status < 300)
+				if (status < 300 && response.getTo().getParameter(SipParams.TAG) != null)
 				{
 					if (_ua != null)
 						_ua.createDialog(response, uac);
