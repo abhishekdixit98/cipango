@@ -319,7 +319,7 @@ public class SipServletHandler extends ServletHandler implements SipHandler
 	{
 		SipServletHolder holder = getSipServlet(servletName);
 		
-	    setServlets((ServletHolder[])LazyList.removeFromArray(super.getServlets(), holder));
+	    setSipServlets((SipServletHolder[])LazyList.removeFromArray(getSipServlets(), holder));
 	       
 	    SipServletMapping[] mappings = getSipServletMappings();
         for (int i = 0; mappings != null && i < mappings.length; i++) 
