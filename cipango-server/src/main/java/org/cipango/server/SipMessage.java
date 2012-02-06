@@ -692,7 +692,7 @@ public abstract class SipMessage implements SipServletMessage, Cloneable
 			setContentLength(_content.length);
 			setContentType(type);
 		} 
-		else if (o instanceof String && type.startsWith("text/"))
+		else if (o instanceof String)
 		{
 			String s = (String) o;
 			setContentType(type);
