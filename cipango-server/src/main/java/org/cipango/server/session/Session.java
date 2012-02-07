@@ -593,7 +593,8 @@ public class Session implements SessionIf
 			case INITIAL:
 				if (status < 300)
 				{
-					if (response.getTo().getParameter(SipParams.TAG) != null)
+					// In UAS mode, the to tag has been set yet.
+					if ((!uac && isUA()) || response.getTo().getParameter(SipParams.TAG) != null)
 					{	
 						if (_ua != null)
 							_ua.createDialog(response, uac);
@@ -1087,7 +1088,7 @@ public class Session implements SessionIf
 			}
 			
 			updateState(response, false);
-			
+						
 			SipRequest request = (SipRequest) response.getRequest();
 
 			if (request.isInitial() && (response.to().getParameter(SipParams.TAG) == null))
