@@ -47,6 +47,7 @@ public class UdpConnectorTest
 	public void setUp() throws Exception
 	{
 		_connector = new UdpConnector();
+		_connector.setHost("localhost");
 		_connector.setPort(5040);
 		_connector.setThreadPool(new QueuedThreadPool());
 		_connector.setHandler(new TestHandler());
@@ -77,6 +78,16 @@ public class UdpConnectorTest
 			assertFalse(connector.isRunning());
 			Thread.sleep(10);
 		}
+	}
+	
+	@Test
+	public void testParam() throws Exception
+	{
+		assertEquals("sip:localhost:5040", _connector.getSipUri().toString());
+		_connector.stop();
+		_connector.setTransportParam(true);
+		_connector.start();
+		assertEquals("sip:localhost:5040;transport=udp", _connector.getSipUri().toString());
 	}
 
 	@Test
@@ -143,7 +154,7 @@ public class UdpConnectorTest
 		DatagramSocket ds = new DatagramSocket();
 		
 		byte[] b = message.getBytes("UTF-8");
-		DatagramPacket packet = new DatagramPacket(b, 0, b.length, InetAddress.getLocalHost(), 5040);
+		DatagramPacket packet = new DatagramPacket(b, 0, b.length, InetAddress.getByName("localhost"), 5040);
 	
 		ds.send(packet);
 	}
