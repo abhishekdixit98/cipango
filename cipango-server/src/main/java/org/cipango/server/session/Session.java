@@ -593,19 +593,15 @@ public class Session implements SessionIf
 			case INITIAL:
 				if (status < 300)
 				{
-					// In UAS mode, the to tag has been set yet.
-					if ((!uac && isUA()) || response.getTo().getParameter(SipParams.TAG) != null)
-					{	
-						if (_ua != null)
-							_ua.createDialog(response, uac);
-						else if (isProxy())
-							createProxyDialog(response);
-						
-						if (status < 200)
-							setState(State.EARLY);
-						else
-							setState(State.CONFIRMED);
-					}
+					if (_ua != null)
+						_ua.createDialog(response, uac);
+					else if (isProxy())
+						createProxyDialog(response);
+					
+					if (status < 200)
+						setState(State.EARLY);
+					else
+						setState(State.CONFIRMED);
 				}
 				else
 				{
@@ -635,7 +631,7 @@ public class Session implements SessionIf
 				break;
 			}
 		}
-		else if (request.isBye() && response.is2xx())
+		else if (request.isBye())
 		{
 			setState(State.TERMINATED);
 		}
@@ -1088,7 +1084,7 @@ public class Session implements SessionIf
 			}
 			
 			updateState(response, false);
-						
+			
 			SipRequest request = (SipRequest) response.getRequest();
 
 			if (request.isInitial() && (response.to().getParameter(SipParams.TAG) == null))
