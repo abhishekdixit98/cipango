@@ -45,6 +45,7 @@ public abstract class AbstractSipConnector extends AbstractLifeCycle implements 
     
     private String _externalHost;
     private int _externalPort = -1;
+    private boolean _transportParam = false;
     
     private SipURI _sipUri;
     
@@ -134,7 +135,19 @@ public abstract class AbstractSipConnector extends AbstractLifeCycle implements 
     {
         return SipConnectors.getName(getTransportOrdinal());
     }
+   
+    public boolean isTransportParam()
+	{
+		return _transportParam;
+	}
+
+	public void setTransportParam(boolean transportParam)
+	{
+		_transportParam = transportParam;
+	}
     
+
+ 
     protected void doStart() throws Exception 
     {
     	if (_port <= 0)
@@ -156,7 +169,10 @@ public abstract class AbstractSipConnector extends AbstractLifeCycle implements 
     	_sipUri = new SipURIImpl(_name,
     			_externalHost != null ? _externalHost : _host, 
     			_externalPort != -1 ? _externalPort : _port);
-        
+       
+        if (isTransportParam())
+    		_sipUri.setTransportParam(getTransport().toLowerCase());
+ 
         if (_threadPool == null && getServer() != null)
         	_threadPool = getServer().getSipThreadPool();
         
