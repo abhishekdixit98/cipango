@@ -1,0 +1,369 @@
+// ========================================================================
+// Copyright (c) 2006-2010 Mort Bay Consulting Pty. Ltd.
+// ------------------------------------------------------------------------
+// All rights reserved. This program and the accompanying materials
+// are made available under the terms of the Eclipse Public License v1.0
+// and Apache License v2.0 which accompanies this distribution.
+// The Eclipse Public License is available at 
+// http://www.eclipse.org/legal/epl-v10.html
+// The Apache License v2.0 is available at
+// http://www.opensource.org/licenses/apache2.0.php
+// You may elect to redistribute this code under either of these licenses. 
+// ========================================================================
+
+package org.cipango.sipapp;
+
+import java.util.Iterator;
+
+import org.cipango.servlet.SipServletHolder;
+import org.cipango.sipapp.rules.AndRule;
+import org.cipango.sipapp.rules.ContainsRule;
+import org.cipango.sipapp.rules.EqualsRule;
+import org.cipango.sipapp.rules.ExistsRule;
+import org.cipango.sipapp.rules.MatchingRule;
+import org.cipango.sipapp.rules.NotRule;
+import org.cipango.sipapp.rules.OrRule;
+import org.cipango.sipapp.rules.SubdomainRule;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.webapp.Descriptor;
+import org.eclipse.jetty.webapp.IterativeDescriptorProcessor;
+import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.xml.XmlParser;
+
+/**
+ * StandardDescriptorProcessor
+ *
+ * Process a sip.xml, sip-defaults.xml, sip-overrides.xml.
+ */
+public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
+{
+	private static final Logger LOG = Log.getLogger(StandardDescriptorProcessor.class);
+	
+    public static final String STANDARD_PROCESSOR = "org.eclipse.jetty.standardDescriptorProcessor";
+        
+    public StandardDescriptorProcessor ()
+    {
+ 
+        try
+        {
+        	registerVisitor("app-name", StandardDescriptorProcessor.class.getDeclaredMethod("visitAppName", __signature));
+        	registerVisitor("servlet-selection", StandardDescriptorProcessor.class.getDeclaredMethod("visitServletSelection", __signature));
+        	registerVisitor("proxy-config", StandardDescriptorProcessor.class.getDeclaredMethod("visitProxyConfig", __signature));
+        	
+            registerVisitor("context-param", StandardDescriptorProcessor.class.getDeclaredMethod("visitContextParam", __signature));
+            registerVisitor("display-name", StandardDescriptorProcessor.class.getDeclaredMethod("visitDisplayName", __signature));
+            registerVisitor("servlet", StandardDescriptorProcessor.class.getDeclaredMethod("visitServlet",  __signature));
+            registerVisitor("servlet-mapping", StandardDescriptorProcessor.class.getDeclaredMethod("visitServletMapping",  __signature));
+            registerVisitor("session-config", StandardDescriptorProcessor.class.getDeclaredMethod("visitSessionConfig",  __signature));
+            // FIXME registerVisitor("security-constraint", this.getClass().getDeclaredMethod("visitSecurityConstraint",  __signature));
+            // FIXME registerVisitor("login-config", this.getClass().getDeclaredMethod("visitLoginConfig",  __signature));
+            // FIXME registerVisitor("security-role", this.getClass().getDeclaredMethod("visitSecurityRole",  __signature));
+            registerVisitor("listener", StandardDescriptorProcessor.class.getDeclaredMethod("visitListener",  __signature));
+            registerVisitor("distributable", StandardDescriptorProcessor.class.getDeclaredMethod("visitDistributable",  __signature));
+        }
+        catch (Exception e)
+        {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    
+    
+    /** 
+     * @see org.eclipse.jetty.webapp.IterativeDescriptorProcessor#start()
+     */
+    public void start(WebAppContext context, Descriptor descriptor)
+    { 
+    }
+    
+    
+    
+    /** 
+     * @see org.eclipse.jetty.webapp.IterativeDescriptorProcessor#end()
+     */
+    public void end(WebAppContext context, Descriptor descriptor)
+    {
+    }
+    
+    /**
+     * @param context
+     * @param descriptor
+     * @param node
+     */
+    public void visitContextParam (WebAppContext context, Descriptor descriptor, XmlParser.Node node)
+    {
+        String name = node.getString("param-name", false, true);
+        String value = node.getString("param-value", false, true);
+ 
+        context.getInitParams().put(name, value);
+    
+        if (LOG.isDebugEnabled()) 
+        	LOG.debug("ContextParam: " + name + "=" + value);
+
+    }
+    
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param context
+     * @param descriptor
+     * @param node
+     */
+    public void visitDisplayName(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
+    {
+        context.setDisplayName(node.toString(false, true));
+    }
+    
+    
+    /**
+     * @param context
+     * @param descriptor
+     * @param node
+     */
+	@SuppressWarnings("rawtypes")
+    public void visitServlet(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
+    {
+    	String servletName = node.getString("servlet-name", false, true);
+		String servletClass = node.getString("servlet-class", false, true);
+		// FIXME allow deploy with prefix: javaee:servlet-name
+		SipServletHolder holder = new SipServletHolder();
+		holder.setName(servletName);
+		holder.setClassName(servletClass);
+		
+		Iterator params = node.iterator("init-param");
+		
+		while (params.hasNext()) 
+		{
+			XmlParser.Node param = (XmlParser.Node) params.next();
+			String pName = param.getString("param-name", false, true);
+			String pValue = param.getString("param-value", false, true);
+			holder.setInitParameter(pName, pValue);
+		}
+		
+		XmlParser.Node startup = node.get("load-on-startup");
+		if (startup != null) 
+		{
+			String s = startup.toString(false, true);
+			int order = 0; 
+			if (s != null && s.trim().length() > 0) 
+			{
+				try 
+				{
+					order = Integer.parseInt(s);
+				} 
+				catch (NumberFormatException e) 
+				{
+					LOG.warn("Cannot parse load-on-startup " + s);
+				}
+			}
+			holder.setInitOrder(order);
+		}
+		
+        // FIXME use same instance for listener and servlet
+		((SipAppContext) context).addSipServlet(holder);
+    }
+    
+    
+
+    /**
+     * @param context
+     * @param descriptor
+     * @param node
+     */
+	public void visitServletMapping(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
+    {
+        String servletName = node.getString("servlet-name", false, true); 
+        
+        SipServletMapping mapping = new SipServletMapping();
+		
+		XmlParser.Node pattern = node.get("pattern");
+		XmlParser.Node start = null;
+		@SuppressWarnings("rawtypes")
+		Iterator it = pattern.iterator();
+		
+		while (it.hasNext() && start == null) 
+		{
+			Object o = it.next();
+			if (!(o instanceof XmlParser.Node)) 
+				continue;
+
+			start = (XmlParser.Node) o;
+		}
+        
+        MatchingRule rule = initRule(start);
+		mapping.setServletName(servletName);
+		mapping.setMatchingRule(rule);
+        
+        ((SipAppContext) context).getSipServletHandler().addSipServletMapping(mapping);
+    }
+
+	@SuppressWarnings("rawtypes")
+	public MatchingRule initRule(XmlParser.Node node) 
+	{
+		String name = node.getTag();
+		if ("and".equals(name)) 
+		{
+			AndRule and = new AndRule();
+			Iterator it = node.iterator();
+			while (it.hasNext()) 
+			{
+				Object o = it.next();
+				if (!(o instanceof XmlParser.Node)) 
+					continue;
+				
+				and.addCriterion(initRule((XmlParser.Node) o));
+			}
+			return and;
+		} 
+		else if ("equal".equals(name)) 
+		{
+			String var = node.getString("var", false, true);
+			String value = node.getString("value", false, true);
+			boolean ignoreCase = "true".equalsIgnoreCase(node.getAttribute("ignore-case"));
+			return new EqualsRule(var, value, ignoreCase);
+		} 
+		else if ("subdomain-of".equals(name)) 
+		{
+			String var = node.getString("var", false, true);
+			String value = node.getString("value", false, true);
+			return new SubdomainRule(var, value);
+		} 
+		else if ("or".equals(name)) 
+		{
+			OrRule or = new OrRule();
+			Iterator it = node.iterator();
+			while (it.hasNext()) 
+			{
+				Object o = it.next();
+				if (!(o instanceof XmlParser.Node)) 
+					continue;
+
+				or.addCriterion(initRule((XmlParser.Node) o));
+			}
+			return or;
+		} 
+		else if ("not".equals(name)) 
+		{
+			NotRule not = new NotRule();
+			Iterator it = node.iterator();
+			while (it.hasNext()) 
+			{
+				Object o = it.next();
+				if (!(o instanceof XmlParser.Node)) 
+					continue;
+				
+				not.setCriterion(initRule((XmlParser.Node) o));
+			}
+			return not;
+		} 
+		else if ("contains".equals(name)) 
+		{
+			String var = node.getString("var", false, true);
+			String value = node.getString("value", false, true);
+			boolean ignoreCase = "true".equalsIgnoreCase(node.getAttribute("ignore-case"));
+			return new ContainsRule(var, value, ignoreCase);
+		} 
+		else if ("exists".equals(name)) 
+		{
+			return new ExistsRule(node.getString("var", false, true));
+		} 
+		else 
+		{
+			throw new IllegalArgumentException("Unknown rule: " + name);
+		}
+	}
+    
+    
+    /**
+     * @param context
+     * @param descriptor
+     * @param node
+     */
+	public void visitSessionConfig(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
+    {
+        XmlParser.Node tNode = node.get("session-timeout");
+        if (tNode != null)
+        {
+            int timeout = Integer.parseInt(tNode.toString(false, true));
+            ((SipAppContext) context).setSessionTimeout(timeout);
+        }
+    }
+    
+	public void visitAppName(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
+    {
+    	((SipAppContext) context).getSipMetaData().setAppName(node.toString(false, true)); 
+    }
+    
+	public void visitServletSelection(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
+    {
+    	XmlParser.Node mainServlet = node.get("main-servlet");
+		if (mainServlet != null)
+			((SipAppContext) context).getSipMetaData().setMainServletName(mainServlet.toString(false, true));
+		else
+		{
+			@SuppressWarnings("rawtypes")
+			Iterator it = node.iterator("servlet-mapping");
+			while (it.hasNext())
+			{
+				visitServletMapping(context, descriptor, (XmlParser.Node)it.next());
+			}
+		}
+    }
+    
+	public void visitProxyConfig(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
+    {
+    	 String s = node.getString("proxy-timeout", false, true);
+         
+         if (s == null)
+         	s = node.getString("sequential-search-timeout", false, true);
+         
+         if (s != null)
+         {
+             try 
+             {
+                 int timeout = Integer.parseInt(s);
+                 ((SipAppContext) context).setProxyTimeout(timeout);
+             }
+             catch (NumberFormatException e)
+             {
+                 LOG.warn("Invalid sequential-search-timeout value: " + s);
+             }
+         }
+    }
+    
+    /**
+     * @param context
+     * @param descriptor
+     * @param node
+     */
+	public void visitListener(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
+    {
+        String className = node.getString("listener-class", false, true);
+        try
+        {
+            if (className != null && className.length()> 0)
+            {
+            	((SipAppContext) context).getSipMetaData().addListener(className); 
+            }
+        }
+        catch (Exception e)
+        {
+            LOG.warn("Could not instantiate listener " + className, e);
+            return;
+        }
+    }
+    
+    /**
+     * @param context
+     * @param descriptor
+     * @param node
+     */
+	public void visitDistributable(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
+    {
+        // the element has no content, so its simple presence
+        // indicates that the webapp is distributable...
+        ((SipDescriptor)descriptor).setDistributable(true);
+    }
+
+}

@@ -1,0 +1,50 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.cipango.osgi</groupId>
+    <artifactId>cipango-osgi-project</artifactId>
+    <version>2.1</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+  <artifactId>test-cipango-osgi-client</artifactId>
+  <packaging>bundle</packaging> 
+  <name>Cipango :: OSGi :: Test client</name>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <extensions>true</extensions>
+        <executions>
+            <execution>
+                <id>bundle-manifest</id>
+                <phase>process-classes</phase>
+                <goals>
+                    <goal>manifest</goal> 
+                </goals>
+            </execution>
+        </executions>
+        <configuration>
+            <instructions>
+                <Bundle-SymbolicName>org.cipango.client.osgi.test</Bundle-SymbolicName>
+                <Bundle-Activator>org.cipango.client.osgi.test.Activator</Bundle-Activator>
+                <Import-Package>*</Import-Package>
+              </instructions>
+          </configuration>
+      </plugin>
+    </plugins>
+  </build>
+  
+  <dependencies>
+    <dependency>
+      <groupId>org.cipango.osgi</groupId>
+      <artifactId>cipango-osgi-client</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.osgi</groupId>
+      <artifactId>org.eclipse.osgi</artifactId>
+    </dependency>
+  </dependencies>
+</project>
