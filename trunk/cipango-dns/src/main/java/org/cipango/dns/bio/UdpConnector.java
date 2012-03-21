@@ -1,5 +1,5 @@
 // ========================================================================
-// Copyright 2011 NEXCOM Systems
+// Copyright 2011-2012 NEXCOM Systems
 // ------------------------------------------------------------------------
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,21 +22,115 @@ import java.net.SocketException;
 import org.cipango.dns.AbstractConnector;
 import org.cipango.dns.DnsConnection;
 import org.cipango.dns.DnsMessage;
+import org.cipango.dns.Resolver;
 import org.eclipse.jetty.io.ByteArrayBuffer;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class UdpConnector extends AbstractConnector
 {
 	public static final int MAX_PACKET_SIZE = 512;
 	
+	private static final Logger LOG = Log.getLogger(UdpConnector.class);
+	private DatagramSocket _socket;
+	private Acceptor _acceptor;
+	private int _timeout = Resolver.DEFAULT_TIMEOUT * 10;
+	
+
+	@Override
+	protected void doStop() throws Exception
+	{
+		super.doStop();
+		if (_socket != null)
+			_socket.close();
+		_socket = null;
+		_acceptor = null;
+	}
 	
 	public DnsConnection newConnection(InetAddress host, int port)
 	{
 		return new Connection(host, port);
 	}
 	
-	public DatagramSocket newDatagramSocket() throws SocketException
+	public synchronized DatagramSocket getDatagramSocket() throws SocketException
 	{
-		return new DatagramSocket(getPort(), getHostAddr());
+		if (_socket == null || _socket.isClosed())
+		{
+			_socket = new DatagramSocket(getPort(), getHostAddr());
+			_socket.setSoTimeout(_timeout); // FIXME 
+
+			LOG.debug("Create the new datagram socket {} for DNS connector", _socket.getLocalSocketAddress());
+			_acceptor = new Acceptor();
+			new Thread(_acceptor, "DNS acceptor").start();
+			
+		}
+		return _socket;
+	}
+	
+	public int getTimeout()
+	{
+		return _timeout;
+	}
+
+	public void setTimeout(int timeout)
+	{
+		_timeout = timeout;
+	}
+	
+	
+	public class Acceptor implements Runnable
+	{
+		private DatagramSocket _datagramSocket;
+		
+		public Acceptor()
+		{
+			_datagramSocket = _socket;
+		}
+		
+		public void run()
+		{
+			while (_datagramSocket != null && _datagramSocket == _socket && !_datagramSocket.isClosed())
+			{
+				try
+				{
+					DatagramPacket packet = new DatagramPacket(new byte[MAX_PACKET_SIZE], MAX_PACKET_SIZE);
+					_datagramSocket.receive(packet);
+					DnsMessage answer = new DnsMessage();
+					answer.decode(new ByteArrayBuffer(packet.getData()));
+					MsgContainer msgContainer;
+					
+					synchronized (_queries)
+					{
+						msgContainer = _queries.get(answer.getHeaderSection().getId());
+					}
+					
+					if (msgContainer != null)
+					{
+						synchronized (msgContainer.getQuery())
+						{
+							msgContainer.setAnswer(answer);
+							msgContainer.getQuery().notify();
+						}
+					}
+					else
+						LOG.warn("Drop DNS Answser {}, as can not found a query with same ID", answer);
+				}
+				catch (IOException e)
+				{
+					close();
+				}
+			}
+			close();
+			LOG.debug("DNS acceptor done");
+		}
+		
+		private void close()
+		{
+			if (_datagramSocket != null && !_datagramSocket.isClosed())
+				_datagramSocket.close();
+			_datagramSocket = null;
+		}
+		
 	}
 
 	
@@ -58,19 +152,30 @@ public class UdpConnector extends AbstractConnector
 			message.encode(buffer);
 			DatagramPacket packet = new DatagramPacket(buffer.asArray(), buffer.length(), _remoteAddr, _remotePort);
 			
-			_socket = newDatagramSocket();
+			synchronized (_queries)
+			{
+				_queries.put(message.getHeaderSection().getId(), new MsgContainer(message));
+			}
+			
+			_socket = getDatagramSocket();
 			_socket.send(packet);
 		}
 		
-		public DnsMessage waitAnswer(int timeout) throws IOException
+		public DnsMessage waitAnswer(DnsMessage request, int timeout)
 		{
-			DatagramPacket packet = new DatagramPacket(new byte[MAX_PACKET_SIZE], MAX_PACKET_SIZE);
-			_socket.setSoTimeout(timeout);
-			_socket.receive(packet);
-			DnsMessage message = new DnsMessage();
-			message.decode(new ByteArrayBuffer(packet.getData()));
-			_socket.close();
-			return message;
+			synchronized (request)
+			{
+				try { request.wait(timeout); } catch (InterruptedException e) {}				
+			}
+			MsgContainer messages;
+			synchronized (_queries)
+			{
+
+				messages = _queries.remove(request.getHeaderSection().getId());
+			}
+			if (messages == null)
+				return null;
+			return messages.getAnswer();
 		}
 		
 		public DatagramSocket getSocket()

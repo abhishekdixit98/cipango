@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.net.InetAddress;
 
 import org.cipango.dns.Compression;
-import org.cipango.dns.DnsClass;
 import org.cipango.dns.Name;
 import org.cipango.dns.Type;
 import org.eclipse.jetty.io.Buffer;

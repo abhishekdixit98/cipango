@@ -14,19 +14,19 @@
 package org.cipango.dns;
 
 import java.io.IOException;
-import java.net.SocketTimeoutException;
 
 public interface DnsConnection
 {
 	void send(DnsMessage message) throws IOException;
 	
 	/**
-	 * 
-	 * @param timeout the timeout in milliseconds before throwing a SocketTimeoutException
-	 * @return
-	 * @throws SocketTimeoutException if no message has been received before <code>timeout</code> milliseconds.
+	 * Returns the answser of <code>request</code> or <code>null</code> if no 
+	 * answser has been received before <code>timeout</code> milliseconds. 
+	 * @param timeout the timeout in milliseconds before return <code>null</code>.
+	 * @return the answser of <code>request</code> or <code>null</code> if no 
+	 * answser has been received before <code>timeout</code> milliseconds. 
 	 */
-	DnsMessage waitAnswer(int timeout) throws IOException;
+	DnsMessage waitAnswer(DnsMessage request, int timeout);
 	
 	
 }

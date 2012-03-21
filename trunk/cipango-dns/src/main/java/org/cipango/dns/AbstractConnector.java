@@ -1,5 +1,5 @@
 // ========================================================================
-// Copyright 2011 NEXCOM Systems
+// Copyright 2011-2012 NEXCOM Systems
 // ------------------------------------------------------------------------
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,14 +15,19 @@ package org.cipango.dns;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public abstract class AbstractConnector extends AbstractLifeCycle implements DnsConnector
 {
+	private static final Logger LOG = Log.getLogger(AbstractConnector.class);
 	private InetAddress _host;
 	private int _port;
+	protected Map<Integer, MsgContainer> _queries = new HashMap<Integer, MsgContainer>();
 	
 	public String getHost()
 	{
@@ -44,7 +49,7 @@ public abstract class AbstractConnector extends AbstractLifeCycle implements Dns
 		}
 		catch (UnknownHostException e) 
 		{
-			Log.debug(e);
+			LOG.debug(e);
 		}
 	}
 
@@ -60,4 +65,29 @@ public abstract class AbstractConnector extends AbstractLifeCycle implements Dns
 		_port = port;
 	}
 
+	public static class MsgContainer
+	{
+		private DnsMessage _query;
+		private DnsMessage _answer;
+		
+		public MsgContainer(DnsMessage query)
+		{
+			_query = query;
+		}
+
+		public DnsMessage getAnswer()
+		{
+			return _answer;
+		}
+
+		public void setAnswer(DnsMessage answer)
+		{
+			_answer = answer;
+		}
+
+		public DnsMessage getQuery()
+		{
+			return _query;
+		}
+	}
 }

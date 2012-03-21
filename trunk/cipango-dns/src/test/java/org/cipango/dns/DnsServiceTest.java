@@ -16,14 +16,20 @@ package org.cipango.dns;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
+import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
+import org.cipango.dns.bio.UdpConnector;
+import org.cipango.dns.record.ARecord;
 import org.cipango.dns.record.NaptrRecord;
 import org.cipango.dns.record.PtrRecord;
 import org.cipango.dns.record.Record;
 import org.cipango.dns.record.SrvRecord;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -40,6 +46,12 @@ public class DnsServiceTest
 		_dnsService.start();
 	}
 	
+	@After
+	public void tearDown() throws Exception
+	{
+		_dnsService.stop();
+	}
+	
 	
 	@Test
 	public void testA() throws Exception
@@ -48,6 +60,46 @@ public class DnsServiceTest
 		assertNotNull(addr);
 		assertEquals(1, addr.size());
 		assertEquals(IPV4_ADDR, addr.get(0).getHostAddress());
+	}
+	
+	@Test
+	public void testNewConnection() throws Exception
+	{
+		UdpConnector connector = (UdpConnector) _dnsService.getDefaultConnector();
+		connector.setPort(10053);
+		connector.setTimeout(4000);
+		List<InetAddress> addr = _dnsService.lookupIpv4HostAddr("jira.cipango.org");
+		assertNotNull(addr);
+				
+		Thread.sleep(4500);
+		// After timeout, no socket should be open.
+		DatagramSocket socket = new DatagramSocket(_dnsService.getDefaultConnector().getPort());
+		socket.close();
+		
+		addr = _dnsService.lookupIpv4HostAddr("confluence.cipango.org");
+		assertNotNull(addr);
+	}
+	
+	
+	
+	@Test
+	public void testConcurrent() throws Exception
+	{
+		_dnsService.getDefaultConnector().setPort(10053);
+		Load[] loads = new Load[4];
+		Random random = new Random(); // Use random to prevent cache
+		for (int i = 0; i < loads.length; i++)
+		{
+			loads[i] = new Load("test" + random.nextInt() + ".cipango.org", 5);
+			new Thread(loads[i]).start();
+		}
+	
+		for (int i = 0; i < loads.length; i++)
+			loads[i].waitDone();
+		
+		for (int i = 0; i < loads.length; i++)
+			assertEquals(0, loads[i].getExceptions().size());
+
 	}
 	
 	@Test (expected = UnknownHostException.class)
@@ -159,29 +211,65 @@ public class DnsServiceTest
 		assertEquals(1, addr.size());
 		assertEquals(IPV4_ADDR, addr.get(0).getHostAddress());
 	}	
-	
-	@Test
-	public void testConnector() throws Exception
+		
+	class Load implements Runnable
 	{
-		_dnsService.getDefaultConnector().setPort(10053);
-		new Thread()
+		private String _name;
+		private int _messages;
+		private List<Exception> _exceptions = new ArrayList<Exception>();
+		private boolean _done = false;
+		
+		public Load(String name, int messages)
 		{
-			public void run()
+			_name = name;
+			_messages = messages;
+		}
+		
+		public void run()
+		{
+			long start = System.currentTimeMillis();
+			for (int i = 0; i < _messages; i++)
 			{
 				try
 				{
-					for (int i = 0; i < 100; i++)
-						_dnsService.lookupIpv4HostAddr(i + "jira.cipango.org");
+					_dnsService.lookup(new ARecord(i + _name));
 				}
-				catch (UnknownHostException e)
+				catch (UnknownHostException e) 
 				{
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+				}
+				catch (Exception e) 
+				{
+					_exceptions.add(e);
 				}
 			}
-		}.start();
-		//Thread.sleep(500);
-		for (int i = 0; i < 100; i++)
-			_dnsService.lookupIpv4HostAddr(i + "fisheye.cipango.org");
+			synchronized (this)
+			{
+				_done = true;
+				this.notify();
+			}
+			System.out.println("Took " + ((System.currentTimeMillis() - start) / _messages) + "ms by message");
+		}
+
+		public List<Exception> getExceptions()
+		{
+			return _exceptions;
+		}
+		
+		public void waitDone()
+		{
+			synchronized (this)
+			{	
+				while (!_done)
+				{
+					try
+					{
+						this.wait(200);
+					}
+					catch (InterruptedException e){}	
+				}
+			}
+			
+		}
+		
 	}
 }

@@ -26,10 +26,12 @@ import org.cipango.dns.record.AdditionalName;
 import org.cipango.dns.record.Record;
 import org.cipango.dns.record.SoaRecord;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class Cache
 {
 	public static final int DEFAULT_NEGATIVE_TTL = 3600;
+	private static final Logger LOG = Log.getLogger(Cache.class);
 	
 	private ConcurrentMap<Name, List<Element>> _cache = new ConcurrentHashMap<Name, List<Element>>();
 	
@@ -49,7 +51,7 @@ public class Cache
 				records = records2;
 		}
 		
-		Log.debug("cache.add: " + record + " on " + records);
+		LOG.debug("cache.add: " + record + " on " + records);
 		synchronized (records)
 		{
 			records.add(new Element(record));
@@ -76,7 +78,7 @@ public class Cache
 				ttl = ((SoaRecord) record2).getTtl();
 		}
 		
-		Log.debug("Negative cache.add: " + record + " on " + records + " with ttl " + ttl);
+		LOG.debug("Negative cache.add: " + record + " on " + records + " with ttl " + ttl);
 		synchronized (records)
 		{
 			records.add(new Element(record, ttl, true));

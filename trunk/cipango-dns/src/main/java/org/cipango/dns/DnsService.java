@@ -27,11 +27,14 @@ import org.cipango.dns.record.Record;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 public class DnsService extends AbstractLifeCycle implements DnsClient
 {
+	private static final Logger LOG = Log.getLogger(DnsService.class);
 	private Cache _cache;
 	private List<Name> _searchList = new ArrayList<Name>(); 
 	private Resolver[] _resolvers;
@@ -64,6 +67,10 @@ public class DnsService extends AbstractLifeCycle implements DnsClient
 		if (_connectors == null || _connectors.length == 0)
 			addConnector(new UdpConnector());
 		
+		for (DnsConnector connector : _connectors)
+			if (connector instanceof LifeCycle)
+				((LifeCycle) connector).start();
+		
 		if (_searchList.isEmpty())
 		{
 			sun.net.dns.ResolverConfiguration resolverConfiguration = sun.net.dns.ResolverConfiguration.open();
@@ -73,6 +80,17 @@ public class DnsService extends AbstractLifeCycle implements DnsClient
 		
 		if (_cache == null)
 			_cache = new Cache();
+	}
+	
+	@Override
+	protected void doStop() throws Exception
+	{
+		if (_connectors != null)
+		{
+			for (DnsConnector connector : _connectors)
+				if (connector instanceof LifeCycle)
+					((LifeCycle) connector).stop();
+		}
 	}
 
 	public List<InetAddress> lookupIpv4HostAddr(String name) throws UnknownHostException
@@ -91,8 +109,7 @@ public class DnsService extends AbstractLifeCycle implements DnsClient
 		{
 			if (e instanceof UnknownHostException)
 				throw (UnknownHostException) e;
-			e.printStackTrace();
-			Log.debug(e);
+			LOG.debug(e);
 			throw new UnknownHostException(name);
 		}
 	}
@@ -113,7 +130,7 @@ public class DnsService extends AbstractLifeCycle implements DnsClient
 		{
 			if (e instanceof UnknownHostException)
 				throw (UnknownHostException) e;
-			Log.debug(e);
+			LOG.debug(e);
 			throw new UnknownHostException(name);
 		}
 	}

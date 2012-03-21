@@ -18,8 +18,6 @@ import java.net.InetAddress;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 
-import org.eclipse.jetty.util.log.Log;
-
 public class Resolver
 {
 	public static final int DEFAULT_PORT = 53;
@@ -36,31 +34,19 @@ public class Resolver
 	public DnsMessage resolve(DnsMessage query) throws IOException
 	{
 		DnsConnection c = _dnsClient.getDefaultConnector().newConnection(_host, _port);
-		SocketTimeoutException e = null;
 		long timeout = _timeout;
 		for (int i = 0; i < _attemps; i++)
 		{
-			try
-			{
-				c.send(query);
-				long end = System.currentTimeMillis() + timeout;
-				DnsMessage answer;
-				while (true)
-				{
-					answer = c.waitAnswer((int) (end - System.currentTimeMillis()));
-					if (answer.getHeaderSection().getId() != query.getHeaderSection().getId())
-						Log.warn("Drop DNS Answser {}, expected id {}", answer, query.getHeaderSection().getId());
-					else
-						return answer;
-				}
-			}
-			catch (SocketTimeoutException e1)
-			{
-				e = e1;
-				timeout *= 2;
-			}
+			c.send(query);
+			long end = System.currentTimeMillis() + timeout;
+			DnsMessage answer;
+			
+			answer = c.waitAnswer(query, (int) (end - System.currentTimeMillis()));
+			if (answer != null)
+				return answer;
+			timeout *= 2;
 		}
-		throw e;
+		throw new SocketTimeoutException();
 		
 	}
 
