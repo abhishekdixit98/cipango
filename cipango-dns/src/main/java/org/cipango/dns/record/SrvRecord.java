@@ -16,7 +16,6 @@ package org.cipango.dns.record;
 import java.io.IOException;
 
 import org.cipango.dns.Compression;
-import org.cipango.dns.DnsClass;
 import org.cipango.dns.Name;
 import org.cipango.dns.Type;
 import org.cipango.dns.util.BufferUtil;
