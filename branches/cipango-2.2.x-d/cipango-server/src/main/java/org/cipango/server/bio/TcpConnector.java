@@ -31,6 +31,7 @@ import org.cipango.server.SipConnectors;
 import org.cipango.server.SipMessage;
 import org.cipango.server.transaction.Transaction;
 import org.cipango.sip.BufferOverflowException;
+import org.cipango.sip.SipGrammar;
 import org.cipango.sip.SipParser;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
@@ -53,6 +54,9 @@ public class TcpConnector extends AbstractSipConnector //implements Buffers
 	public static final int MAX_TCP_MESSAGE = 1024 * 400;
 	
 	public static final int DEFAULT_SO_TIMEOUT = 2 * Transaction.__T1 * 64;
+	
+	private static final byte[] PING = new byte[] { SipGrammar.CR, SipGrammar.LF, SipGrammar.CR, SipGrammar.LF};
+	private static final byte[] PONG = new byte[] { SipGrammar.CR, SipGrammar.LF };
     
     private ServerSocket _serverSocket;
     private InetAddress _addr;
@@ -83,10 +87,10 @@ public class TcpConnector extends AbstractSipConnector //implements Buffers
 		if (_tcpThreadPool instanceof LifeCycle)
             ((LifeCycle)_tcpThreadPool).stop();
 		
-		Iterator<TcpConnection> it = _connections.values().iterator();
-		while (it.hasNext())
+		Object[]  connections = _connections.values().toArray();
+		for (Object o : connections)
 		{
-			TcpConnection connection = it.next();
+			TcpConnection connection =  (TcpConnection) o;
 			try
 			{
 				connection.close();
@@ -227,6 +231,23 @@ public class TcpConnector extends AbstractSipConnector //implements Buffers
 		}
 	}
 	
+	/**
+	 * Send a keep alive with double CRLF to the Sip Connection identified by <code>addr</code>
+	 * and <code>port</code>.
+	 * @return <code>true</code> if the message has been sent, <code>false</code> if no connection 
+	 * could be found.
+	 * @throws IOException
+	 */
+	public boolean sendHeartBeat(InetAddress addr, int port) throws IOException 
+	{
+		TcpConnection cnx = _connections.get(key(addr, port));
+		if (cnx == null)
+			return false;
+		
+		cnx.write(new ByteArrayBuffer(PING));
+		return true;
+	}
+	
 	protected TcpConnection newConnection(InetAddress addr, int port) throws IOException
 	{
 		return new TcpConnection(new Socket(addr, port));
@@ -360,20 +381,21 @@ public class TcpConnector extends AbstractSipConnector //implements Buffers
 					} 
 					while (overflow);
 					
-					message = handler.getMessage();
-					message.setConnection(this);
+					if (handler.isPing())
+					{
+						write(new ByteArrayBuffer(PONG));
+					}
+					else if (handler.isPong())
+					{
 
-					/*message.set5uple(
-							getTransportOrdinal(), 
-							getLocalAddress(),
-							getLocalPort(),
-							getRemoteAddress(), 
-							getRemotePort());
-					
-					if (message.isRequest())
-						((SipRequest) message).setEndpoint(this);*/
-					
-					process(message);
+					}
+					else
+					{
+						message = handler.getMessage();
+						message.setConnection(this);
+						process(message);
+					}
+					handler.reset();
 				} 
 			} 
 			catch (EofException e)
