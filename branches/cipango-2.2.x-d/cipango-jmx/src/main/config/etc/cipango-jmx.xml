@@ -1,0 +1,67 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
+
+<!-- =============================================================== -->
+<!-- Configure the JVM JMX Server                                    -->
+<!-- this configuration file should be used in combination with      -->
+<!-- other configuration files.  e.g.                                -->
+<!--    java -jar start.jar - -ini=start-cipango.ini \               -->
+<!--        - -pre=etc/cipango-jmx.xml                               -->
+<!-- =============================================================== -->
+<Configure id="Server" class="org.cipango.server.Server">
+
+    <!-- =========================================================== -->
+    <!-- Initialize mbean server                                     -->
+    <!-- =========================================================== -->
+    <!-- Use the jdk 1.5 platformMBeanServer -->
+    <Call id="MBeanServer" class="java.lang.management.ManagementFactory" name="getPlatformMBeanServer"/>
+    
+    <!-- =========================================================== -->
+    <!-- Initialize the Cipango MBean container                      -->
+    <!-- =========================================================== -->
+    <Get id="Container" name="container">
+      <Call name="addEventListener">
+        <Arg>
+          <New class="org.eclipse.jetty.jmx.MBeanContainer">
+            <Arg><Ref id="MBeanServer"/></Arg>
+            <Call name="start" />
+          </New>
+        </Arg>
+      </Call>
+    </Get>
+
+    <!-- ================================================================== -->
+    <!-- Get or Create RMI registry                                         -->
+    <!-- ================================================================== -->
+    <!-- Get an already existing registry
+    <Call class="java.rmi.registry.LocateRegistry" name="getRegistry"/>
+    -->
+    <!-- Create registry
+    <Call class="java.lang.System" name="setProperty">
+      <Arg>java.naming.factory.initial</Arg>
+      <Arg>com.sun.jndi.rmi.registry.RegistryContextFactory</Arg>
+    </Call>
+    <Call class="java.rmi.registry.LocateRegistry" name="createRegistry">
+      <Arg>1099</Arg>
+    </Call> 
+    -->
+
+
+    <!-- ================================================================== -->
+    <!-- add a remote JMX connector                                         -->
+    <!-- ================================================================== -->
+    <!--
+    <Call id="jmxConnector" class="javax.management.remote.JMXConnectorServerFactory" name="newJMXConnectorServer">
+      <Arg>
+        <New class="javax.management.remote.JMXServiceURL">
+          <Arg>service:jmx:rmi:///jndi/rmi:///cipangombeanserver</Arg>
+        </New>
+      </Arg>
+      <Arg></Arg>
+      <Arg><Ref id="MBeanServer"/></Arg>
+      <Call name="start"/>
+    </Call>
+    -->
+
+</Configure>
+

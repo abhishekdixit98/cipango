@@ -1,0 +1,13 @@
+diff --git a/jetty-osgi/jetty-osgi-boot/src/main/java/org/eclipse/jetty/osgi/boot/internal/serverfactory/DefaultJettyAtJettyHomeHelper.java b/jetty-osgi/jetty-osgi-boot/src/main/java/org/eclipse/jetty/osgi/boot/internal/serverfactory/DefaultJettyAtJettyHomeHelper.java
+index c07ab02..88c2900 100644
+--- org/eclipse/jetty/osgi/boot/internal/serverfactory/DefaultJettyAtJettyHomeHelper.java
++++ org/eclipse/jetty/osgi/boot/internal/serverfactory/DefaultJettyAtJettyHomeHelper.java
+@@ -25,7 +25,7 @@ import java.util.StringTokenizer;
+ import org.eclipse.jetty.osgi.boot.JettyBootstrapActivator;
+ import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
+ import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelper;
+-import org.eclipse.jetty.server.Server;
++import org.cipango.server.Server;
+ import org.eclipse.jetty.util.log.Log;
+ import org.eclipse.jetty.util.log.Logger;
+ import org.osgi.framework.Bundle;
