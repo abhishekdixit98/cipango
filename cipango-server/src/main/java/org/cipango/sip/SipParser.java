@@ -34,6 +34,7 @@ import org.eclipse.jetty.util.log.Log;
 public class SipParser 
 {
 	private static final int STATE_START = -9;
+	private static final int STATE_CR = -10;
 	private static final int STATE_FIELD0 = -8;
 	private static final int STATE_SPACE0 = -7;
 	private static final int STATE_FIELD1 = -6;
@@ -219,11 +220,24 @@ public class SipParser
 			case STATE_START:
 				_contentLength = UNKNOWN_CONTENT;
 				_cached = null;
+				if (b == SipGrammar.CR && _endpoint != null)
+					_state = STATE_CR;
+				
 				if (b < 0 || b > SipGrammar.SPACE) 
 				{
 					_buffer.mark();
 					_state = STATE_FIELD0;
 				}
+				break;
+				
+			case STATE_CR:
+				if (b == SipGrammar.LF)
+				{
+					_handler.keepAlive();
+					_state = STATE_END;
+				}
+				else
+					_state = STATE_START;
 				break;
 				
 			case STATE_FIELD0:
@@ -551,5 +565,6 @@ public class SipParser
 		public void startResponse(Buffer version, int status, Buffer reason) throws IOException {}
 		public void header(Buffer name, Buffer value) throws IOException {}
 		public void content(Buffer content) throws IOException {}
+		public void keepAlive() throws IOException {}
 	}
 }

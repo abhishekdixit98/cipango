@@ -430,7 +430,11 @@ public abstract class AbstractSipConnector extends AbstractLifeCycle implements 
 
 		private SipMessage msg;
 		private Exception exception;
+		private boolean _prevPong = false;
+		private boolean _pong = false;
+		private long _lastEvent;
 		
+		@Override
 		public void startRequest(Buffer method, Buffer uri, Buffer version) throws IOException
 		{
 			try
@@ -453,6 +457,7 @@ public abstract class AbstractSipConnector extends AbstractLifeCycle implements 
 			}
 		}
 		
+		@Override
 		public void startResponse(Buffer version, int status, Buffer reason) throws IOException 
 		{
 			SipResponse response = new SipResponse();
@@ -475,6 +480,7 @@ public abstract class AbstractSipConnector extends AbstractLifeCycle implements 
 			return exception != null;
 		}
 		
+		@Override
 		public void header(Buffer name, Buffer value) throws IOException
 		{
 			if (msg == null) 
@@ -484,16 +490,26 @@ public abstract class AbstractSipConnector extends AbstractLifeCycle implements 
 			add(name, value);
 		}
 		
+		@Override
 		public void content(Buffer buffer) throws IOException
 		{
 			if (buffer.length() > 0)
 				msg.setRawContent(buffer.asArray()); // TODO buffer
 		}
 		
+		@Override
+		public void keepAlive() throws IOException 
+		{
+			_pong = true;
+		}
+		
 		public void reset()
 		{
 			msg = null;
 			exception = null;
+			_prevPong = _pong && !_prevPong;
+			_pong = false;
+			_lastEvent = System.currentTimeMillis();
 		}
 		
 		private byte[] asArray(byte[] src, int index, int length)
@@ -558,7 +574,23 @@ public abstract class AbstractSipConnector extends AbstractLifeCycle implements 
 	        }
 		}
 
+		public boolean isPing()
+		{
+			// Ensure that two pong received with more than 500ms of difference are not
+			// detected as a ping
+			return _prevPong && _pong && System.currentTimeMillis() - _lastEvent < 500;
 		}
 		
+		public long getLastEvent()
+		{
+			return _lastEvent;
+		}
+
+		public boolean isPong()
+		{
+			return _pong && !isPing();
+		}
+		
+	}
 	
 }
