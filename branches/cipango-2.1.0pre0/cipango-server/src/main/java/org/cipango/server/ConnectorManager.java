@@ -47,14 +47,15 @@ import org.eclipse.jetty.util.log.Log;
 
 public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipHandler
 {
-    private static final int DEFAULT_MTU = 1500;
     private static final int DEFAULT_MESSAGE_SIZE = 16*1024; // FIXME
     private static final int MAX_MESSAGE_SIZE = 64*1024;
+		// By default set MTU to max message size instead of 1500.
+    private static final int DEFAULT_MTU = MAX_MESSAGE_SIZE;
     
     private Server _server;
    
     private SipConnector[] _connectors;
-    private int _mtu;
+    private int _mtu = DEFAULT_MTU;
     
     private SipGenerator _sipGenerator;
     
@@ -70,12 +71,7 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
     private int _messageSize = 10000;
     
     private int _largeMessageSize = MAX_MESSAGE_SIZE;
-    
-    public ConnectorManager() 
-    {
-        _mtu = SystemUtil.getIntOrDefault("sip.mtu", DEFAULT_MTU);
-    }
-    
+        
     public void addConnector(SipConnector connector) 
     {
         setConnectors((SipConnector[]) LazyList.addToArray(getConnectors(), connector, SipConnector.class));
@@ -332,6 +328,39 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
     	
     	try
     	{
+        if (!connection.getConnector().isReliable() 
+        			&& (buffer.putIndex() + 200 > _mtu)
+        			&& message.isRequest()) 
+				{
+    			Log.debug("Message is too large. Switching to TCP");
+					SipConnector connector = findConnector(SipConnectors.TCP_ORDINAL, connection.getRemoteAddress());
+					
+    			if (connector.isReliable())
+    			{
+						try
+						{
+							Via via = message.getTopVia();
+							Via connectorVia = connector.getVia();
+							via.setTransport(connectorVia.getTransport());
+							String host = connectorVia.getHost();
+							via.setHost(host);
+							via.setPort(connectorVia.getPort());
+							SipConnection newConnection = connector.getConnection(connection.getRemoteAddress(), connection.getRemotePort());
+							send(message, newConnection);
+							return;
+						}
+						catch (IOException e) 
+						{
+							Via via = message.getTopVia();
+							// Update via to ensure that right value is used in logs
+							SipConnector connectorOrig = connection.getConnector();
+							via.setTransport(connectorOrig.getTransport());
+							via.setHost(connectorOrig.getSipUri().getHost());
+							via.setPort(connectorOrig.getSipUri().getPort());
+							Log.debug("Failed to switch to TCP, return to original connection");
+						}
+    			}
+    		}
     		connection.write(buffer);
     		
     		if (_accessLog != null)
@@ -357,8 +386,6 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
         via.setHost(host);
         via.setPort(connectorVia.getPort());
                 
-        // TODO > 1300
-
         SipConnection connection = connector.getConnection(address, port);
         updateContact(request, connection);
         
@@ -751,5 +778,14 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
 		return null;
 	}
 
+		public int getMtu()
+	{
+		return _mtu;
+	}
+
+	public void setMtu(int mtu)
+	{
+		_mtu = mtu;
+	}
 
 }
