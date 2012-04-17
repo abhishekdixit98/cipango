@@ -28,37 +28,20 @@ import java.util.List;
 import java.util.Map;
 
 import javax.servlet.http.HttpSession;
-import javax.servlet.sip.ServletTimer;
-import javax.servlet.sip.SipApplicationSession;
-import javax.servlet.sip.SipApplicationSessionAttributeListener;
-import javax.servlet.sip.SipApplicationSessionBindingEvent;
-import javax.servlet.sip.SipApplicationSessionBindingListener;
-import javax.servlet.sip.SipApplicationSessionEvent;
-import javax.servlet.sip.SipApplicationSessionListener;
-import javax.servlet.sip.SipErrorEvent;
-import javax.servlet.sip.SipErrorListener;
-import javax.servlet.sip.SipServletRequest;
-import javax.servlet.sip.SipServletResponse;
-import javax.servlet.sip.SipSession;
-import javax.servlet.sip.SipSessionEvent;
-import javax.servlet.sip.SipSessionListener;
-import javax.servlet.sip.TimerListener;
-import javax.servlet.sip.UAMode;
-import javax.servlet.sip.URI;
+
+import javax.servlet.sip.*;
 
 import org.cipango.server.ID;
 import org.cipango.server.SipMessage;
 import org.cipango.sip.NameAddr;
 import org.cipango.sipapp.SipAppContext;
 import org.cipango.util.TimerTask;
-import org.eclipse.jetty.util.LazyList;
+
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.LazyList;
 
 public class AppSession implements AppSessionIf
 {	
-	private static final Logger LOG = Log.getLogger(AppSession.class);
-	
 	public static final String APP_ID_PREFIX = ";" + ID.APP_SESSION_ID_PARAMETER + "=";
 	
 	enum State { VALID, EXPIRED, INVALIDATING, INVALID }
@@ -180,8 +163,8 @@ public class AppSession implements AppSessionIf
 	{
 		checkValid();
 		
-		if (LOG.isDebugEnabled())
-			LOG.debug("invalidating SipApplicationSession: " + this);
+		if (Log.isDebugEnabled())
+			Log.debug("invalidating SipApplicationSession: " + this);
 			
 		try 
 		{
@@ -219,7 +202,7 @@ public class AppSession implements AppSessionIf
 			getCallSession().removeSession(this);
 			
 			if (getContext() != null)
-				getContext().decrementSessions(System.currentTimeMillis() - _created);
+				getContext().updateNbSessions(false);
 			
 			SipApplicationSessionListener[] listeners = getContext().getSipApplicationSessionListeners();
 			if (listeners.length > 0)
@@ -296,6 +279,7 @@ public class AppSession implements AppSessionIf
 		return null;
 	}
 	
+	@SuppressWarnings("unchecked")
 	public synchronized Iterator<?> getSessions()
 	{
 		checkValid();
@@ -464,7 +448,7 @@ public class AppSession implements AppSessionIf
         	_expiryTimer = null;
         }
         
-        if (_expiryDelay > 0 && isValid()) // TODO refactor
+        if (_expiryDelay > 0) // TODO refactor
         	_expiryTimer = _callSession.schedule(new ExpiryTimeout(), _expiryDelay * 60000l);
     }
     
@@ -637,7 +621,7 @@ public class AppSession implements AppSessionIf
 
 		_context = context;
 
-		_context.incrementSessions();
+		_context.updateNbSessions(true);
 		
 		if (_context.getSpecVersion() == SipAppContext.VERSION_10)
 			_invalidateWhenReady = false;

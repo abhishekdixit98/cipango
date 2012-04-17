@@ -1,13 +1,10 @@
 package org.cipango.util;
-import static junit.framework.Assert.assertTrue;
 
 import java.util.Random;
+import junit.framework.TestCase;
 
-import org.junit.Test;
-
-public class TimerListTest
+public class TimerListTest extends TestCase
 {	
-	@Test
 	public void testOrder()
 	{
 		TimerList list = new TimerList();

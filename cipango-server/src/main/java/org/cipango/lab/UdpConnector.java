@@ -29,20 +29,16 @@ import org.cipango.server.SipConnectors;
 import org.cipango.server.SipMessage;
 import org.cipango.server.SipRequest;
 import org.cipango.server.SipResponse;
-import org.cipango.sip.SipHeaders;
-import org.cipango.sip.SipParser;
-import org.cipango.sip.URIFactory;
+import org.cipango.sip.*;
 import org.cipango.util.HexString;
+
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.View;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
 public class UdpConnector extends AbstractSipConnector
 {
-	private static final Logger LOG = Log.getLogger(UdpConnector.class);
-	
 	public static final int MAX_UDP_SIZE = 65536;
 	public static final int DEFAULT_PORT = 5060;
 	public static final boolean RELIABLE = false;
@@ -289,17 +285,17 @@ public class UdpConnector extends AbstractSipConnector
 						}
 						catch (Throwable t)
 						{
-							LOG.warn(t);
+							Log.warn(t);
 							//if (handler.hasException())
 								//Log.warn(handler.getException());
 				        
-							if (LOG.isDebugEnabled())
-								LOG.debug("Buffer content: \r\n" + HexString.toDetailedHexString(buffer.array(), buffer.length()));
+							if (Log.isDebugEnabled())
+								Log.debug("Buffer content: \r\n" + HexString.toDetailedHexString(buffer.array(), buffer.length()));
 						}
 					}
 					catch (Exception e)
 					{
-						LOG.warn(e);
+						Log.warn(e);
 					}
 				}
 			}

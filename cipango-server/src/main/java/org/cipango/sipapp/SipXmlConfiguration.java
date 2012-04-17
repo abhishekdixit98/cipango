@@ -17,17 +17,14 @@ package org.cipango.sipapp;
 import java.io.IOException;
 import java.net.MalformedURLException;
 
-import org.cipango.servlet.SipServletHandler;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.webapp.AbstractConfiguration;
+import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.WebAppContext;
 
-public class SipXmlConfiguration extends AbstractConfiguration
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.resource.Resource;
+
+public class SipXmlConfiguration implements Configuration 
 {	
-	private static final Logger LOG = Log.getLogger(SipXmlConfiguration.class);
-	
 	public void preConfigure(WebAppContext context) throws Exception
 	{
 		if (!(context instanceof SipAppContext))
@@ -37,34 +34,30 @@ public class SipXmlConfiguration extends AbstractConfiguration
 		
 		if (sipContext.isStarted())
 		{
-			if (LOG.isDebugEnabled()) 
-				LOG.debug("Cannot configure sipapp after it is started");
+			if (Log.isDebugEnabled()) 
+				Log.debug("Cannot configure sipapp after it is started");
 			return;
 		}
-				
+		
+		SipXmlProcessor processor = (SipXmlProcessor) sipContext.getAttribute(SipXmlProcessor.SIP_PROCESSOR);
+		if (processor == null)
+		{
+			processor = new SipXmlProcessor(sipContext);
+			sipContext.setAttribute(SipXmlProcessor.SIP_PROCESSOR, processor);
+		}
+		
 		String defaultsSipDescriptor = sipContext.getDefaultsSipDescriptor();
 		if (defaultsSipDescriptor != null && defaultsSipDescriptor.length() > 0)
 		{
 			Resource dftSipResource = Resource.newSystemResource(defaultsSipDescriptor);
 			if (dftSipResource == null)
 				dftSipResource = context.newResource(defaultsSipDescriptor);
-			sipContext.getSipMetaData().setDefaults(dftSipResource);
+			processor.parseDefaults(dftSipResource);
+			processor.processDefaults();
 		}
 		Resource sipXml = findSipXml(context);
 		if (sipXml != null)
-			sipContext.getSipMetaData().setSipXml(sipXml);
-		
-		//parse but don't process override-sip.xml
-        for (String overrideDescriptor : sipContext.getOverrideSipDescriptors())
-        {
-            if (overrideDescriptor != null && overrideDescriptor.length() > 0)
-            {
-                Resource orideResource = Resource.newSystemResource(overrideDescriptor);
-                if (orideResource == null) 
-                    orideResource = context.newResource(overrideDescriptor);
-                sipContext.getSipMetaData().addOverride(orideResource);
-            }
-        }
+			processor.parseSipXml(sipXml);
 	}
 	
 	public void configure(WebAppContext context) throws Exception
@@ -76,27 +69,41 @@ public class SipXmlConfiguration extends AbstractConfiguration
 		
 		if (sipContext.isStarted())
 		{
-			if (LOG.isDebugEnabled())
-				LOG.debug("Cannot configure sipapp after it is started");
+			if (Log.isDebugEnabled())
+				Log.debug("Cannot configure sipapp after it is started");
 		}
-
-        ((SipAppContext) context).getSipMetaData().addDescriptorProcessor(new StandardDescriptorProcessor());
+		
+		SipXmlProcessor processor = (SipXmlProcessor) sipContext.getAttribute(SipXmlProcessor.SIP_PROCESSOR);
+		if (processor == null)
+		{
+			processor = new SipXmlProcessor(sipContext);
+			context.setAttribute(SipXmlProcessor.SIP_PROCESSOR, processor);
+		}
+		
+		processor.processSipXml();
+		
+		String overrideSipDescriptor = sipContext.getOverrideSipDescriptor();
+		if (overrideSipDescriptor != null && overrideSipDescriptor.length() > 0)
+		{
+			Resource overrideSipResource = Resource.newSystemResource(overrideSipDescriptor);
+			if (overrideSipResource == null)
+				overrideSipResource = sipContext.newResource(overrideSipDescriptor);
+			processor.parseSipOverride(overrideSipResource);
+			processor.processSipOverride();
+		}
 	}
 	
 	public void deconfigure(WebAppContext context) throws Exception 
 	{
-		// TODO preserve any configuration that pre-existed.
-
-        SipServletHandler servletHandler = ((SipAppContext) context).getSipServletHandler();
-       
-        servletHandler.setSipServlets(null);
-        servletHandler.setSipServletMappings(null);
-
-        context.setEventListeners(null);
-
-        // TODO remove classpaths from classloader
+		// TODO Auto-generated method stub
+		
 	}
 
+	public void postConfigure(WebAppContext context) throws Exception 
+	{
+		// TODO Auto-generated method stub
+		
+	}
 	
 	protected Resource findSipXml(WebAppContext context) throws IOException, MalformedURLException 
 	{
@@ -107,7 +114,7 @@ public class SipXmlConfiguration extends AbstractConfiguration
 			Resource sip = webInf.addPath("sip.xml");
 			if (sip.exists()) 
 				return sip;
-			LOG.debug("No WEB-INF/sip.xml in " + context.getWar());
+			Log.debug("No WEB-INF/sip.xml in " + context.getWar());
 		}
 		return null;
 	}

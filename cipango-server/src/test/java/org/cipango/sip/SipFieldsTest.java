@@ -13,14 +13,6 @@
 // ========================================================================
 package org.cipango.sip;
 
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertFalse;
-import static junit.framework.Assert.assertNotNull;
-import static junit.framework.Assert.assertNotSame;
-import static junit.framework.Assert.assertSame;
-import static junit.framework.Assert.assertTrue;
-import static junit.framework.Assert.fail;
-
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.ListIterator;
@@ -31,21 +23,24 @@ import javax.servlet.sip.Address;
 import javax.servlet.sip.Parameterable;
 import javax.servlet.sip.SipURI;
 
+import org.cipango.sip.NameAddr;
+import org.cipango.sip.ParameterableImpl;
+import org.cipango.sip.SipFields;
+import org.cipango.sip.SipHeaders;
+import org.cipango.sip.Via;
 import org.eclipse.jetty.http.HttpFields;
-import org.junit.Before;
-import org.junit.Test;
 
-public class SipFieldsTest
+import junit.framework.TestCase;
+
+public class SipFieldsTest extends TestCase
 {
 	private SipFields _fields;
 	
-	@Before
 	public void setUp()
 	{
 		_fields = new SipFields();
 	}
-
-	@Test
+	
 	public void testString() throws Exception
 	{
 		_fields.setString("call-id", "foo");
@@ -88,8 +83,7 @@ public class SipFieldsTest
 		
 		assertEquals("route1", ((SipURI) _fields.getAddress(SipHeaders.ROUTE_BUFFER).getURI()).getHost());
 	}
-
-	@Test
+	
 	public void testAddress() throws Exception
 	{
 		_fields.setAddress(SipHeaders.FROM_BUFFER, new NameAddr("sip:foo@bar.com"));
@@ -120,15 +114,13 @@ public class SipFieldsTest
 		it = _fields.getAddressValues("route");
 		assertFalse(it.hasNext());		
 	}
-
-	@Test
+	
 	public void testLong()
 	{
 		_fields.setString("expires", "30");
 		assertEquals(30, _fields.getLong("expires"));
 	}
-
-	@Test
+	
 	public void testParameters()
 	{
 		String s = ";  foo =   bar ; transport =    tcp";
@@ -136,8 +128,7 @@ public class SipFieldsTest
 		HttpFields.valueParameters(s, parameters);
 		//System.out.println(parameters.get("transport"));
 	}
-
-	@Test
+	
 	public void testParameterable() throws Exception 
 	{
 		_fields.addParameterable(
@@ -159,16 +150,14 @@ public class SipFieldsTest
 		p = _fields.getParameterableValues("contact").next();
 		assertEquals("1234", p.getParameter("tag"));
 	}
-
-	@Test
+	
 	public void testUnknown() throws Exception
 	{
 		_fields.addString("foo", "value;foo=bar");
 		Parameterable p = _fields.getParameterable(SipHeaders.CACHE.lookup("foo"));
 		assertEquals("bar", p.getParameter("foo"));
 	}
-
-	@Test
+	
 	public void testIterator() throws Exception
 	{
 		_fields.addString("foo", "1");
@@ -206,8 +195,7 @@ public class SipFieldsTest
 		
 		assertEquals(0, it.previousIndex());
 	}
-
-	@Test
+	
 	public void testVia() throws Exception
 	{
 		_fields.addString("via", "SIP/2.0/TCP client.atlanta.example.com:5060;branch=z9hG4bK74bd5");
@@ -216,8 +204,7 @@ public class SipFieldsTest
 		_fields.addVia(new Via("SIP/2.0/UDP client.atlanta.example.com:5060;branch=z9hG4bK43fs6"), true);
 		assertEquals("z9hG4bK43fs6", _fields.getVia().getBranch());
 	}
-
-	@Test
+	
 	public void testRemove() throws Exception
 	{
 		_fields.addString("foo", "bar");
@@ -236,8 +223,7 @@ public class SipFieldsTest
 		assertEquals("route2", ((SipURI) _fields.getAddress("route").getURI()).getUser());
 		//_fields.removeLast("route");
 	}
-
-	@Test
+	
 	public void testCopy() throws Exception
 	{
 		_fields.addAddress("route", new NameAddr("<sip:foo.org>;index=1"), true);
@@ -252,7 +238,6 @@ public class SipFieldsTest
 	}
 	
 	/*
-	@Test
 	public void testClone() throws Exception
 	{
 		_sipFields.addAddress("route", new NameAddr("sip:route1"), false);
@@ -282,8 +267,7 @@ public class SipFieldsTest
 		assertEquals(foo.getBuffer(), clone.getBuffer());
 		assertSame(foo.getBuffer(), clone.getBuffer());
 	}*/
-
-	@Test
+	
 	public void testClone2() throws Exception
 	{
 		_fields.addString("foo", "bar");

@@ -13,21 +13,19 @@
 // ========================================================================
 
 package org.cipango.sip;
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.fail;
 
 import java.io.IOException;
+
+import junit.framework.TestCase;
 
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.bio.StringEndPoint;
-import org.junit.Test;
 
-public class StreamParserTest
+public class StreamParserTest extends TestCase
 {
 	int seq = -1;
-
-	@Test
+	
 	public void testTcp() throws Exception 
 	{	
 		StringEndPoint ep = new StringEndPoint();
@@ -44,8 +42,7 @@ public class StreamParserTest
 			
 		}
 	}
-
-	@Test
+	
 	public void testSeveral() throws Exception
 	{
 		StringBuffer msgs = new StringBuffer();
@@ -74,8 +71,7 @@ public class StreamParserTest
 			
 		}
 	}
-
-	@Test
+	
 	public void testOverflow() throws Exception 
 	{
 		StringEndPoint ep = new StringEndPoint();
