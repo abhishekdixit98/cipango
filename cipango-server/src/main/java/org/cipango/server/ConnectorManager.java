@@ -1,5 +1,5 @@
 // ========================================================================
-// Copyright 2008-2009 NEXCOM Systems
+// Copyright 2008-2012 NEXCOM Systems
 // ------------------------------------------------------------------------
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -49,14 +49,15 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
 {
 	private static final Logger LOG = Log.getLogger(ConnectorManager.class);
 	
-    private static final int DEFAULT_MTU = 1500;
     private static final int DEFAULT_MESSAGE_SIZE = 16*1024; // FIXME
     private static final int MAX_MESSAGE_SIZE = 64*1024;
+    // By default set MTU to max message size instead of 1500.
+    private static final int DEFAULT_MTU = MAX_MESSAGE_SIZE;
     
     private Server _server;
    
     private SipConnector[] _connectors;
-    private int _mtu;
+    private int _mtu = DEFAULT_MTU;
     
     private SipGenerator _sipGenerator;
     
@@ -71,12 +72,7 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
     private int _messageSize = 10000;
     
     private int _largeMessageSize = MAX_MESSAGE_SIZE;
-    
-    public ConnectorManager() 
-    {
-        _mtu = SystemUtil.getIntOrDefault("sip.mtu", DEFAULT_MTU);
-    }
-    
+        
     public void addConnector(SipConnector connector) 
     {
         setConnectors((SipConnector[]) LazyList.addToArray(getConnectors(), connector, SipConnector.class));
@@ -304,9 +300,37 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
     {
     	Buffer buffer = getBuffer(_messageSize); 
     	_sipGenerator.generate(buffer, message);
-    	
+    	    	
     	try
     	{
+        	if (!connection.getConnector().isReliable() 
+        			&& (buffer.putIndex() + 200 > _mtu)
+        			&& message.isRequest()) {
+    			LOG.debug("Message is too large. Switching to TCP");
+    			try
+    			{
+    				SipConnection newConnection = getConnection((SipRequest) message, 
+	    					SipConnectors.TCP_ORDINAL, 
+	    					connection.getRemoteAddress(), 
+	    					connection.getRemotePort());
+	    			if (newConnection.getConnector().isReliable())
+	    			{
+	    				send(message, newConnection);
+	    				return;
+	    			}
+    			}
+    			catch (IOException e) 
+    			{
+    				Via via = message.getTopVia();
+    				// Update via to ensure that right value is used in logs
+    		        SipConnector connector = connection.getConnector();
+    		        via.setTransport(connector.getTransport());
+    		        via.setHost(connector.getSipUri().getHost());
+    		        via.setPort(connector.getSipUri().getPort());
+    				LOG.debug("Failed to switch to TCP, return to original connection");
+				}
+    		}
+    		
     		connection.write(buffer);
     		
     		if (_accessLog != null)
@@ -329,8 +353,6 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
         via.setHost(connector.getSipUri().getHost());
         via.setPort(connector.getSipUri().getPort());
                 
-        // TODO mtu
-
         SipConnection connection = connector.getConnection(address, port);
         if (connection == null)
         	throw new IOException("Could not find connection to " + address + ":" + port + "/" + connector.getTransport());
@@ -687,6 +709,16 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
 	public Buffer getHeader() {
 		// TODO Auto-generated method stub
 		return null;
+	}
+
+	public int getMtu()
+	{
+		return _mtu;
+	}
+
+	public void setMtu(int mtu)
+	{
+		_mtu = mtu;
 	}
 
 
