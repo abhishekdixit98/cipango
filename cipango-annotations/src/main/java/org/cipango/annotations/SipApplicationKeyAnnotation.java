@@ -15,19 +15,21 @@ package org.cipango.annotations;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.EventListener;
 
+import javax.annotation.PostConstruct;
 import javax.servlet.sip.SipServletRequest;
 import javax.servlet.sip.annotation.SipApplicationKey;
+import javax.servlet.sip.annotation.SipListener;
+import javax.servlet.sip.annotation.SipServlet;
 
+import org.cipango.servlet.SipServletHolder;
 import org.cipango.sipapp.SipAppContext;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.DiscoveredAnnotation;
 
 public class SipApplicationKeyAnnotation extends DiscoveredAnnotation
 {
-	private static final Logger LOG = Log.getLogger(SipApplicationKeyAnnotation.class);
-	
     public SipApplicationKeyAnnotation (SipAppContext context, String className)
     {
         super(context, className);
@@ -43,7 +45,7 @@ public class SipApplicationKeyAnnotation extends DiscoveredAnnotation
         
         if (clazz == null)
         {
-            LOG.warn(_className+" cannot be loaded");
+            Log.warn(_className+" cannot be loaded");
             return;
         }
         

@@ -19,11 +19,11 @@ import java.util.StringTokenizer;
 
 import org.cipango.server.ID;
 import org.cipango.util.DigestAuthenticator;
-import org.eclipse.jetty.http.security.Credential;
+
 import org.eclipse.jetty.io.BufferCache;
 import org.eclipse.jetty.io.BufferCache.CachedBuffer;
 
-public class Authorization extends Credential
+public class Authorization
 {
 	public static BufferCache CACHE = new BufferCache();
 	
@@ -67,8 +67,7 @@ public class Authorization extends Credential
 	private String[] _params = new String[10];
 	private String _scheme;
 	private HashMap<String, String> _unknwonParams;
-	private String _method;
-	
+
 	public Authorization(Authenticate authenticate, String username, String password, String uri, String method)
 	{
 		_params[USERNAME_ORDINAL] = username;
@@ -232,25 +231,6 @@ public class Authorization extends Credential
 			}
 		}
 		return sb.toString();
-	}
-
-	@Override
-	public boolean check(Object credentials)
-	{
-		if (credentials instanceof char[])
-            credentials=new String((char[])credentials);
-        String password = (credentials instanceof String) ? (String) credentials : credentials.toString();
-        return getResponse().equals(getCalculatedResponse(password, _method));
-	}
-
-	public String getMethod()
-	{
-		return _method;
-	}
-
-	public void setMethod(String method)
-	{
-		_method = method;
 	}
 
 }

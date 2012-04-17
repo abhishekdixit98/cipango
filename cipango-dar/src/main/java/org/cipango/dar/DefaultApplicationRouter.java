@@ -15,11 +15,8 @@
 package org.cipango.dar;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.Serializable;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -35,20 +32,15 @@ import javax.servlet.sip.ar.SipApplicationRoutingRegion;
 import javax.servlet.sip.ar.SipRouteModifier;
 import javax.servlet.sip.ar.SipTargetedRequestInfo;
 
-import org.eclipse.jetty.util.component.AggregateLifeCycle;
-import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
 /**
  * Default Application Router. 
  * Looks for its configuration from the property javax.servlet.sip.ar.dar.configuration
  * or etc/dar.properties if not defined. 
  */
-public class DefaultApplicationRouter implements SipApplicationRouter, Dumpable
+public class DefaultApplicationRouter implements SipApplicationRouter
 {
-	private static final Logger LOG = Log.getLogger(DefaultApplicationRouter.class);
-	
 	public static final String __J_S_DAR_CONFIGURATION = "javax.servlet.sip.ar.dar.configuration";
 	
 	public static final String ROUTE_OUTGOING_REQUESTS = "org.cipango.dar.routeOutgoingRequests";
@@ -238,66 +230,15 @@ public class DefaultApplicationRouter implements SipApplicationRouter, Dumpable
 		}
 		catch (Exception e)
 		{
-			LOG.debug("DAR configuration error: " + e);
+			Log.debug("DAR configuration error: " + e);
 		}
 		
-		
 		if ((_routerInfoMap == null || _routerInfoMap.isEmpty()) && !_applicationNames.isEmpty())
-			LOG.info("No DAR configuration. Using application: " + _applicationNames.first());
+			Log.info("No DAR configuration. Using application: " + _applicationNames.first());
 	}
 	
 	public void init(Properties properties)
 	{
 		init();
 	}
-
-	public String dump()
-	{
-		return AggregateLifeCycle.dump(this);
-	}
-
-	public void dump(Appendable out, String indent) throws IOException
-	{
-		out.append("DefaultApplicationRouter ");
-		if (_routerInfoMap == null || _routerInfoMap.isEmpty())
-		{
-			if (!_applicationNames.isEmpty())
-				out.append("default application: ").append(getDefaultApplication());
-			else
-				out.append("No applications");
-		}
-		else
-		{
-			out.append("\n");
-			List<Dumpable> l = new ArrayList<Dumpable>();
-			Iterator<String> it = _routerInfoMap.keySet().iterator();
-			while (it.hasNext())
-				l.add(new DumpableMethod(it.next()));
-			AggregateLifeCycle.dump(out,indent, l);
-		}
-			
-	}
-		
-	public class DumpableMethod implements Dumpable
-	{
-		private String _method;
-		
-		public DumpableMethod(String method)
-		{
-			_method = method;
-		}
-		
-		public String dump()
-		{
-			return AggregateLifeCycle.dump(this);
-		}
-	
-		public void dump(Appendable out, String indent) throws IOException
-		{
-			out.append(_method).append("\n");
-			AggregateLifeCycle.dump(out,indent, Arrays.asList(_routerInfoMap.get(_method)));
-		}
-		
-	}
 }
-
