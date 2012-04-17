@@ -65,6 +65,7 @@
         </New>
       </Arg>
     </Call>
+		<Set name="mtu"><Property default="65536" name="sip.mtu"/></Set>
   </Get>
  
   <!-- Set name="applicationRouter">
