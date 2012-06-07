@@ -66,6 +66,10 @@
       </Arg>
     </Call>
     <Set name="mtu"><Property default="65536" name="sip.mtu"/></Set>
+    <!-- If the client's source port doesn't match the port in the Via header (usually due to NAT),
+         and no ";rport" is given in that Via (RFC 3581), force ";rport=..."
+         in that Via header anyway so Cipango can route back replies correctly -->
+    <Set name="forceClientRport">false</Set>
   </Get>
  
   <!-- Set name="applicationRouter">

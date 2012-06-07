@@ -72,6 +72,8 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
     private int _messageSize = 10000;
     
     private int _largeMessageSize = MAX_MESSAGE_SIZE;
+    
+    private boolean _forceClientRport;
         
     public void addConnector(SipConnector connector) 
     {
@@ -232,7 +234,7 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
                 if (!host.equals(remoteAddr))
                     via.setReceived(remoteAddr);
 
-                if (via.getRport() != null)
+                if (via.getRport() != null || isForceClientRport())
                     via.setRport(Integer.toString(message.getRemotePort()));
             }
 
@@ -719,6 +721,16 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
 	public void setMtu(int mtu)
 	{
 		_mtu = mtu;
+	}
+	
+	public boolean isForceClientRport()
+	{
+		return _forceClientRport;
+	}
+	
+	public void setForceClientRport(boolean forceClientRport)
+	{
+		_forceClientRport = forceClientRport;
 	}
 
 
