@@ -228,7 +228,10 @@ public class Authorization extends Credential
 				else
 					first = false;
 				sb.append(CACHE.get(i).buffer().toString());
-				sb.append("=\"").append(_params[i]).append('"');
+				if (i == NONCE_COUNT_ORDINAL)
+					sb.append("=").append(_params[i]);
+				else	
+					sb.append("=\"").append(_params[i]).append('"');
 			}
 		}
 		return sb.toString();
