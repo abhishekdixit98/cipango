@@ -1,8 +1,8 @@
-diff --git a/jetty-maven-plugin/src/main/java/org/mortbay/jetty/plugin/MavenWebInfConfiguration.java b/jetty-maven-plugin/src/main/java/org/mortbay/jetty/plugin/MavenWebInfConfiguration.java
-index d8beebc..1598245 100644
---- org/mortbay/jetty/plugin/MavenWebInfConfiguration.java
-+++ org/mortbay/jetty/plugin/MavenWebInfConfiguration.java
-@@ -22,6 +22,7 @@ import java.util.ArrayList;
+Index: org/mortbay/jetty/plugin/MavenWebInfConfiguration.java
+===================================================================
+--- org/mortbay/jetty/plugin/MavenWebInfConfiguration.java	(revision 6306)
++++ org/mortbay/jetty/plugin/MavenWebInfConfiguration.java	(working copy)
+@@ -22,6 +22,7 @@
  import java.util.Iterator;
  import java.util.List;
  
@@ -10,7 +10,7 @@ index d8beebc..1598245 100644
  import org.eclipse.jetty.util.IO;
  import org.eclipse.jetty.util.LazyList;
  import org.eclipse.jetty.util.log.Log;
-@@ -39,7 +40,7 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
+@@ -39,7 +40,7 @@
      
      public void configure(WebAppContext context) throws Exception
      {
@@ -19,16 +19,16 @@ index d8beebc..1598245 100644
          if (jwac.getClassPathFiles() != null)
          {
              if (Log.isDebugEnabled()) Log.debug("Setting up classpath ...");
-@@ -75,7 +76,7 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
-         super.preConfigure(context);
- 
+@@ -73,7 +74,7 @@
+     public void preConfigure(WebAppContext context) throws Exception
+     {
          _originalResourceBase = context.getBaseResource();
 -        JettyWebAppContext jwac = (JettyWebAppContext)context;
 +        CipangoSipAppContext jwac = (CipangoSipAppContext) context;
  
          //Add in any overlaid wars as base resources
          if (jwac.getOverlays() != null && !jwac.getOverlays().isEmpty())
-@@ -139,7 +140,7 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
+@@ -160,7 +161,7 @@
  
      public void deconfigure(WebAppContext context) throws Exception
      {
@@ -36,8 +36,8 @@ index d8beebc..1598245 100644
 +    	CipangoSipAppContext jwac = (CipangoSipAppContext) context;
          
          //remove the unpacked wars
-         if (_unpackedOverlays != null && _unpackedOverlays.length>0)
-@@ -174,7 +175,7 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
+         if (jwac.getUnpackOverlays() && _unpackedOverlays != null && _unpackedOverlays.length>0)
+@@ -195,7 +196,7 @@
      throws Exception
      {
          List<Resource> list = new ArrayList<Resource>();

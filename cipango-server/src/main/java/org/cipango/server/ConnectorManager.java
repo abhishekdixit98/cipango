@@ -1,5 +1,5 @@
 // ========================================================================
-// Copyright 2008-2012 NEXCOM Systems
+// Copyright 2008-2009 NEXCOM Systems
 // ------------------------------------------------------------------------
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,11 +16,11 @@ package org.cipango.server;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.concurrent.atomic.AtomicLong;
 
 import javax.servlet.ServletException;
 import javax.servlet.sip.Address;
@@ -33,6 +33,7 @@ import org.cipango.server.log.AccessLog;
 import org.cipango.sip.NameAddr;
 import org.cipango.sip.SipGenerator;
 import org.cipango.sip.SipHeaders;
+import org.cipango.sip.SipURIImpl;
 import org.cipango.sip.Via;
 import org.cipango.util.SystemUtil;
 import org.eclipse.jetty.io.Buffer;
@@ -43,15 +44,12 @@ import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
 public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipHandler
 {
-	private static final Logger LOG = Log.getLogger(ConnectorManager.class);
-	
     private static final int DEFAULT_MESSAGE_SIZE = 16*1024; // FIXME
     private static final int MAX_MESSAGE_SIZE = 64*1024;
-    // By default set MTU to max message size instead of 1500.
+		// By default set MTU to max message size instead of 1500.
     private static final int DEFAULT_MTU = MAX_MESSAGE_SIZE;
     
     private Server _server;
@@ -63,17 +61,16 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
     
     private AccessLog _accessLog;
     
-    private final AtomicLong _receivedStats = new AtomicLong();
-    private final AtomicLong _sentStats = new AtomicLong();
-    
+    private transient long _statsStartedAt = -1;
+    private Object _statsLock = new Object();
+    private transient long _messagesReceived;
+    private transient long _messagesSent;
     private transient long _nbParseErrors;
     
     private ArrayList<Buffer> _buffers;
     private int _messageSize = 10000;
     
     private int _largeMessageSize = MAX_MESSAGE_SIZE;
-    
-    private boolean _forceClientRport;
         
     public void addConnector(SipConnector connector) 
     {
@@ -118,11 +115,22 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
     	return _server;
     }
     
+    public Via getVia(int type, InetAddress address)
+    {
+        return (Via) findConnector(type, address).getVia().clone();
+    }
+    
     public Address getContact(int type)
     {
         SipConnector sc = findConnector(type, null);
         return new NameAddr((URI) sc.getSipUri().clone());
         //return (Address) findTransport(type, null).getContact().clone();
+    }
+    
+    public Address getContact(int type, InetAddress addr)
+    {
+        SipConnector sc = findConnector(type, addr);
+        return new NameAddr((URI) sc.getSipUri().clone());
     }
     
     
@@ -145,7 +153,7 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
         	}
         	catch (Exception e)
         	{
-        		LOG.warn("failed to start access log", e);
+        		Log.warn("failed to start access log", e);
         	}
         }
         
@@ -180,7 +188,7 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
         
 
     	if (_accessLog instanceof LifeCycle)
-    		try { ((LifeCycle) _accessLog).stop(); } catch (Throwable t) { LOG.warn(t); }
+    		try { ((LifeCycle) _accessLog).stop(); } catch (Throwable t) { Log.warn(t); }
         
         super.doStop();
         
@@ -189,10 +197,12 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
     
     public SipConnector findConnector(int type, InetAddress addr)
     {
+    	int ipFamilly = (addr instanceof Inet4Address) ? SipConnectors.IPv4 : SipConnectors.IPv6;
+    	
         for (int i = 0; i < _connectors.length; i++) 
         {
             SipConnector t = _connectors[i];
-            if (t.getTransportOrdinal() == type) 
+            if (t.getTransportOrdinal() == type && (addr == null || t.getIpFamily() == ipFamilly)) 
                 return t;
         }
         return _connectors[0];
@@ -200,12 +210,22 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
     
     public void messageReceived()
     {
-    	_receivedStats.incrementAndGet();
+    	if (_statsStartedAt == -1) 
+    		return;
+    	synchronized (_statsLock)
+        {
+            _messagesReceived++;
+        }
     }
     
     public void messageSent()
     {
-        _sentStats.incrementAndGet();
+    	if (_statsStartedAt == -1)
+    		return;
+         synchronized (_statsLock)
+         {
+             _messagesSent++;
+         }
     }
         
     public void handle(SipServletMessage message) throws IOException, ServletException
@@ -234,15 +254,18 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
                 if (!host.equals(remoteAddr))
                     via.setReceived(remoteAddr);
 
-                if (via.getRport() != null || isForceClientRport())
+                if (via.getRport() != null)
                     via.setRport(Integer.toString(message.getRemotePort()));
             }
 
             getServer().handle(msg);
 		}
-		else
+		else if (_statsStartedAt != -1)
 		{
-			_nbParseErrors++;
+			synchronized (_statsLock)
+			{
+				_nbParseErrors++;
+			}
 		}  
     }
     
@@ -267,7 +290,7 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
 			}
 			catch (UnknownHostException e)
 			{
-				LOG.ignore(e);
+				Log.ignore(e);
 			}
 		}
 		
@@ -298,46 +321,56 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
         return false;
     }
     
-    public void send(SipMessage message, SipConnection connection) throws IOException
+    /**
+     * Sends the message and returns the connection used to sent the message.
+     * The returned connection can be different if initial connection is not reliable and
+     * message is bigger than MTU.
+     */
+    public SipConnection send(SipMessage message, SipConnection connection) throws IOException
     {
     	Buffer buffer = getBuffer(_messageSize); 
     	_sipGenerator.generate(buffer, message);
-    	    	
+    	
     	try
     	{
-        	if (!connection.getConnector().isReliable() 
+        if (!connection.getConnector().isReliable() 
         			&& (buffer.putIndex() + 200 > _mtu)
-        			&& message.isRequest()) {
-    			LOG.debug("Message is too large. Switching to TCP");
-    			try
+        			&& message.isRequest()) 
+				{
+    			Log.debug("Message is too large. Switching to TCP");
+					SipConnector connector = findConnector(SipConnectors.TCP_ORDINAL, connection.getRemoteAddress());
+					
+    			if (connector.isReliable())
     			{
-    				SipConnection newConnection = getConnection((SipRequest) message, 
-	    					SipConnectors.TCP_ORDINAL, 
-	    					connection.getRemoteAddress(), 
-	    					connection.getRemotePort());
-	    			if (newConnection.getConnector().isReliable())
-	    			{
-	    				send(message, newConnection);
-	    				return;
-	    			}
+						try
+						{
+							Via via = message.getTopVia();
+							Via connectorVia = connector.getVia();
+							via.setTransport(connectorVia.getTransport());
+							String host = connectorVia.getHost();
+							via.setHost(host);
+							via.setPort(connectorVia.getPort());
+							SipConnection newConnection = connector.getConnection(connection.getRemoteAddress(), connection.getRemotePort());
+							return send(message, newConnection);
+						}
+						catch (IOException e) 
+						{
+							Via via = message.getTopVia();
+							// Update via to ensure that right value is used in logs
+							SipConnector connectorOrig = connection.getConnector();
+							via.setTransport(connectorOrig.getTransport());
+							via.setHost(connectorOrig.getSipUri().getHost());
+							via.setPort(connectorOrig.getSipUri().getPort());
+							Log.debug("Failed to switch to TCP, return to original connection");
+						}
     			}
-    			catch (IOException e) 
-    			{
-    				Via via = message.getTopVia();
-    				// Update via to ensure that right value is used in logs
-    		        SipConnector connector = connection.getConnector();
-    		        via.setTransport(connector.getTransport());
-    		        via.setHost(connector.getSipUri().getHost());
-    		        via.setPort(connector.getSipUri().getPort());
-    				LOG.debug("Failed to switch to TCP, return to original connection");
-				}
     		}
-    		
     		connection.write(buffer);
     		
     		if (_accessLog != null)
     			_accessLog.messageSent(message, connection);
             messageSent();
+				return connection;
     	}
     	finally
     	{
@@ -345,21 +378,45 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
     	}
     }
     
-    public SipConnection getConnection(SipRequest request, int transport, InetAddress address, int port) throws IOException
+    public SipConnection sendRequest(SipRequest request, int transport, InetAddress address, int port) throws IOException
     {   
     	SipConnector connector = findConnector(transport, address);
     	
         Via via = request.getTopVia();
         
-        via.setTransport(connector.getTransport());
-        via.setHost(connector.getSipUri().getHost());
-        via.setPort(connector.getSipUri().getPort());
+        Via connectorVia = connector.getVia();
+        via.setTransport(connectorVia.getTransport());
+        
+        String host = connectorVia.getHost();
+        via.setHost(host);
+        via.setPort(connectorVia.getPort());
                 
         SipConnection connection = connector.getConnection(address, port);
-        if (connection == null)
-        	throw new IOException("Could not find connection to " + address + ":" + port + "/" + connector.getTransport());
+        updateContact(request, connection);
         
-        return connection;
+        return send(request, connection);
+    }
+    
+    private void updateContact(SipMessage message, SipConnection connection)
+    {
+    	if (message.session() != null && message.session().isUA() && message.needsContact())
+    	{
+    		SipURI rightUri = (SipURI) connection.getConnector().getSipUri();
+    		Address contact = (Address) message.getFields().getAddress(SipHeaders.CONTACT).clone();
+			if (contact != null)
+			{
+				SipURI uri = (SipURI) contact.getURI();
+				uri.setHost(rightUri.getHost());
+				uri.setPort(rightUri.getPort());
+				if (rightUri.getTransportParam() != null)
+					uri.setTransportParam(rightUri.getTransportParam());	
+				else
+					uri.removeParameter(SipURIImpl.TRANSPORT_PARAM);
+			}
+			else
+				contact = new NameAddr(rightUri.clone());
+			message.getFields().setAddress(SipHeaders.CONTACT, contact);
+    	}
     }
     
     public void sendResponse(SipResponse response) throws IOException
@@ -409,10 +466,6 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
 	                port = connection.getConnector().getDefaultPort();
 	        }
 	        connection = connector.getConnection(address, port);
-	        
-	        if (connection == null)
-	        	throw new IOException("Could not found any SIP connection to " 
-	        			+ address + ":" + port + "/" + connector.getTransport());
     	}
     	send(response, connection);
     }
@@ -576,18 +629,18 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
         }
         catch (Exception e)
         {
-            LOG.warn(e);
+            Log.warn(e);
         }
     }
     
     public long getMessagesReceived() 
     {
-        return _receivedStats.get();
+        return _messagesReceived;
     }
     
     public long getMessagesSent() 
     {
-        return _sentStats.get();
+        return _messagesSent;
     }
     
 	public long getNbParseError()
@@ -602,16 +655,31 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
     
     public void statsReset() 
     {
-    	_receivedStats.set(0);
-    	_sentStats.set(0);
-    	
-        _nbParseErrors = 0;
-        for (int i = 0; _connectors != null && i <_connectors.length; i++)
+        synchronized (_statsLock) 
         {
-			 _connectors[i].statsReset();
-		}
+            _statsStartedAt = _statsStartedAt == -1 ? -1 : System.currentTimeMillis();
+            _messagesReceived = _messagesSent = 0;
+            _nbParseErrors = 0;
+            for (int i = 0; _connectors != null && i <_connectors.length; i++)
+            {
+				 _connectors[i].statsReset();
+			}
+        }
     }
-       
+    
+    public void setStatsOn(boolean on) 
+    {
+        if (on && _statsStartedAt != -1) 
+            return;
+        statsReset();
+        _statsStartedAt = on ? System.currentTimeMillis() : -1;
+    }
+    
+    public boolean isStatsOn() 
+    {
+        return  _statsStartedAt != -1;
+    }
+
 	public boolean preValidateMessage(SipMessage message)
 	{
 		boolean valid = true;
@@ -629,7 +697,7 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
 					|| message.getTo() == null
 					|| message.getCSeq() == null)
 			{
-				LOG.info("Received bad message: unparsable required headers");
+				Log.info("Received bad message: unparsable required headers");
 				valid = false;
 			}
 			message.getAddressHeader("contact");
@@ -642,7 +710,7 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
 				request.getTopRoute();
 				if (!request.getCSeq().getMethod().equals(request.getMethod()))
 				{
-					LOG.info("Received bad request: CSeq method does not match");
+					Log.info("Received bad request: CSeq method does not match");
 					valid = false;
 				}
 			}
@@ -651,15 +719,15 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
 				int status = ((SipResponse) message).getStatus();
 				if (status < 100 || status > 699)
 				{
-					LOG.info("Received bad response: Invalid status code: " + status);
+					Log.info("Received bad response: Invalid status code: " + status);
 					valid = false;
 				}
 			}
 		}
 		catch (Exception e) 
 		{
-			LOG.info("Received bad message: Some headers are not parsable: {}", e);
-			LOG.debug("Received bad message: Some headers are not parsable", e);
+			Log.info("Received bad message: Some headers are not parsable: {}", e);
+			Log.debug("Received bad message: Some headers are not parsable", e);
 			valid = false;
 		}
 				
@@ -678,7 +746,7 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
 		}
 		catch (Exception e) 
 		{
-			LOG.ignore(e);
+			Log.ignore(e);
 		}
 		
 		return valid;
@@ -686,15 +754,15 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
 	
 	private boolean isUnique(Buffer headerName, SipMessage message)
 	{
-		Iterator<String> it = message.getFields().getValues(headerName);
+		Iterator it = message.getFields().getValues(headerName);
 		if (!it.hasNext())
 		{
-			LOG.info("Received bad message: Missing required header: " + headerName);
+			Log.info("Received bad message: Missing required header: " + headerName);
 			return false;
 		}
 		it.next();
 		if (it.hasNext())
-			LOG.info("Received bad message: Duplicate header: " + headerName);
+			Log.info("Received bad message: Duplicate header: " + headerName);
 		return !it.hasNext();
 	}
 
@@ -702,7 +770,7 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
 	{
 		return _accessLog;
 	}
-		 
+
 	public Buffer getBuffer() {
 		// TODO Auto-generated method stub
 		return null;
@@ -713,7 +781,7 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
 		return null;
 	}
 
-	public int getMtu()
+		public int getMtu()
 	{
 		return _mtu;
 	}
@@ -722,16 +790,5 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
 	{
 		_mtu = mtu;
 	}
-	
-	public boolean isForceClientRport()
-	{
-		return _forceClientRport;
-	}
-	
-	public void setForceClientRport(boolean forceClientRport)
-	{
-		_forceClientRport = forceClientRport;
-	}
-
 
 }
