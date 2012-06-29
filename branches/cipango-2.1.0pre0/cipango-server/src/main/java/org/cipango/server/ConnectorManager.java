@@ -321,7 +321,12 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
         return false;
     }
     
-    public void send(SipMessage message, SipConnection connection) throws IOException
+    /**
+     * Sends the message and returns the connection used to sent the message.
+     * The returned connection can be different if initial connection is not reliable and
+     * message is bigger than MTU.
+     */
+    public SipConnection send(SipMessage message, SipConnection connection) throws IOException
     {
     	Buffer buffer = getBuffer(_messageSize); 
     	_sipGenerator.generate(buffer, message);
@@ -346,8 +351,7 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
 							via.setHost(host);
 							via.setPort(connectorVia.getPort());
 							SipConnection newConnection = connector.getConnection(connection.getRemoteAddress(), connection.getRemotePort());
-							send(message, newConnection);
-							return;
+							return send(message, newConnection);
 						}
 						catch (IOException e) 
 						{
@@ -366,6 +370,7 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
     		if (_accessLog != null)
     			_accessLog.messageSent(message, connection);
             messageSent();
+				return connection;
     	}
     	finally
     	{
@@ -389,9 +394,7 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
         SipConnection connection = connector.getConnection(address, port);
         updateContact(request, connection);
         
-        send(request, connection);
-        
-        return connection;
+        return send(request, connection);
     }
     
     private void updateContact(SipMessage message, SipConnection connection)
