@@ -13,21 +13,16 @@
 // ========================================================================
 package org.cipango.sip;
 
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertFalse;
-import static junit.framework.Assert.assertNull;
-import static junit.framework.Assert.assertTrue;
-import static junit.framework.Assert.fail;
-
 import javax.servlet.sip.Address;
 import javax.servlet.sip.ServletParseException;
 import javax.servlet.sip.SipURI;
 
-import org.junit.Test;
+import org.cipango.sip.NameAddr;
 
-public class AddressTest
+import junit.framework.TestCase;
+
+public class AddressTest extends TestCase
 {
-	@Test
 	public void testEquals() throws Exception
 	{
 		Address a1 = new NameAddr("<sip:%61lice@bea.com;transport=TCP;lr>;q=0.5");
@@ -45,8 +40,7 @@ public class AddressTest
 		assertTrue(a1.equals(a5));
 		assertTrue(a5.equals(a1));
 	}
-
-	@Test
+	
 	public void testSetValue() throws Exception
 	{
 		Address a1 = new NameAddr("<sip:alice@nexcom.fr;transport=UDP>;q=0.5");
@@ -62,8 +56,7 @@ public class AddressTest
 		a1.setValue("<sip:carol@nexcom.fr>");
 		assertNull(a1.getDisplayName());
 	}
-
-	@Test
+	
 	public void testTourtuous() throws ServletParseException
 	{
 		Address a1 = new NameAddr("sip:vivekg@chair-dnrc.example.com ; tag = 19923n");

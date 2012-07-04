@@ -30,7 +30,7 @@ import sun.misc.Service;
  */
 public class ApplicationRouterLoader
 {
-	@SuppressWarnings("rawtypes")
+	@SuppressWarnings("unchecked")
 	public static SipApplicationRouter loadApplicationRouter()
 	{
 		SipApplicationRouterProvider provider = null;

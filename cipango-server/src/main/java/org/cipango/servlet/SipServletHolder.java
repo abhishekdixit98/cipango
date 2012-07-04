@@ -1,5 +1,5 @@
 // ========================================================================
-// Copyright 2008-2010 NEXCOM Systems
+// Copyright 199-2004 Mort Bay Consulting Pty. Ltd.
 // ------------------------------------------------------------------------
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -11,68 +11,199 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 // ========================================================================
+
 package org.cipango.servlet;
 
 import java.io.IOException;
+import java.util.Enumeration;
+import java.util.Stack;
 
 import javax.servlet.Servlet;
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.SingleThreadModel;
 import javax.servlet.UnavailableException;
+import javax.servlet.sip.SipServlet;
 
-import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.servlet.Holder;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
-
-
-
-/* --------------------------------------------------------------------- */
-/** Servlet Instance and Context Holder.
- * Holds the name, params and some state of a javax.servlet.Servlet
- * instance. It implements the ServletConfig interface.
- * This class will organise the loading of the servlet when needed or
- * requested.
- *
- * 
- */
-public class SipServletHolder extends ServletHolder
+public class SipServletHolder extends Holder implements Comparable
 {
-	private static final Logger LOG = Log.getLogger(SipServletHandler.class);
-	
+    private int _initOrder;
+    private boolean _initOnStartup=false;
+    
+    private transient Servlet _servlet;
+    private transient Config _config;
     private transient long _unavailable;
     private transient UnavailableException _unavailableEx;
-	
-    /* ---------------------------------------------------------------- */
-    /** Constructor .
-     */
+
     public SipServletHolder()
+    {}
+    
+    public SipServletHolder(SipServlet servlet)
     {
+        setServlet(servlet);
     }
     
-    
-    /* ---------------------------------------------------------------- */
-    /** Constructor for existing servlet.
-     */
-    public SipServletHolder(Servlet servlet)
-    {
-        super(servlet);
-    }
-
-    /* ---------------------------------------------------------------- */
-    /** Constructor for existing servlet.
-     */
-    public SipServletHolder(Class<? extends Servlet> servlet)
+    public SipServletHolder(Class<? extends SipServlet> servlet)
     {
         super(servlet);
     }
-
     
+    /* ------------------------------------------------------------ */
+    public synchronized void setServlet(Servlet servlet)
+    {
+        if (servlet==null || servlet instanceof SingleThreadModel)
+            throw new IllegalArgumentException();
+
+        _extInstance=true;
+        _servlet=servlet;
+        setHeldClass(servlet.getClass());
+        if (getName()==null)
+            setName(servlet.getClass().getName()+"-"+super.hashCode());
+    }
+    
+    /* ------------------------------------------------------------ */
+    public int getInitOrder()
+    {
+        return _initOrder;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Set the initialize order.
+     * Holders with order<0, are initialized on use. Those with
+     * order>=0 are initialized in increasing order when the handler
+     * is started.
+     */
+    public void setInitOrder(int order)
+    {
+        _initOnStartup=true;
+        _initOrder = order;
+    }
+    
+	public boolean isInitOnStartup()
+	{
+		return _initOnStartup;
+	}
+
+    /* ------------------------------------------------------------ */
+    /** Comparitor by init order.
+     */
+    public int compareTo(Object o)
+    {
+        if (o instanceof SipServletHolder)
+        {
+            SipServletHolder sh= (SipServletHolder)o;
+            if (sh==this)
+                return 0;
+            if (sh._initOrder<_initOrder)
+                return 1;
+            if (sh._initOrder>_initOrder)
+                return -1;
+            
+            int c=(_className!=null && sh._className!=null)?_className.compareTo(sh._className):0;
+            if (c==0)
+                c=_name.compareTo(sh._name);
+            if (c==0)
+                c=this.hashCode()>o.hashCode()?1:-1;
+            return c;
+        }
+        return 1;
+    }
+
+    /* ------------------------------------------------------------ */
+    public boolean equals(Object o)
+    {
+        return compareTo(o)==0;
+    }
+
+    /* ------------------------------------------------------------ */
+    public int hashCode()
+    {
+        return _name==null?System.identityHashCode(this):_name.hashCode();
+    }
+
+    public void doStart()
+    throws Exception
+    {
+        _unavailable=0;
+        try
+        {
+            super.doStart();
+            checkServletType();
+        }
+        catch (UnavailableException ue)
+        {
+            makeUnavailable(ue);
+        }
+
+        _config=new Config();
+
+        if (javax.servlet.SingleThreadModel.class.isAssignableFrom(_class))
+            _servlet = new SingleThreadedWrapper();
+
+        if (_extInstance || _initOnStartup)
+        {
+            if (_servlet==null)
+                _servlet=(Servlet)newInstance();
+            try
+            {
+                initServlet(_servlet,_config);
+            }
+            catch(Throwable e)
+            {
+                _servlet=null;
+                _config=null;
+                if (e instanceof Exception)
+                    throw (Exception) e;
+                else if (e instanceof Error)
+                    throw (Error)e;
+                else
+                    throw new ServletException(e);
+            } 
+        }  
+    }
+
+    /* ------------------------------------------------------------ */
+    public void doStop()
+    {
+        if (_servlet!=null)
+        {                  
+            try
+            {
+                destroyInstance(_servlet);
+            }
+            catch (Exception e)
+            {
+                Log.warn(e);
+            }
+        }
+        
+        if (!_extInstance)
+            _servlet=null;
+       
+        _config=null;   
+    }
+
+    /* ------------------------------------------------------------ */
+    public void destroyInstance (Object o)
+    throws Exception
+    {
+        if (o==null)
+            return;
+        Servlet servlet =  ((Servlet)o);
+        servlet.destroy();
+        getServletHandler().customizeServletDestroy(servlet);
+    }
+
+    /* ------------------------------------------------------------ */
     /** Get the servlet.
      * @return The servlet
      */
-    @Override
     public synchronized Servlet getServlet()
         throws ServletException
     {
@@ -84,25 +215,115 @@ public class SipServletHolder extends ServletHolder
             _unavailable=0;
             _unavailableEx=null;
         }
-
-        return super.getServlet();
+        
+        try
+        {   
+            if (_servlet==null)
+            {
+                _servlet=(Servlet)newInstance();
+                if (_config==null)
+                	_config=new Config();
+                initServlet(_servlet,_config);
+            }
+        
+            return _servlet;
+        }
+        catch(UnavailableException e)
+        {
+            _servlet=null;
+            _config=null;
+            return makeUnavailable(e);
+        }
+        catch(ServletException e)
+        {
+            _servlet=null;
+            _config=null;
+            throw e;
+        }
+        catch(Throwable e)
+        {
+            _servlet=null;
+            _config=null;
+            throw new ServletException("init",e);
+        }    
     }
-    
-    @Override
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Check to ensure class of servlet is acceptable.
+     * @throws UnavailableException
+     */
+    public void checkServletType ()
+        throws UnavailableException
+    {
+        if (!javax.servlet.Servlet.class.isAssignableFrom(_class))
+        {
+            throw new UnavailableException("Servlet "+_class+" is not a javax.servlet.Servlet");
+        }
+    }
+
+    /* ------------------------------------------------------------ */
+    /** 
+     * @return true if the holder is started and is not unavailable
+     */
     public boolean isAvailable()
     {
         if (isStarted()&& _unavailable==0)
-            return super.isAvailable();
+            return true;
         try 
         {
             getServlet();
         }
         catch(Exception e)
         {
-            LOG.ignore(e);
+            Log.ignore(e);
         }
 
-        return isStarted()&& _unavailable==0 && super.isAvailable();
+        return isStarted()&& _unavailable==0;
+    }
+    
+    /* ------------------------------------------------------------ */
+    private Servlet makeUnavailable(UnavailableException e) 
+      throws UnavailableException 
+    {
+        _unavailableEx=e;
+        _unavailable=-1;
+        if (e.isPermanent())   
+            _unavailable=-1;
+        else
+        {
+            if (_unavailableEx.getUnavailableSeconds()>0)
+                _unavailable=System.currentTimeMillis()+1000*_unavailableEx.getUnavailableSeconds();
+            else
+                _unavailable=System.currentTimeMillis()+5000; // TODO configure
+        }
+        
+        throw _unavailableEx;
+    }
+
+    /* ------------------------------------------------------------ */
+    private void initServlet(Servlet servlet, ServletConfig config) 
+    	throws ServletException
+    {
+        try
+        {
+            //handle any cusomizations of the servlet, such as @postConstruct
+            _servlet = getServletHandler().customizeServlet(servlet);
+            
+            servlet.init(config);
+            
+            if (servlet instanceof SipServlet)
+            	((SipServletHandler) getServletHandler()).servletInitialized((SipServlet) servlet);
+        }
+        catch (Exception e)
+        {
+            throw new ServletException(e);
+        }
+    }
+    
+    public Servlet servlet()
+    {
+    	return _servlet;
     }
     
     /* ------------------------------------------------------------ */
@@ -117,27 +338,27 @@ public class SipServletHolder extends ServletHolder
         if (_class==null)
             throw new UnavailableException("Servlet Not Initialized");
         
-        Servlet servlet = getServletInstance();
+        Servlet servlet=_servlet;
         synchronized(this)
         {
-            if (!isAvailable() || !isSetInitOrder())
-                servlet=getServlet();
+            if (_unavailable!=0 || !_initOnStartup)
+            servlet=getServlet();
             if (servlet==null)
                 throw new UnavailableException("Could not instantiate "+_class);
         }
         
         // Service the request
         boolean servlet_error=true;
-        
+
         try
-        {            
+        {
+    
             servlet.service(request,response);
             servlet_error=false;
         }
         catch(UnavailableException e)
         {
             makeUnavailable(e);
-            throw getUnavailableException();
         }
         finally
         {
@@ -146,34 +367,127 @@ public class SipServletHolder extends ServletHolder
                 request.setAttribute("javax.servlet.error.servlet_name",getName());
         }
     }
-    
-    private void makeUnavailable(UnavailableException e)
-    {
-        if (_unavailableEx==e && _unavailable!=0)
-            return;
 
-        _servletHandler.getServletContext().log("unavailable",e);
-
-        _unavailableEx=e;
-        _unavailable=-1;
-        if (e.isPermanent())   
-            _unavailable=-1;
-        else
+ 
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    class Config implements ServletConfig
+    {   
+        /* -------------------------------------------------------- */
+        public String getServletName()
         {
-            if (_unavailableEx.getUnavailableSeconds()>0)
-                _unavailable=System.currentTimeMillis()+1000*_unavailableEx.getUnavailableSeconds();
-            else
-                _unavailable=System.currentTimeMillis()+5000; // TODO configure
+            return getName();
+        }
+        
+        /* -------------------------------------------------------- */
+        public ServletContext getServletContext()
+        {
+            return _servletHandler.getServletContext();
+        }
+
+        /* -------------------------------------------------------- */
+        public String getInitParameter(String param)
+        {
+            return SipServletHolder.this.getInitParameter(param);
+        }
+    
+        /* -------------------------------------------------------- */
+        public Enumeration getInitParameterNames()
+        {
+            return SipServletHolder.this.getInitParameterNames();
         }
     }
-    
-    @Override
-    public UnavailableException getUnavailableException()
+
+    /* -------------------------------------------------------- */
+    /* -------------------------------------------------------- */
+    /* -------------------------------------------------------- */
+    private class SingleThreadedWrapper implements Servlet
     {
-    	if (_unavailableEx != null)
-    		return _unavailableEx;
-    	return super.getUnavailableException();
+        Stack _stack=new Stack();
+        
+        public void destroy()
+        {
+            synchronized(this)
+            {
+                while(_stack.size()>0)
+                    try { ((Servlet)_stack.pop()).destroy(); } catch (Exception e) { Log.warn(e); }
+            }
+        }
+
+        public ServletConfig getServletConfig()
+        {
+            return _config;
+        }
+
+        public String getServletInfo()
+        {
+            return null;
+        }
+
+        public void init(ServletConfig config) throws ServletException
+        {
+            synchronized(this)
+            {
+                if(_stack.size()==0)
+                {
+                    try
+                    {
+                        Servlet s = (Servlet) newInstance();
+                        s.init(config);
+                        _stack.push(s);
+                    }
+                    catch(IllegalAccessException e)
+                    {
+                        throw new ServletException(e);
+                    }
+                    catch (InstantiationException e)
+                    {
+                        throw new ServletException(e);
+                    }
+                }
+            }
+        }
+
+        public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
+        {
+            Servlet s;
+            synchronized(this)
+            {
+                if(_stack.size()>0)
+                    s=(Servlet)_stack.pop();
+                else
+                {
+                    try
+                    {
+                        s = (Servlet) newInstance();
+                        s.init(_config);
+                    }
+                    catch(IllegalAccessException e)
+                    {
+                        throw new ServletException(e);
+                    }
+                    catch (InstantiationException e)
+                    {
+                        throw new ServletException(e);
+                    }
+                }
+            }
+            
+            try
+            {
+                s.service(req,res);
+            }
+            finally
+            {
+                synchronized(this)
+                {
+                    _stack.push(s);
+                }
+            }
+        }
     }
+
 }
 
 

@@ -21,12 +21,9 @@ import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
 public class MessageListenerCollection extends AbstractLifeCycle implements DiameterMessageListener
 {
-	private static final Logger LOG = Log.getLogger(MessageListenerCollection.class);
-	
 	private DiameterMessageListener[] _listeners;
 	private Server _server;
 
@@ -111,7 +108,7 @@ public class MessageListenerCollection extends AbstractLifeCycle implements Diam
 			}
 			catch (Exception e)
 			{
-				LOG.warn(e);
+				Log.warn(e);
 			}
 		}
 		super.doStart();
@@ -129,7 +126,7 @@ public class MessageListenerCollection extends AbstractLifeCycle implements Diam
 			}
 			catch (Exception e)
 			{
-				LOG.warn(e);
+				Log.warn(e);
 			}
 
 		}

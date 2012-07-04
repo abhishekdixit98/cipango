@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.cipango.example</groupId>
     <artifactId>cipango-examples-project</artifactId>
-    <version>2.2-SNAPSHOT</version>
+    <version>1.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
@@ -57,49 +57,16 @@
           </execution>
         </executions>
       </plugin>
-
-      <plugin>
-        <artifactId>maven-war-plugin</artifactId>
-        <configuration>
-          <archive>
-            <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
-          </archive>
-        </configuration>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.felix</groupId>
-        <artifactId>maven-bundle-plugin</artifactId>
-        <extensions>true</extensions>
-        <configuration>
-          <supportedProjectTypes>
-            <supportedProjectType>war</supportedProjectType>
-          </supportedProjectTypes>
-        </configuration>
-        <executions>
-          <execution>
-            <id>bundle-manifest</id>
-            <phase>process-classes</phase>
-            <goals>
-              <goal>manifest</goal>
-            </goals>
-            <configuration>
-              <instructions>
-                <Bundle-SymbolicName>org.cipano.example-sipapp</Bundle-SymbolicName>
-                <Import-Package>javax.servlet,javax.servlet.sip,*</Import-Package>
-                <Export-Package>!org.cipango.example</Export-Package>
-                <Web-ContextPath>/${project.artifactId}</Web-ContextPath>
-                <Bundle-RequiredExecutionEnvironment>J2SE-1.5</Bundle-RequiredExecutionEnvironment>
-              </instructions>
-            </configuration>
-           </execution>
-        </executions>
-      </plugin>
  
     </plugins>
   </build>
   
  <dependencies>
+   <dependency>
+      <groupId>org.mortbay.jetty</groupId>
+      <artifactId>servlet-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
   <dependency>
       <groupId>javax.servlet</groupId>
       <artifactId>sip-api</artifactId>

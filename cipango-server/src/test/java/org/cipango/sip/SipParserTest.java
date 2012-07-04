@@ -14,19 +14,17 @@
 
 
 package org.cipango.sip;
-import static junit.framework.Assert.assertEquals;
 
 import java.io.IOException;
+import junit.framework.TestCase;
 
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
-import org.junit.Test;
 
-public class SipParserTest
+public class SipParserTest extends TestCase
 {
-	@Test
 	public void testRequestLine() throws Exception
 	{
 		ByteArrayBuffer buffer = new ByteArrayBuffer("INVITE sip:foo.org SIP/2.0\r\n\r\n".getBytes(StringUtil.__UTF8));
@@ -38,8 +36,7 @@ public class SipParserTest
 		assertEquals("sip:foo.org", _t1);
 		assertEquals("SIP/2.0", _t2);
 	}
-
-	@Test
+	
 	public void testStatusLine() throws Exception
 	{
 		ByteArrayBuffer buffer = new ByteArrayBuffer("SIP/2.0 999 Foo\r\n\r\n".getBytes(StringUtil.__UTF8));
@@ -51,8 +48,7 @@ public class SipParserTest
 		assertEquals("999", _t1);
 		assertEquals("Foo", _t2);
 	}
-
-	@Test
+	
 	public void testSpace() throws Exception
 	{
 		ByteArrayBuffer buffer = new ByteArrayBuffer(
@@ -65,8 +61,7 @@ public class SipParserTest
         assertEquals("foo", _hdr[0]);
         assertEquals("bar", _val[0]);
 	}
-
-	@Test
+	
 	public void testHeader() throws Exception
 	{
 		ByteArrayBuffer buffer = new ByteArrayBuffer(
@@ -94,8 +89,7 @@ public class SipParserTest
         assertEquals("value4", _val[3]);
         assertEquals(3, _h);
 	}
-
-	@Test
+	
 	public void testopid()
 	{
 		int i = 20801;
@@ -107,8 +101,7 @@ public class SipParserTest
 		System.out.println(TypeUtil.toHexString(b));
 		
 	}
-
-	@Test
+	
 	public void testHeaderCRLF() throws Exception
 	{
 		ByteArrayBuffer buffer = new ByteArrayBuffer(
@@ -121,8 +114,7 @@ public class SipParserTest
 		System.out.println(_hdr[1]);
 		
 	}
-
-	@Test
+	
 	public void testCached() throws Exception 
 	{
 		ByteArrayBuffer buffer = new ByteArrayBuffer(_msg.getBytes(StringUtil.__UTF8));	
