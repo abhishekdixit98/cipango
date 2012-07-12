@@ -648,6 +648,11 @@ public class Node extends AbstractLifeCycle implements DiameterHandler, Dumpable
 		_requestTimeout = requestTimeout;
 	}
 	
+	public void addDictionary(String classname) throws ClassNotFoundException
+	{
+		Dictionary.getInstance().load(Loader.loadClass(getClass(), classname));
+	}
+	
 	public String dump()
 	{
 		return AggregateLifeCycle.dump(this);
