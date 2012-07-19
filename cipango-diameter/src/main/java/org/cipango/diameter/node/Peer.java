@@ -256,9 +256,13 @@ public class Peer implements Dumpable, PeerStateListener
 			}
 		}
 		
-		answer.setRequest(request);
-		
-		getNode().handle(answer);
+		if (request != null)
+		{
+			answer.setRequest(request);		
+			getNode().handle(answer);
+		}
+		else
+			LOG.debug("Ignore answer {} as no corresponding request found", answer);
 	}
 	
 	protected void receiveDWR(DiameterRequest dwr)
@@ -924,9 +928,8 @@ public class Peer implements Dumpable, PeerStateListener
 		public void run()
 		{
 			LOG.debug("Diameter request timeout for {}", _request);
-			// FIXME should not use class cast
-			if (_node.getHandler() instanceof DiameterContext)
-				((DiameterContext) _node.getHandler()).fireNoAnswerReceived(_request, _node.getRequestTimeout());
+			if (_node.getHandler() instanceof TimeoutHandler)
+				((TimeoutHandler) _node.getHandler()).fireNoAnswerReceived(_request, _node.getRequestTimeout());
 			
 			synchronized (_pendingRequests)
 			{

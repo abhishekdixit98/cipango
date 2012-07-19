@@ -27,6 +27,7 @@ import org.cipango.diameter.node.DiameterAnswer;
 import org.cipango.diameter.node.DiameterHandler;
 import org.cipango.diameter.node.DiameterMessage;
 import org.cipango.diameter.node.DiameterRequest;
+import org.cipango.diameter.node.TimeoutHandler;
 import org.cipango.server.session.AppSessionIf;
 import org.cipango.sipapp.SipAppContext;
 import org.eclipse.jetty.util.LazyList;
@@ -34,7 +35,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.WebAppContext;
 
-public class DiameterContext implements DiameterHandler
+public class DiameterContext implements DiameterHandler, TimeoutHandler
 {
 	private static final Logger LOG = Log.getLogger(DiameterContext.class);
 	
