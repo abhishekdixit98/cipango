@@ -34,7 +34,6 @@ import org.cipango.sip.NameAddr;
 import org.cipango.sip.SipGenerator;
 import org.cipango.sip.SipHeaders;
 import org.cipango.sip.Via;
-import org.cipango.util.SystemUtil;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.ByteArrayBuffer;
@@ -298,7 +297,12 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
         return false;
     }
     
-    public void send(SipMessage message, SipConnection connection) throws IOException
+    /**
+     * Sends the message and returns the connection used to sent the message.
+     * The returned connection can be different if initial connection is not reliable and
+     * message is bigger than MTU.
+     */
+    public SipConnection send(SipMessage message, SipConnection connection) throws IOException
     {
     	Buffer buffer = getBuffer(_messageSize); 
     	_sipGenerator.generate(buffer, message);
@@ -317,8 +321,7 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
 	    					connection.getRemotePort());
 	    			if (newConnection.getConnector().isReliable())
 	    			{
-	    				send(message, newConnection);
-	    				return;
+	    				return send(message, newConnection);
 	    			}
     			}
     			catch (IOException e) 
@@ -338,6 +341,7 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
     		if (_accessLog != null)
     			_accessLog.messageSent(message, connection);
             messageSent();
+            return connection;
     	}
     	finally
     	{
