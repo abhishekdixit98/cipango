@@ -207,7 +207,8 @@ public class ClientTransaction extends Transaction
 					port);
 			setConnection(connection);
 			_listener.customizeRequest(_request, connection);
-			getServer().getConnectorManager().send(_request, connection);
+			connection = getServer().getConnectorManager().send(_request, connection);
+			setConnection(connection);
 		}
 	}
 	
