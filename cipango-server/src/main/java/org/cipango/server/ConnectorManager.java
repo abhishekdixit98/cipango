@@ -394,7 +394,11 @@ public class ConnectorManager extends AbstractLifeCycle implements Buffers, SipH
     		else
     		{
     			int transport = SipConnectors.getOrdinal(via.getTransport());
-    			address = InetAddress.getByName(via.getHost());
+    			
+    			if (via.getMAddr() != null)
+    				address = InetAddress.getByName(via.getMAddr());
+    			else
+    				address = InetAddress.getByName(via.getHost());
     			
     			connector = findConnector(transport, address);
     		}

@@ -184,7 +184,12 @@ public class ClientTransaction extends Transaction
 			
 			SipURI target = (SipURI) uri;
 			
-			InetAddress address = InetAddress.getByName(target.getHost()); // TODO 3263
+			InetAddress address;
+			if (target.getMAddrParam() != null)
+				address = InetAddress.getByName(target.getMAddrParam());
+			else
+				address = InetAddress.getByName(target.getHost()); // TODO 3263
+			
 			int transport = SipConnectors.getOrdinal(target.getTransportParam()); // TODO opt
 			
 			if (transport == -1) 
