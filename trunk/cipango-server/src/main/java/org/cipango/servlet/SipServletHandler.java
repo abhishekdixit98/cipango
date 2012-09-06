@@ -96,7 +96,7 @@ public class SipServletHandler extends ServletHandler implements SipHandler
 	public void doHandle(String target, Request baseRequest, HttpServletRequest request,HttpServletResponse response) throws IOException, ServletException
     {
     	int semi = request.getRequestURI().lastIndexOf(';');
-        if (semi>=0)
+        if (semi>=0 && (request.getSession(true) instanceof org.cipango.http.servlet.ConvergedSessionManager.Session))
  		{
  			((org.cipango.http.servlet.ConvergedSessionManager.Session) request.getSession(true)).updateSession(request);
  		}
