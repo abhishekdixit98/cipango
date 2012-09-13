@@ -21,7 +21,7 @@ import org.eclipse.jetty.security.UserDataConstraint;
  * 
  * 
  */
-public class Constraint extends org.eclipse.jetty.http.security.Constraint
+public class Constraint extends org.eclipse.jetty.util.security.Constraint
 {
 		
 	private boolean _proxyMode;

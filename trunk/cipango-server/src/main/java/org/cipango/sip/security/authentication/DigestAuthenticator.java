@@ -25,7 +25,7 @@ import org.cipango.sip.security.Authenticate;
 import org.cipango.sip.security.Authorization;
 import org.cipango.sip.security.SipAuthenticator;
 import org.cipango.util.HexString;
-import org.eclipse.jetty.http.security.Constraint;
+import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.log.Log;

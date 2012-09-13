@@ -1,17 +1,26 @@
 diff --git a/jetty-maven-plugin/src/main/java/org/mortbay/jetty/plugin/AbstractJettyMojo.java b/jetty-maven-plugin/src/main/java/org/mortbay/jetty/plugin/AbstractJettyMojo.java
-index 1f1f85b..92fbca4 100644
+index 2ef31ff..87208c7 100644
 --- org/mortbay/jetty/plugin/AbstractJettyMojo.java
 +++ org/mortbay/jetty/plugin/AbstractJettyMojo.java
-@@ -29,6 +29,8 @@ import org.apache.maven.plugin.AbstractMojo;
- import org.apache.maven.plugin.MojoExecutionException;
- import org.apache.maven.plugin.MojoFailureException;
- import org.apache.maven.project.MavenProject;
+@@ -46,6 +46,8 @@ import org.eclipse.jetty.server.handler.HandlerCollection;
+ import org.eclipse.jetty.util.Scanner;
+ import org.eclipse.jetty.util.resource.Resource;
+ import org.eclipse.jetty.xml.XmlConfiguration;
 +import org.cipango.plugin.CipangoServer;
 +import org.cipango.plugin.CipangoSipAppContext;
- import org.codehaus.plexus.util.FileUtils;
- import org.eclipse.jetty.security.LoginService;
- import org.eclipse.jetty.server.Connector;
-@@ -51,7 +53,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
+ 
+ 
+ 
+@@ -133,7 +135,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
+      * 
+      * @parameter alias="webAppConfig"
+      */
+-    protected JettyWebAppContext webApp;
++    protected CipangoSipAppContext webApp;
+ 
+ 
+ 
+@@ -305,7 +307,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      /**
       * A wrapper for the Server object
       */
@@ -19,17 +28,8 @@ index 1f1f85b..92fbca4 100644
 +    protected CipangoServer server;
      
      /**
-      * List of connectors to use. If none are configured
-@@ -92,7 +94,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
-      * The "virtual" webapp created by the plugin
-      * @parameter
-      */
--    protected JettyWebAppContext webAppConfig;
-+    protected CipangoSipAppContext webAppConfig;
- 
- 
- 
-@@ -281,7 +283,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
+      * A scanner to check for changes to the webapp
+@@ -459,7 +461,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
              getLog().debug("Starting Jetty Server ...");
  
              printSystemProperties();
@@ -38,16 +38,16 @@ index 1f1f85b..92fbca4 100644
              setServer(this.server);
  
              //apply any config from a jetty.xml file first which is able to
-@@ -379,7 +381,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
+@@ -557,7 +559,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      {
          //As of jetty-7, you must use a <webAppConfig> element
-         if (webAppConfig == null)
--            webAppConfig = new JettyWebAppContext();
-+            webAppConfig = new CipangoSipAppContext();
+         if (webApp == null)
+-            webApp = new JettyWebAppContext();
++            webApp = new CipangoSipAppContext();
          
          //Apply any context xml file to set up the webapp
          //CAUTION: if you've defined a <webAppConfig> element then the
-@@ -631,12 +633,12 @@ public abstract class AbstractJettyMojo extends AbstractMojo
+@@ -809,12 +811,12 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      }
  
  
@@ -62,17 +62,18 @@ index 1f1f85b..92fbca4 100644
      {
          this.server = server;
      }
-@@ -663,11 +665,11 @@ public abstract class AbstractJettyMojo extends AbstractMojo
+@@ -841,12 +843,12 @@ public abstract class AbstractJettyMojo extends AbstractMojo
          return this.scannerListeners;
      }
  
--    public JettyWebAppContext getWebAppConfig() {
-+    public CipangoSipAppContext getWebAppConfig() {
-         return webAppConfig;
+-    public JettyWebAppContext getWebAppConfig()
++    public CipangoSipAppContext getWebAppConfig()
+     {
+         return webApp;
      }
  
--    public void setWebAppConfig(JettyWebAppContext webAppConfig) {
-+    public void setWebAppConfig(CipangoSipAppContext webAppConfig) {
-         this.webAppConfig = webAppConfig;
+-    public void setWebAppConfig(JettyWebAppContext webAppConfig)
++    public void setWebAppConfig(CipangoSipAppContext webAppConfig)
+     {
+         this.webApp = webAppConfig;
      }
- 

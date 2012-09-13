@@ -19,7 +19,7 @@ import java.util.StringTokenizer;
 
 import org.cipango.server.ID;
 import org.cipango.util.DigestAuthenticator;
-import org.eclipse.jetty.http.security.Credential;
+import org.eclipse.jetty.util.security.Credential;
 import org.eclipse.jetty.io.BufferCache;
 import org.eclipse.jetty.io.BufferCache.CachedBuffer;
 

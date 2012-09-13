@@ -1,12 +1,12 @@
-Index: org/mortbay/jetty/plugin/JettyRunMojo.java
-===================================================================
---- org/mortbay/jetty/plugin/JettyRunMojo.java	(revision 6306)
-+++ org/mortbay/jetty/plugin/JettyRunMojo.java	(working copy)
-@@ -59,7 +59,6 @@
+diff --git a/jetty-maven-plugin/src/main/java/org/mortbay/jetty/plugin/JettyRunMojo.java b/jetty-maven-plugin/src/main/java/org/mortbay/jetty/plugin/JettyRunMojo.java
+index 3d7df2e..7574f51 100644
+--- org/mortbay/jetty/plugin/JettyRunMojo.java
++++ org/mortbay/jetty/plugin/JettyRunMojo.java
+@@ -53,7 +53,6 @@ import org.eclipse.jetty.webapp.WebAppContext;
   *  </p>
   * 
   * 
 - * @goal run
-  * @requiresDependencyResolution runtime
+  * @requiresDependencyResolution test
   * @execute phase="test-compile"
   * @description Runs jetty directly from a maven project
