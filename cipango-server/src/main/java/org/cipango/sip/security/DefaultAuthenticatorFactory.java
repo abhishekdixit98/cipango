@@ -16,7 +16,7 @@ package org.cipango.sip.security;
 import javax.servlet.ServletContext;
 
 import org.cipango.sip.security.authentication.DigestAuthenticator;
-import org.eclipse.jetty.http.security.Constraint;
+import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.server.Server;

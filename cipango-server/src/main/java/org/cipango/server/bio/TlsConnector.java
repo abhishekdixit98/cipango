@@ -47,10 +47,10 @@ import javax.net.ssl.TrustManagerFactory;
 
 import org.cipango.server.SipConnectors;
 import org.cipango.server.SipMessage;
-import org.eclipse.jetty.http.security.Password;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.security.Password;
 
 public class TlsConnector extends TcpConnector
 {

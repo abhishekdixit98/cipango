@@ -153,13 +153,13 @@ public class CipangoRunMojo extends JettyRunMojo
 		super.configureWebApplication();
 		
 		if (sipDefaultXml != null)
-            webAppConfig.setDefaultsSipDescriptor(sipDefaultXml.getCanonicalPath());
+            webApp.setDefaultsSipDescriptor(sipDefaultXml.getCanonicalPath());
         if (overrideSipXml != null)
-            webAppConfig.setOverrideSipDescriptor(overrideSipXml.getCanonicalPath());
-        webAppConfig.setAnnotationsEnabled(annotationsEnabled);
+        	webApp.setOverrideSipDescriptor(overrideSipXml.getCanonicalPath());
+        webApp.setAnnotationsEnabled(annotationsEnabled);
         
-        getLog().info("Sip defaults = "+(webAppConfig.getDefaultsSipDescriptor()==null?" cipango default":webAppConfig.getDefaultsSipDescriptor()));
-        getLog().info("Sip overrides = "+(webAppConfig.getOverrideSipDescriptor()==null?" none":webAppConfig.getOverrideSipDescriptor()));
+        getLog().info("Sip defaults = "+(webApp.getDefaultsSipDescriptor()==null?" cipango default":webApp.getDefaultsSipDescriptor()));
+        getLog().info("Sip overrides = "+(webApp.getOverrideSipDescriptor()==null?" none":webApp.getOverrideSipDescriptor()));
 
 	}
     

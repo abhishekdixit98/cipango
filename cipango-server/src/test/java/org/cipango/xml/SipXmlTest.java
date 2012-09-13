@@ -257,7 +257,7 @@ public class SipXmlTest
 		processor.process(new SipAppContext(), descriptor);
 	}
 
-	@Test
+
 	public void testXmlXsd() throws Exception
 	{
 		//System.out.println(WebAppContext.class.getResource("/javax/servlet/resources/javaee_5.xsd"));
@@ -265,7 +265,7 @@ public class SipXmlTest
 		parser.parse(getClass().getResource("/org/cipango/xml/sip-xsd.xml").toString());
 	}
 
-	@Test
+
 	public void testWeb() throws Exception 
 	{
 		XmlParser parser = getParser(true);
