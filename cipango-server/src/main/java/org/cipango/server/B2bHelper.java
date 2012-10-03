@@ -25,7 +25,6 @@ import java.util.Map.Entry;
 import javax.servlet.ServletException;
 import javax.servlet.sip.Address;
 import javax.servlet.sip.B2buaHelper;
-import javax.servlet.sip.ServletParseException;
 import javax.servlet.sip.SipServletMessage;
 import javax.servlet.sip.SipServletRequest;
 import javax.servlet.sip.SipServletResponse;
@@ -391,8 +390,12 @@ public class B2bHelper implements B2buaHelper
 							try
 							{
 								Address address = new NameAddr(l.get(0));
-								
-								mergeFromTo(address, request.getFields().getAddress(name));
+								if (ordinal == SipHeaders.FROM_ORDINAL)
+									address.setParameter(SipParams.TAG, request.from().getParameter(SipParams.TAG));
+								else
+									address.removeParameter(SipParams.TAG);
+								request.getFields().setAddress(name, address);
+								// TODO from/to session ?
 							}
 							catch (ServletException e)
 							{
@@ -416,21 +419,11 @@ public class B2bHelper implements B2buaHelper
 				else if (ordinal == SipHeaders.CONTACT_ORDINAL)
 				{
 					NameAddr contact = (NameAddr) request.getFields().getAddress(SipHeaders.CONTACT_BUFFER);
-					List<String> contacts = entry.getValue();
-					
-					if (contacts.size() > 0)
+					if (contact != null)
 					{
-						try 
-						{
-							if (contact != null)
-								mergeContact(contacts.get(0), contact);
-							else if (request.isRegister())
-								request.getFields().setAddress(SipHeaders.CONTACT_BUFFER, new NameAddr(contacts.get(0)));
-						}
-						catch (ServletParseException e)
-						{
-							throw new IllegalArgumentException("Invalid Contact header: " + contacts.get(0));
-						}
+						List<String> contacts = entry.getValue();
+						if (contacts.size() > 0)
+							mergeContact(contacts.get(0), contact);
 					}
 				}
 				else
@@ -446,74 +439,47 @@ public class B2bHelper implements B2buaHelper
 		}
 	}
 	
-	public static void mergeContact(String src, Address dest) throws ServletParseException
+	public static void mergeContact(String src, Address dest)
 	{
-		NameAddr source = new NameAddr(src);
-		
-		SipURI srcUri = (SipURI) source.getURI();
-		SipURI destUri = (SipURI) dest.getURI();
-		
-		String user = srcUri.getUser();
-		if (user != null)
-			destUri.setUser(user);
-		
-		Iterator<String> it = srcUri.getHeaderNames();
-		while (it.hasNext())
+		try
 		{
-			String name = it.next();
-			destUri.setHeader(name, srcUri.getHeader(name));
+			NameAddr source = new NameAddr(src);
+			
+			SipURI srcUri = (SipURI) source.getURI();
+			SipURI destUri = (SipURI) dest.getURI();
+			
+			String user = srcUri.getUser();
+			if (user != null)
+				destUri.setUser(user);
+			
+			Iterator<String> it = srcUri.getHeaderNames();
+			while (it.hasNext())
+			{
+				String name = it.next();
+				destUri.setHeader(name, srcUri.getHeader(name));
+			}
+			
+			it = srcUri.getParameterNames();
+			while (it.hasNext())
+			{
+				String name = it.next();
+				if (!ContactAddress.isReservedUriParam(name))
+					destUri.setParameter(name, srcUri.getParameter(name));
+			}
+			String displayName = source.getDisplayName();
+			if (displayName != null)
+				dest.setDisplayName(displayName);
+			
+			it = source.getParameterNames();
+			while (it.hasNext())
+			{
+				String name = it.next();
+				dest.setParameter(name, source.getParameter(name));
+			}
 		}
-		
-		it = srcUri.getParameterNames();
-		while (it.hasNext())
+		catch (Exception e)
 		{
-			String name = it.next();
-			if (!ContactAddress.isReservedUriParam(name))
-				destUri.setParameter(name, srcUri.getParameter(name));
+			throw new IllegalArgumentException("Invalid Contact: " + src);
 		}
-		String displayName = source.getDisplayName();
-		if (displayName != null)
-			dest.setDisplayName(displayName);
-		
-		it = source.getParameterNames();
-		while (it.hasNext())
-		{
-			String name = it.next();
-			dest.setParameter(name, source.getParameter(name));
-		}
-	}
-	
-	public static void mergeFromTo(Address src, Address dest)
-	{
-		dest.setURI(src.getURI());
-		dest.setDisplayName(src.getDisplayName());
-		
-		List<String> params = new ArrayList<String>();
-		
-		Iterator<String> it = src.getParameterNames();
-		while (it.hasNext())
-		{
-			params.add(it.next());
-		}
-		it = dest.getParameterNames();
-		while (it.hasNext())
-		{
-			params.add(it.next());
-		}
-		
-		for (String param : params)
-		{
-			if (!param.equalsIgnoreCase(SipParams.TAG))
-				dest.setParameter(param, src.getParameter(param));
-		}
-	}
-	
-	public static void main(String[] args) throws Exception
-	{
-		NameAddr dest = new NameAddr("Alice <sip:alice@atlanta.com>;toberemoved");
-		NameAddr src = new NameAddr("sip:alice@atlanta2.com;tag=void;foo=bar"); 
-		mergeFromTo(src, dest);
-		
-		System.out.println(dest);
 	}
 }

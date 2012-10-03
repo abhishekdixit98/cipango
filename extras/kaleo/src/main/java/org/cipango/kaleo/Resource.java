@@ -21,4 +21,8 @@ package org.cipango.kaleo;
 public interface Resource 
 {
 	String getUri();
+	
+	long nextTimeout();
+	void doTimeout(long time);
+	boolean isDone();
 }

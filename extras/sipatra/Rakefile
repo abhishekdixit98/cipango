@@ -4,8 +4,6 @@ require "rspec/core/rake_task"
 require 'rexml/document'
 
 
-Dir["./lib/tasks/*.rake"].each { |f| load f }
-
 JarVersion = File::open("pom.xml") do |f|
   REXML::Document::new(f).elements["project/version"].text
 end
@@ -14,7 +12,7 @@ JarName      = "#{PackageName}.jar"
 JarFile      = "lib/sipatra/#{JarName}"
 GemFiles     = FileList["src/main/resources/**/*.rb"].to_a.map do |file|
   file.gsub(%r{src/main/resources}, "lib")
-end + FileList["lib/sipatra/*"] + ["lib/sipatra.rb"]
+end + FileList["lib/sipatra/*"]
 GemFiles << JarFile
 GemFiles << "lib/sipatra-jars.rb"
 
@@ -82,6 +80,6 @@ end
 
 file "lib/sipatra/#{JarName}" => ["lib/sipatra", "lib/sipatra.rb"] do
   system "mvn -o package"
-  cp Dir["target/gem-dist/*"].delete_if {|n| n =~ /^jruby-complete/ }, "lib/sipatra"
+  cp Dir["target/#{PackageName}-dist/*"], "lib/sipatra"
 end
 

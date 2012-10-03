@@ -14,19 +14,13 @@
 
 package org.cipango.sip;
 
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertFalse;
-import static junit.framework.Assert.assertNull;
-import static junit.framework.Assert.fail;
-
 import javax.servlet.sip.TelURL;
 
-import org.junit.Test;
+import junit.framework.TestCase;
 
-public class TelURLTest
+public class TelURLTest extends TestCase
 {
 
-	@Test
 	public void testSetPhoneNumber() throws Exception
 	{
 		TelURL url = (TelURL) URIFactory.parseURI("tel:+1-212-555-0101");
@@ -41,8 +35,7 @@ public class TelURLTest
 		try	{ url.setPhoneNumber("1-212-555-0101"); fail();} catch (IllegalArgumentException e) {}
 		try	{ url.setPhoneNumber("+1-212-555-0101", "atlanta.com"); fail();} catch (IllegalArgumentException e) {}
 	}	
-
-	@Test
+	
 	public void testParameters() throws Exception
 	{
 		String tel = "tel:863-1234;phone-context=+1-914-555";

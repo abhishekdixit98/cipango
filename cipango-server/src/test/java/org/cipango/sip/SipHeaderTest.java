@@ -14,19 +14,17 @@
 
 package org.cipango.sip;
 
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.fail;
-
 import javax.servlet.sip.Address;
 import javax.servlet.sip.SipURI;
 
 import org.cipango.server.SipRequest;
+import org.cipango.sip.NameAddr;
 import org.cipango.util.ReadOnlyAddress;
-import org.junit.Test;
 
-public class SipHeaderTest
+import junit.framework.TestCase;
+
+public class SipHeaderTest extends TestCase
 {
-	@Test
 	public void testAddress() throws Exception
 	{
 		SipRequest request = new SipRequest();
