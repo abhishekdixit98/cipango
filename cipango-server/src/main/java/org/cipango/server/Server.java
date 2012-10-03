@@ -16,12 +16,11 @@ package org.cipango.server;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 
 import javax.servlet.ServletException;
+import javax.servlet.sip.SipServlet;
 import javax.servlet.sip.SipServletMessage;
 import javax.servlet.sip.SipURI;
 import javax.servlet.sip.ar.SipApplicationRouter;
@@ -35,32 +34,24 @@ import org.cipango.server.session.SessionManager;
 import org.cipango.server.transaction.TransactionManager;
 import org.cipango.sip.SipURIImpl;
 import org.cipango.sipapp.SipAppContext;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
 
 /**
  * Cipango SIP/HTTP Server.
- * It extends Jetty HTTP {@link org.eclipse.jetty.server.Server} to add SIP capabilities.
+ * It extends Jetty HTTP Server to add SIP capabilities.
  */
 public class Server extends org.eclipse.jetty.server.Server implements SipHandler
 {
-	private static final Logger LOG = Log.getLogger(Server.class);
-	
-	private static final String __sipVersion;
-	
-	static 
-	{
-		if (Server.class.getPackage() != null && Server.class.getPackage().getImplementationVersion() != null)
-			__sipVersion = Server.class.getPackage().getImplementationVersion();
-		else
-			__sipVersion = System.getProperty("cipango.version", "2.x.y-SNAPSHOT");
-	}
+	private static String __sipVersion = (Server.class.getPackage() != null && Server.class.getPackage().getImplementationVersion() != null)
+    	?Server.class.getPackage().getImplementationVersion() : "1.0.x";
     	
 	private ThreadPool _sipThreadPool;
     
@@ -70,7 +61,10 @@ public class Server extends org.eclipse.jetty.server.Server implements SipHandle
     private SessionManager _sessionManager;    
     private SipApplicationRouter _applicationRouter;
 
-    private final AtomicLong _statsStartedAt = new AtomicLong(System.currentTimeMillis());
+    private long _statsStartedAt = -1;
+    private Object _statsLock = new Object();
+    
+    private long _messages;
     
     public Server()
     {
@@ -81,7 +75,8 @@ public class Server extends org.eclipse.jetty.server.Server implements SipHandle
 	@Override
 	protected void doStart() throws Exception 
     {
-		LOG.info("cipango-" + __sipVersion);
+		Log.info("cipango-" + __sipVersion);
+		//SipGenerator.setServerVersion(__sipVersion);
 
 		MultiException mex = new MultiException();
 		
@@ -100,6 +95,7 @@ public class Server extends org.eclipse.jetty.server.Server implements SipHandle
 		if (_applicationRouter == null)
 			setApplicationRouter(ApplicationRouterLoader.loadApplicationRouter());
 
+		
 		try 
 		{
 			_applicationRouter.init();
@@ -120,7 +116,7 @@ public class Server extends org.eclipse.jetty.server.Server implements SipHandle
 			if (contexts != null)
 			{
 				for (SipAppContext context : contexts)
-					context.serverStarted();
+					context.initialized();
 			}
 		}
 		catch (Throwable t) { mex.add(t); }
@@ -166,19 +162,22 @@ public class Server extends org.eclipse.jetty.server.Server implements SipHandle
 		return _applicationRouter;
 	}
 	
-    public void applicationStarted(SipAppContext context)
+    public void applicationDeployed(SipAppContext context)
     {
     	if (isStarted())
-    	{
     		_applicationRouter.applicationDeployed(Collections.singletonList(context.getName()));
-    		context.serverStarted();
-    	}
     }
     
-    public void applicationStopped(SipAppContext context)
+    public void applicationUndeployed(SipAppContext context)
     {
     	if (isStarted())
     		_applicationRouter.applicationUndeployed(Collections.singletonList(context.getName()));
+    }
+    
+    public void servletInitialized(SipAppContext context, SipServlet servlet)
+    {
+    	if (isStarted())
+    		context.fireServletInitialized(servlet);
     }
     
     public void customizeRequest(SipRequest request) throws IOException
@@ -245,6 +244,14 @@ public class Server extends org.eclipse.jetty.server.Server implements SipHandle
 	
     public void handle(SipServletMessage message) throws IOException, ServletException
     {
+		if (isStatsOn())
+		{
+			synchronized (_statsLock)
+			{
+				_messages++;
+			}
+		}
+    	
 		((SipHandler) getHandler()).handle(message); 
 	}
 	
@@ -299,9 +306,33 @@ public class Server extends org.eclipse.jetty.server.Server implements SipHandle
 		return _sessionManager;
 	}
 	
+	public void statsReset()
+	{
+		synchronized (_statsLock)
+		{
+			_statsStartedAt = _statsStartedAt == -1 ? -1 : System.currentTimeMillis();
+			_messages = 0;
+		}
+	}
+	
+	public void setStatsOn(boolean on) 
+	{
+        if (on && _statsStartedAt != -1) 
+        	return;
+        
+        Log.info("Statistics set to " + on);
+        statsReset();
+        _statsStartedAt = on ? System.currentTimeMillis() : -1;
+    }
+	
+	public boolean isStatsOn() 
+    {
+		return _statsStartedAt != -1;
+	}
+	
 	public void allStatsReset()
 	{
-		_statsStartedAt.set(System.currentTimeMillis());
+		statsReset();
 		getSessionManager().statsReset();
 		getConnectorManager().statsReset();
 		getTransactionManager().statsReset();
@@ -316,11 +347,28 @@ public class Server extends org.eclipse.jetty.server.Server implements SipHandle
 		}
 	}
 	
-	public long getStatsStartedAt()
+	public void setAllStatsOn(boolean on) 
 	{
-		return _statsStartedAt.get();
+		setStatsOn(on);
+		if (getSessionManager() != null)
+			getSessionManager().setStatsOn(on);
+		getConnectorManager().setStatsOn(on);		
+		getTransactionManager().setStatsOn(on);
 	}
 	
+	public boolean isAllStatsOn() 
+	{
+		return isStatsOn()
+			&& getSessionManager().isStatsOn()
+			&& getConnectorManager().isStatsOn()
+			&& getTransactionManager().getStatsOn();
+	}
+	
+	public long getMessages()
+	{
+		return _messages;
+	}
+
 	public static String getSipVersion()
 	{
 		return __sipVersion;
@@ -330,7 +378,7 @@ public class Server extends org.eclipse.jetty.server.Server implements SipHandle
     public void dump(Appendable out,String indent) throws IOException
     {
         super.dump(out, indent);
-        dump(out,indent,TypeUtil.asList(_connectorManager.getConnectors()), Arrays.asList(_applicationRouter));    
+        dump(out,indent,TypeUtil.asList(_connectorManager.getConnectors()));    
     }
 	
 	@Override

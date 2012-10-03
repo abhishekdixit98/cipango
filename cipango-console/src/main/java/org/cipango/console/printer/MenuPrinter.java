@@ -30,7 +30,6 @@ import org.cipango.console.Menu;
 import org.cipango.console.ObjectNameFactory;
 import org.cipango.console.Page;
 import org.cipango.console.PageImpl;
-import org.cipango.console.printer.generic.HtmlPrinter;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -70,6 +69,37 @@ public class MenuPrinter implements HtmlPrinter, Menu
 				return c.isRegistered(ConsoleFilter.SNMP_AGENT);
 			}
 		}),
+		
+		STATISTICS = PAGES.add(new PageImpl("Statistics")),
+		STATISTICS_SIP = STATISTICS.add(new PageImpl("statistics-sip", "SIP Statistics", "SIP")),
+		STATISTICS_HTTP = STATISTICS.add(new PageImpl("statistics-http", "HTTP Statistics", "HTTP")),
+		STATISTICS_DIAMETER = STATISTICS.add(new PageImpl("statistics-diameter", "Diameter Statistics", "Diameter"){
+			@Override
+			public boolean isEnabled(MBeanServerConnection c) throws IOException
+			{
+				return c.isRegistered(ConsoleFilter.DIAMETER_NODE);
+			}
+		}),
+		
+		LOGS = PAGES.add(new PageImpl("Logs")),
+		SIP_LOGS = LOGS.add(new PageImpl("logs-sip", "SIP Logs", "SIP"){
+			@Override
+			public boolean isEnabled(MBeanServerConnection c) throws IOException
+			{
+				return c.isRegistered(ConsoleFilter.SIP_CONSOLE_MSG_LOG)
+							|| c.isRegistered(ConsoleFilter.SIP_MESSAGE_LOG);
+			}
+		}),
+		HTTP_LOGS = LOGS.add(new PageImpl("logs-http", "HTTP Logs", "HTTP")),
+		DIAMETER_LOGS = LOGS.add(new PageImpl("logs-diameter", "Diameter Logs", "Diameter")
+		{
+			@Override
+			public boolean isEnabled(MBeanServerConnection c) throws IOException
+			{
+				return c.isRegistered(ConsoleFilter.DIAMETER_NODE);
+			}
+		}),
+		CALLS = LOGS.add(new PageImpl("logs-calls", "Calls")),
 
 		APPLICATIONS = PAGES.add(new PageImpl("Applications")
 		{
@@ -94,45 +124,7 @@ public class MenuPrinter implements HtmlPrinter, Menu
 			{
 				return getFather().isEnabled(c) && c.isRegistered(ConsoleFilter.DAR);
 			}
-		}),
-		
-		STATISTICS = PAGES.add(new PageImpl("Statistics")),
-		STATISTICS_SIP = STATISTICS.add(new PageImpl("statistics-sip", "SIP Statistics", "SIP")),
-		STATISTICS_HTTP = STATISTICS.add(new PageImpl("statistics-http", "HTTP Statistics", "HTTP")),
-		STATISTICS_DIAMETER = STATISTICS.add(new PageImpl("statistics-diameter", "Diameter Statistics", "Diameter"){
-			@Override
-			public boolean isEnabled(MBeanServerConnection c) throws IOException
-			{
-				return c.isRegistered(ConsoleFilter.DIAMETER_NODE);
-			}
-		}),
-		
-		LOGS = PAGES.add(new PageImpl("Logs")),
-		SIP_LOGS = LOGS.add(new PageImpl("logs-sip", "SIP Logs", "SIP"){
-			@Override
-			public boolean isEnabled(MBeanServerConnection c) throws IOException
-			{
-				return c.isRegistered(ConsoleFilter.SIP_CONSOLE_MSG_LOG)
-							|| c.isRegistered(ConsoleFilter.SIP_MESSAGE_LOG);
-			}
-		}),
-		HTTP_LOGS = LOGS.add(new PageImpl("logs-http", "HTTP Logs", "HTTP")
-		{
-			@Override
-			public boolean isEnabled(MBeanServerConnection c) throws IOException
-			{
-				return c.isRegistered(ConsoleFilter.HTTP_LOG);
-			}
-		}),
-		DIAMETER_LOGS = LOGS.add(new PageImpl("logs-diameter", "Diameter Logs", "Diameter")
-		{
-			@Override
-			public boolean isEnabled(MBeanServerConnection c) throws IOException
-			{
-				return c.isRegistered(ConsoleFilter.DIAMETER_NODE);
-			}
-		}),
-		CALLS = LOGS.add(new PageImpl("logs-calls", "Calls"));
+		});
 	
 	
 	protected MBeanServerConnection _connection;
@@ -189,10 +181,10 @@ public class MenuPrinter implements HtmlPrinter, Menu
 	public String getHtmlTitle()
 	{
 		if (_currentPage.getFather() == null)
-			return "<h1>" + _currentPage.getTitle() + "</h1>\n";
+			return "<h1>" + _currentPage.getTitle() + "</h1>";
 		else
 			return "<h1>" + _currentPage.getFather().getTitle() + 
-					"<span> > " + _currentPage.getMenuTitle() + "</span></h1>\n";
+					"<span> > " + _currentPage.getMenuTitle() + "</span></h1>";
 	}
 
 	public void print(Writer out) throws Exception
@@ -243,9 +235,9 @@ public class MenuPrinter implements HtmlPrinter, Menu
 		List<PageImpl> l = new ArrayList<PageImpl>(PAGES.getPages());
 				
 		try
-		{			
+		{
 			@SuppressWarnings("unchecked")
-			Set<ObjectName> set = _connection.queryNames(null, ConsoleFilter.APPLICATION_PAGES_QUERY);
+			Set<ObjectName> set = _connection.queryNames(ConsoleFilter.APPLICATION_PAGES, null);
 			if (set != null && !set.isEmpty())
 			{
 				Iterator<ObjectName> it = set.iterator();
