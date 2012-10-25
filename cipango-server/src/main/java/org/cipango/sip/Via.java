@@ -139,7 +139,10 @@ public class Via implements Serializable, Cloneable
 			}
 			if (!SipGrammar.__param.containsAll(value) && !SipGrammar.isToken(value)) 
 			{
-				throw new ServletParseException("Invalid parameter value [" 
+				if (value.startsWith("\""))
+					value = SipGrammar.unquote(value);
+				else
+					throw new ServletParseException("Invalid parameter value [" 
 						+ value + "] in [" + _via + "]");
 			}			
 			_params.put(name.toLowerCase(), value);
@@ -285,7 +288,16 @@ public class Via implements Serializable, Cloneable
             if (value != null && value.length() > 0) 
             {
                 sb.append('=');
-                sb.append(value);
+                if (SipGrammar.isTokens(value)) 
+    			{
+    				sb.append(value);
+    			} 
+    			else 
+    			{
+    				sb.append('"');
+    				sb.append(SipGrammar.escapeQuoted(value));
+    				sb.append('"');
+    			}
             }
         }
 
