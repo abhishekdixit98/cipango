@@ -327,6 +327,7 @@ public abstract class Common
 		VENDOR_SPECIFIC_APPLICATION_ID_ORDINAL = 260,
 		PRODUCT_NAME_ORDINAL = 269,
 		FAILED_AVP_ORDINAL = 279,
+		ROUTE_RECORD_ORDINAL = 282,
 		REDIRECT_HOST_ORDINAL = 292,
 		EXPERIMENTAL_RESULT_ORDINAL = 297,
 		EXPERIMENTAL_RESULT_CODE_ORDINAL = 298;
@@ -685,6 +686,13 @@ public abstract class Common
      *               1* {AVP}
 	 */
 	public static final Type<AVPList> FAILED_AVP = newGroupedType("Failed-AVP", FAILED_AVP_ORDINAL);
+	
+	/**
+	 * The Route-Record AVP (AVP Code 282) is of type DiameterIdentity.  The
+	 * identity added in this AVP MUST be the same as the one received in
+	 * the Origin-Host of the Capabilities Exchange message.
+	 */
+	public static final Type<String> ROUTE_RECORD_AVP = newUTF8StringType("Route-Record", ROUTE_RECORD_ORDINAL);
 	
 	// Radius for digest authentication (RFC 4590)
 	public static final int
