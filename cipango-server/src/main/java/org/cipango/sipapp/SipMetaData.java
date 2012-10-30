@@ -23,7 +23,6 @@ import javax.servlet.ServletException;
 import org.cipango.servlet.SipServletHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.DescriptorProcessor;
 import org.eclipse.jetty.webapp.DiscoveredAnnotation;
@@ -36,9 +35,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
  * All data associated with the configuration and deployment of a SIP application.
  */
 public class SipMetaData
-{    
-	private static final Logger LOG = Log.getLogger(SipMetaData.class);
-	
+{        
     protected SipDescriptor _sipDefaultsRoot;
     protected SipDescriptor _sipXmlRoot;
     protected final List<SipDescriptor> _sipOverrideRoots=new ArrayList<SipDescriptor>();
@@ -47,7 +44,6 @@ public class SipMetaData
     protected final List<DescriptorProcessor> _descriptorProcessors = new ArrayList<DescriptorProcessor>();
  
     private String _mainServletName;
-    private String _appName;
     
     private final List<String> _listeners = new ArrayList<String>();
    
@@ -110,10 +106,9 @@ public class SipMetaData
      * Resolve all servlet/filter/listener metadata from all sources: descriptors and annotations.
      * 
      */
-    public void resolve (WebAppContext appContext)
+    public void resolve (WebAppContext context)
     throws Exception
     {
-    	SipAppContext context = (SipAppContext) appContext;
         //Ensure origins is fresh
         
         for (DescriptorProcessor p:_descriptorProcessors)
@@ -130,29 +125,11 @@ public class SipMetaData
         if (_mainServletName != null)
         	((SipAppContext) context).getSipServletHandler().setMainServletName(_mainServletName);
         
-        int version = SipAppContext.VERSION_11;
-        if (_appName != null || getSipXml() == null)
-        	version = SipAppContext.VERSION_11;
-        else
-        	version = getSipXml().getVersion();
-        
-        context.setSpecVersion(version);
-        
-        if (context.getName() == null)
-        {
-	        if (_appName == null)
-	        	context.setName(context.getDefaultName());
-	        else
-	        	context.setName(_appName);
-        }
-        
-        initListeners(context);
+        initListeners((SipAppContext) context);
     }
     
     protected SipServletHolder getServlet(SipAppContext context, String className)
 	{
-    	if (context.getSipServletHandler().getSipServlets() == null)
-    		return null;
 		for (SipServletHolder holder : context.getSipServletHandler().getSipServlets())
 		{
 			if (className.equals(holder.getClassName()))
@@ -176,7 +153,7 @@ public class SipMetaData
 				{
 					if (listener.getClass().getName().equals(className))
 					{
-						LOG.debug("Found multiple listener declaration " +  className);
+						Log.debug("Found multiple listener declaration " +  className);
 						if (holder != null)
 							holder.setServlet((Servlet) listener);
 						found = true;
@@ -202,7 +179,7 @@ public class SipMetaData
 			}
 			catch (Exception e) 
 			{
-				LOG.warn("Could not instantiate listener: " + className, e);
+				Log.warn("Could not instantiate listener: " + className, e);
 			}
 		}
 
@@ -271,16 +248,6 @@ public class SipMetaData
 	public List<DescriptorProcessor> getDescriptorProcessors()
 	{
 		return _descriptorProcessors;
-	}
-
-	public String getAppName()
-	{
-		return _appName;
-	}
-
-	public void setAppName(String appName)
-	{
-		_appName = appName;
 	}
 	
 }

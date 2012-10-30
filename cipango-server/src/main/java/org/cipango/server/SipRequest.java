@@ -48,11 +48,11 @@ import org.cipango.server.session.SessionManager;
 import org.cipango.server.session.SessionManager.SessionScope;
 import org.cipango.server.transaction.ClientTransaction;
 import org.cipango.server.transaction.ServerTransaction;
+import org.cipango.sip.CSeq;
 import org.cipango.sip.NameAddr;
 import org.cipango.sip.RAck;
 import org.cipango.sip.SipHeaders;
 import org.cipango.sip.SipMethods;
-import org.cipango.sip.SipParams;
 import org.cipango.sip.URIFactory;
 import org.cipango.sip.Via;
 import org.cipango.sip.security.AuthInfoImpl;
@@ -62,11 +62,9 @@ import org.cipango.sip.security.Authorization;
 import org.cipango.util.LazyMap;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
 public class SipRequest extends SipMessage implements SipServletRequest
 {
-	private static final Logger LOG = Log.getLogger(SipRequest.class);
     private String _method;
     private URI _requestUri;
     private String _sRequestUri;
@@ -98,11 +96,8 @@ public class SipRequest extends SipMessage implements SipServletRequest
 		if (getTransaction().isCompleted())
 			throw new IllegalStateException("Transaction has completed");
 		
-		SipRequest cancel = createRequest(SipMethods.CANCEL);
-		cancel.to().removeParameter(SipParams.TAG);
-		
-		return cancel;
-    }
+		return createRequest(SipMethods.CANCEL);
+	}
 	
 	/**
 	 * @see SipServletRequest#createResponse(int)
@@ -193,7 +188,7 @@ public class SipRequest extends SipMessage implements SipServletRequest
 			}
 			catch (ServletParseException e)
 			{
-				LOG.info("Received bad request: " + e.getMessage());
+				Log.info("Received bad request: " + e.getMessage());
 			}
     	}
 		return _requestUri;
@@ -344,17 +339,17 @@ public class SipRequest extends SipMessage implements SipServletRequest
 	/**
 	 * @see javax.servlet.ServletRequest#getLocales()
 	 */
-	public Enumeration<Locale> getLocales() 
+	public Enumeration getLocales() 
     {
-		final Iterator<Locale> it = getAcceptLanguages();
-		return new Enumeration<Locale>() 
+		final Iterator it = getAcceptLanguages();
+		return new Enumeration() 
         {
 			public boolean hasMoreElements() 
             {
 				return it.hasNext();
 			}
 
-			public Locale nextElement() 
+			public Object nextElement() 
             {
 				return it.next();
 			}
@@ -385,18 +380,18 @@ public class SipRequest extends SipMessage implements SipServletRequest
 	/**
 	 * @see javax.servlet.ServletRequest#getParameterMap()
 	 */
-	public Map<String, String[]> getParameterMap() 
+	public Map getParameterMap() 
     {
-		Map<String, String[]> map = new HashMap<String, String[]>();
+		Map map = new HashMap();
 		
 		SipURI paramUri = getParamUri();
 		
 		if (paramUri != null) 
         {
-			Iterator<String> it = paramUri.getParameterNames();
+			Iterator it = paramUri.getParameterNames();
 			while (it.hasNext()) 
             {
-				String key = it.next();
+				String key = (String) it.next();
 				map.put(key, new String[] {paramUri.getParameter(key)});
 			}
 		}
@@ -406,8 +401,7 @@ public class SipRequest extends SipMessage implements SipServletRequest
 	/**
 	 * @see javax.servlet.ServletRequest#getParameterNames()
 	 */
-	@SuppressWarnings("unchecked")
-	public Enumeration<String> getParameterNames() 
+	public Enumeration getParameterNames() 
     {
 		SipURI paramUri = getParamUri();
 		
@@ -727,7 +721,7 @@ public class SipRequest extends SipMessage implements SipServletRequest
 		clone._subscriberURI = null;
 		clone._proxy = null;
 		clone._initialPoppedRoute = null;
-		clone._requestUri = getRequestURI().clone();
+		clone._requestUri = _requestUri.clone();
 		return clone;
 	}
 	

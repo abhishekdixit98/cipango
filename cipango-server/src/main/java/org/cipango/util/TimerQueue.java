@@ -197,7 +197,7 @@ public class TimerQueue<E extends TimerQueue.Node>
 	
 	public static class Node
 	{
-		protected int _index = -1;
+		private int _index = -1;
 		protected long _value;
 		
 		public Node()
