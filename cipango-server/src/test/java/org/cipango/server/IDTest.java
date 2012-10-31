@@ -1,12 +1,11 @@
 package org.cipango.server;
 
-import static junit.framework.Assert.assertEquals;
+import junit.framework.TestCase;
 
-import org.junit.Test;
+import org.cipango.server.ID;
 
-public class IDTest
+public class IDTest extends TestCase
 {
-	@Test
 	public void testCallId()
 	{
 		String[] cids = 

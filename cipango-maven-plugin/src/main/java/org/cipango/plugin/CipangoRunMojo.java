@@ -24,6 +24,7 @@ import org.apache.maven.plugin.MojoFailureException;
 import org.cipango.server.SipConnector;
 import org.cipango.server.log.AccessLog;
 import org.mortbay.jetty.plugin.JettyRunMojo;
+import org.mortbay.jetty.plugin.JettyServer;
 
 /**
  *  <p>
@@ -146,20 +147,19 @@ public class CipangoRunMojo extends JettyRunMojo
 		super.finishConfigurationBeforeStart();
 	}
 
-	@SuppressWarnings("deprecation")
 	@Override
 	public void configureWebApplication () throws Exception
 	{
 		super.configureWebApplication();
 		
 		if (sipDefaultXml != null)
-            webApp.setDefaultsSipDescriptor(sipDefaultXml.getCanonicalPath());
+            webAppConfig.setDefaultsSipDescriptor(sipDefaultXml.getCanonicalPath());
         if (overrideSipXml != null)
-        	webApp.setOverrideSipDescriptor(overrideSipXml.getCanonicalPath());
-        webApp.setAnnotationsEnabled(annotationsEnabled);
+            webAppConfig.setOverrideSipDescriptor(overrideSipXml.getCanonicalPath());
+        webAppConfig.setAnnotationsEnabled(annotationsEnabled);
         
-        getLog().info("Sip defaults = "+(webApp.getDefaultsSipDescriptor()==null?" cipango default":webApp.getDefaultsSipDescriptor()));
-        getLog().info("Sip overrides = "+(webApp.getOverrideSipDescriptor()==null?" none":webApp.getOverrideSipDescriptor()));
+        getLog().info("Sip defaults = "+(webAppConfig.getDefaultsSipDescriptor()==null?" cipango default":webAppConfig.getDefaultsSipDescriptor()));
+        getLog().info("Sip overrides = "+(webAppConfig.getOverrideSipDescriptor()==null?" none":webAppConfig.getOverrideSipDescriptor()));
 
 	}
     

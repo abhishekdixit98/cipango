@@ -18,7 +18,7 @@
     <Call name="addAppProvider">
       <Arg>
         <New class="org.cipango.deploy.providers.SipAppProvider">
-          <Set name="monitoredDirName"><Property name="jetty.home" default="." />/webapps-diameter</Set>
+          <Set name="monitoredDir"><Property name="jetty.home" default="." />/webapps-diameter</Set>
           <Set name="defaultsDescriptor"><Property name="jetty.home" default="."/>/etc/webdefault.xml</Set>
           <Set name="scanInterval">5</Set>
           <Set name="contextXmlDir"><Property name="jetty.home" default="." />/contexts</Set>
@@ -29,18 +29,18 @@
     </Call>
   </Ref>
   
-  <Call name="addBean">
+  <Call name="addLifeCycle">
     <Arg>
       <New id="node" class="org.cipango.diameter.node.Node">
         <Set name="server"><Ref id="Server"/></Set>
         <Call name="addConnector">
           <Arg>
             <New class="org.cipango.diameter.bio.DiameterSocketConnector" id="DiameterSocketConnector">
-              <Set name="host"><Property  name="diameter.host"/></Set>
-              <Set name="port"><Property default="3868" name="diameter.port"/></Set>
+              <Set name="host"><SystemProperty  name="diameter.host"/></Set>
+              <Set name="port"><SystemProperty default="3868" name="diameter.port"/></Set>
               <Set name="messageListener">
                 <New class="org.cipango.diameter.log.FileMessageLogger" id="FileMessageLogger">
-                  <Set name="filename"><Property default="." name="jetty.home"/>/logs/yyyy_mm_dd.diameter.log</Set>
+                  <Set name="filename"><SystemProperty default="." name="jetty.home"/>/logs/yyyy_mm_dd.diameter.log</Set>
                   <Set name="append">true</Set>
                   <Set name="retainDays">31</Set>
                 </New>
@@ -65,8 +65,6 @@
             </New>
           </Arg>
         </Call>
-        
-        <Set name="statsOn">true</Set>
       </New>
     </Arg>
   </Call>
@@ -82,18 +80,5 @@
       <Arg><Ref id="node"/></Arg>
     </Call>
   </Get>
-  
-  <!-- =========================================================== -->
-  <!-- Apply plusConfig to all webapps for this Server             -->
-  <!-- =========================================================== -->
-  <!--
-  <Call name="setAttribute">
-    <Arg>org.eclipse.jetty.webapp.configuration</Arg>
-    <Arg>
-        <Ref id="diameterConfig"/>
-    </Arg>
-  </Call>
-  -->
-  
 
 </Configure>

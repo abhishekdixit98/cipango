@@ -20,15 +20,12 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URLEncoder;
 
-import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.DateCache;
 
 public class FileCallLog extends AbstractLifeCycle implements CallLog
 {	
-	private static final Logger LOG = Log.getLogger(FileCallLog.class);
-	
 	private String _logDirName;
 	private File _logDir;
 	
@@ -56,20 +53,20 @@ public class FileCallLog extends AbstractLifeCycle implements CallLog
 	{
 		try
 		{
-			return new CallLoggerImpl(callId);
+			return new Logger(callId);
 		}
 		catch (IOException e)
 		{
-			LOG.warn(e);
+			Log.warn(e);
 		}
 		return null;
 	}
 
-	class CallLoggerImpl implements CallLogger
+	class Logger implements CallLogger
 	{	
 		private PrintWriter _writer;
 
-		public CallLoggerImpl(String id) throws IOException
+		public Logger(String id) throws IOException
 		{
 			String name = URLEncoder.encode(id, "UTF-8");
 			File log = new File(_logDir, name + ".log");
