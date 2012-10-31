@@ -103,11 +103,22 @@ public class DiameterContext implements DiameterHandler
 	public void fireNoAnswerReceived(DiameterRequest request, long timeout)
 	{
 		DiameterErrorListener[] listeners = null;
-		SipAppContext context = null;
-		AppSessionIf appSession = (AppSessionIf) request.getApplicationSession();
-		if (appSession != null)
-			context = appSession.getAppSession().getContext();
+		SipAppContext context = request.getContext();
+        
+        if (context == null)
+        {
+            AppSessionIf appSession = (AppSessionIf) request.getApplicationSession();       
+            if (appSession != null)
+                context = appSession.getAppSession().getContext();
+        }
 		
+        if (context == null)
+        {
+            context = _defaultContext;
+			Log.debug("Use default context {} to handle timeout for {}", 
+					context == null ? "" : context.getName(), request);	
+        }
+            
 		if (context != null)
 		{
 			DiameterAppContext ctx = _diameterListeners.get(context.getContextPath());
@@ -116,7 +127,10 @@ public class DiameterContext implements DiameterHandler
 		}
 		
 		if (listeners != null && listeners.length != 0)
-			context.fire(listeners, _noAnswerReceived, new DiameterErrorEvent(request, timeout));		
+			context.fire(listeners, _noAnswerReceived, new DiameterErrorEvent(request, timeout));
+        else
+            Log.warn("Could not notify timeout for diameter request {} as no listeners defined for context {}", 
+					request, context == null ? "" : context.getName());	
 	}
 	
 }
