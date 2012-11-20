@@ -9,7 +9,7 @@
   <packaging>jar</packaging>
   <name>Cipango :: Server</name>
   <properties>
-    <bundle-symbolic-name>${project.groupId}.server</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}</bundle-symbolic-name>
   </properties>
   
   <build>

@@ -9,7 +9,11 @@
   <packaging>bundle</packaging>
   <name>Cipango :: OSGi :: Test SIP Service</name>
   <artifactId>test-cipango-osgi</artifactId>
-
+  
+ <properties>
+    <bundle-symbolic-name>org.cipango.osgi.test</bundle-symbolic-name>
+  </properties>
+  
 	<build>
     <plugins>
       <plugin>
