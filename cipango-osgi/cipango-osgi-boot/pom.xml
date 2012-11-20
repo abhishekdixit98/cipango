@@ -9,12 +9,33 @@
   <artifactId>cipango-osgi-boot</artifactId>
   <packaging>bundle</packaging> 
   <name>Cipango :: OSGi :: Boot</name>
-	<properties>
+  <properties>
     <bundle-symbolic-name>${project.groupId}.boot</bundle-symbolic-name>
   </properties>
 
   <build>
     <plugins>
+      <plugin> 
+        <artifactId>maven-antrun-plugin</artifactId> 
+        <executions> 
+          <execution> 
+            <phase>process-resources</phase> 
+            <configuration> 
+              <tasks>
+                <copy todir="target/classes/jettyhome"> 
+                  <fileset dir="jettyhome"> 
+                    <exclude name="**/*.log" /> 
+                  </fileset> 
+                </copy> 
+              </tasks> 
+            </configuration> 
+            <goals> 
+                <goal>run</goal> 
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
       <plugin>
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
@@ -97,7 +118,7 @@
         </executions>
         <configuration>
             <instructions>
-                <Bundle-SymbolicName>org.eclipse.jetty.osgi.boot;singleton:=true</Bundle-SymbolicName>
+                <Bundle-SymbolicName>org.eclipse.jetty.osgi.boot</Bundle-SymbolicName>
                 <!-- Bundle-SymbolicName>org.cipango.osgi.boot</Bundle-SymbolicName -->
                 <Export-Package>org.eclipse.jetty.osgi.boot;version="${jetty-version}",org.eclipse.jetty.osgi.boot.utils,org.eclipse.jetty.osgi.nested;version="${jetty-version}"</Export-Package> 
                 <Bundle-Activator>org.eclipse.jetty.osgi.boot.JettyBootstrapActivator</Bundle-Activator>
