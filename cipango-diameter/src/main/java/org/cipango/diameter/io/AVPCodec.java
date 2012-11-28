@@ -71,7 +71,9 @@ public class AVPCodec extends AbstractCodec<AVP<?>>
 	public Buffer encode(Buffer buffer, AVP avp) throws IOException
 	{
 		buffer = ensureSpace(buffer, 12);
-		int flags = AVP_MANDATORY_FLAG;
+		int flags = 0;
+		if (avp.getType().isMandatory())
+			flags |= AVP_MANDATORY_FLAG;
 		
 		int start = buffer.putIndex();
 		putInt(buffer, avp.getType().getCode());

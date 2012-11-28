@@ -47,7 +47,7 @@ public class Sh
 		PNA_ORDINAL = 309;
 	
 	/**
-	 * The User-Data-Request (UDR) command, indicated by the Command-Code field set to 306 and the ÔRÕ bit 
+	 * The User-Data-Request (UDR) command, indicated by the Command-Code field set to 306 and the 'R' bit 
 	 * set in the Command Flags field, is sent by a Diameter client to a Diameter server in order to request user data.
 	 * <p>
 	 * <pre> {@code
@@ -77,7 +77,7 @@ public class Sh
 	
 	/**
 	 * The User-Data-Answer (UDA) command, indicated by the Command-Code field set to 306 and 
-	 * the ÔRÕ bit cleared in the Command Flags field, is sent by a server in response to the 
+	 * the 'R' bit cleared in the Command Flags field, is sent by a server in response to the 
 	 * User-Data-Request command. The Experimental-Result AVP may contain one of the values 
 	 * defined in section 6.2 or in 3GPP TS 29.229 [6].
 	 * 
@@ -103,7 +103,7 @@ public class Sh
 	
 	/**
 	 * The Profile-Update-Request (PUR) command, indicated by the Command-Code field set to 307 and
-	 * the ‘R’ bit set in the Command Flags field, is sent by a Diameter client to a Diameter server
+	 * the 'R' bit set in the Command Flags field, is sent by a Diameter client to a Diameter server
 	 * in order to update user data in the server. Message Format
 	 * 
 	 * <pre>
@@ -130,7 +130,7 @@ public class Sh
 	
 	/**
 	 * The Profile-Update-Answer (PUA) command, indicated by the Command-Code field set to 307 and 
-	 * the ‘R’ bit cleared in the Command Flags field, is sent by a server in response to the 
+	 * the 'R' bit cleared in the Command Flags field, is sent by a server in response to the 
 	 * Profile-Update-Request command. The Experimental-Result AVP may contain one of the values 
 	 * defined in section 6.2 or in 3GPP TS 29.229 [6].
 	 * 
@@ -157,7 +157,7 @@ public class Sh
 	
 	/**
 	 * The Subscribe-Notifications-Request (SNR) command, indicated by the Command-Code field set to
-	 * 308 and the ‘R’ bit set in the Command Flags field, is sent by a Diameter client to a Diameter
+	 * 308 and the 'R' bit set in the Command Flags field, is sent by a Diameter client to a Diameter
 	 * server in order to request notifications of changes in user data.
 	 * 
 	 * <pre>
@@ -190,7 +190,7 @@ public class Sh
 	
 	/**
 	 * The Subscribe-Notifications-Answer command, indicated by the Command-Code field set to 308
-	 * and the ‘R’ bit cleared in the Command Flags field, is sent by a server in response to the 
+	 * and the 'R' bit cleared in the Command Flags field, is sent by a server in response to the 
 	 * Subscribe-Notifications-Request command. The Result-Code or Experimental-Result AVP may contain
 	 * one of the values defined in section 6.2 or in 3GPP TS 29.229 [6].
 	 * 
@@ -218,7 +218,7 @@ public class Sh
 	
 	/**
 	 * The Push-Notification-Request (PNR) command, indicated by the Command-Code field set to 309 
-	 * and the ‘R’ bit set in the Command Flags field, is sent by a Diameter server to a Diameter 
+	 * and the 'R' bit set in the Command Flags field, is sent by a Diameter server to a Diameter 
 	 * client in order to notify changes in the user data in the server. 
 	 * 
 	 * <pre>
@@ -244,7 +244,7 @@ public class Sh
 	
 	/**
 	 * The Push-Notifications-Answer (PNA) command, indicated by the Command-Code field set to 309
-	 * and the ‘R’ bit cleared in the Command Flags field, is sent by a client in response to the 
+	 * and the 'R' bit cleared in the Command Flags field, is sent by a client in response to the 
 	 * Push-Notification-Request command. The Experimental-Result AVP may contain one of the values
 	 * defined in section 6.2 or in 3GPP TS 29.229 [6].
 	 * 
@@ -370,7 +370,7 @@ public class Sh
 	 * Identities.
 	 */
 	public static Type<IdentitySet> IDENTITY_SET = IMS.newIMSType("Identity-Set", 
-			IDENTITY_SET_ORDINAL, new EnumDataFormat<IdentitySet>(IdentitySet.class));
+			IDENTITY_SET_ORDINAL, new EnumDataFormat<IdentitySet>(IdentitySet.class)).setMandatory(false);
 
 	public static enum RequestedDomain
 	{
@@ -421,7 +421,7 @@ public class Sh
 	 * notifications in the HSS.
 	 */
 	public static final Type<Date> EXPIRY_TIME = IMS.newIMSType("Expiry-Time", 
-			EXPIRY_TIME_ORDINAL, Common.__date);
+			EXPIRY_TIME_ORDINAL, Common.__date).setMandatory(false);
 	
 	public static enum SendDataIndication
 	{
@@ -434,7 +434,7 @@ public class Sh
 	 * requests the User-Data.
 	 */
 	public static Type<SendDataIndication> SEND_DATA_INDICATION = IMS.newIMSType("Send-Data-Indication", 
-			SEND_DATA_INDICATION_ORDINAL, new EnumDataFormat<SendDataIndication>(SendDataIndication.class));
+			SEND_DATA_INDICATION_ORDINAL, new EnumDataFormat<SendDataIndication>(SendDataIndication.class)).setMandatory(false);
 
 	/**
 	 * The DSAI-Tag AVP is of type OctetString. This AVP contains the DSAI-Tag identifying the 
