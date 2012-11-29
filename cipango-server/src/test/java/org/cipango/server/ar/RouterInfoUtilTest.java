@@ -13,8 +13,6 @@
 // ========================================================================
 package org.cipango.server.ar;
 
-import static junit.framework.Assert.assertNull;
-
 import java.io.Serializable;
 
 import javax.servlet.sip.SipURI;
@@ -23,14 +21,13 @@ import javax.servlet.sip.ar.SipApplicationRoutingRegion;
 import javax.servlet.sip.ar.SipApplicationRoutingRegionType;
 import javax.servlet.sip.ar.SipRouteModifier;
 
-import junit.framework.Assert;
+import junit.framework.TestCase;
 
+import org.cipango.server.ar.RouterInfoUtil;
 import org.cipango.sip.SipURIImpl;
-import org.junit.Test;
 
-public class RouterInfoUtilTest
+public class RouterInfoUtilTest extends TestCase
 {
-	@Test
 	public void testDecode() throws Exception
 	{
 		testRouterInfo(new SipApplicationRouterInfo("kaleo", 
@@ -40,7 +37,7 @@ public class RouterInfoUtilTest
 				SipRouteModifier.ROUTE, 
 				"1"));
 	}
-
+	
 	protected void testRouterInfo(SipApplicationRouterInfo routerInfo) throws Exception
 	{
 		SipURI uri = new SipURIImpl(null, "localhost", 5060);
@@ -48,37 +45,34 @@ public class RouterInfoUtilTest
 		//System.out.println(uri);
 		assertEquals(routerInfo, RouterInfoUtil.decode(new SipURIImpl(uri.toString())));
 	}
-
+	
 	public void assertEquals(SipApplicationRouterInfo orig, SipApplicationRouterInfo actual)
 	{
-		Assert.assertEquals(orig.getNextApplicationName(), actual.getNextApplicationName());
+		assertEquals(orig.getNextApplicationName(), actual.getNextApplicationName());
 		if (orig.getRoutingRegion() != null)
 		{
-			Assert.assertEquals(orig.getRoutingRegion().getType(), actual.getRoutingRegion().getType());
-			Assert.assertEquals(orig.getRoutingRegion().getLabel(), actual.getRoutingRegion().getLabel());
+			assertEquals(orig.getRoutingRegion().getType(), actual.getRoutingRegion().getType());
+			assertEquals(orig.getRoutingRegion().getLabel(), actual.getRoutingRegion().getLabel());
 		}
 		else
 			assertNull(actual.getRoutingRegion());
 
-		Assert.assertEquals(orig.getSubscriberURI(), actual.getSubscriberURI());
-		Assert.assertEquals(orig.getStateInfo(), actual.getStateInfo());
+		assertEquals(orig.getSubscriberURI(), actual.getSubscriberURI());
+		assertEquals(orig.getStateInfo(), actual.getStateInfo());
 	}
-
-	@Test
+	
 	public void testDecodeNull() throws Exception
 	{
 		testRouterInfo(new SipApplicationRouterInfo("kaleo", 
 				null, null, null, null, null));
 	}
-
-	@Test
+	
 	public void testStrangeAppName() throws Exception
 	{
 		testRouterInfo(new SipApplicationRouterInfo(":@1=>!;", 
 				null, null, null, null, null));
 	}
-
-	@Test
+	
 	public void testCustomRegion() throws Exception
 	{
 		testRouterInfo(new SipApplicationRouterInfo("kaleo", 

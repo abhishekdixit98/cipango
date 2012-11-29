@@ -6,9 +6,11 @@ import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertTrue;
 
 import java.net.InetAddress;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
+
+import junit.framework.TestCase;
 
 import junit.framework.Assert;
 
@@ -24,20 +26,15 @@ import org.cipango.diameter.base.Common.AuthSessionState;
 import org.cipango.diameter.ims.Cx;
 import org.cipango.diameter.ims.Sh;
 import org.cipango.diameter.ims.Sh.DataReference;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
 
-public class NodeTest
+public class NodeTest extends TestCase
 {
 	private Node _client;
 	private Node _server;
 	private Peer _peer;
 
-	@Before
 	public void setUp() throws Exception
 	{
-		//Log.getLog().setDebugEnabled(true);
 		_client = new Node(38681);
 		_client.getConnectors()[0].setHost("127.0.0.1");
 		_client.setIdentity("client");
@@ -52,14 +49,12 @@ public class NodeTest
 		_server.setIdentity("server");
 	}
 
-	@After
 	public void tearDown() throws Exception
 	{
 		_server.stop();
 		_client.stop();
 	}
 	
-	@Test
 	public void testConnect() throws Exception
 	{
 		//org.eclipse.jetty.util.log.Log.getLog().setDebugEnabled(true);
@@ -80,7 +75,6 @@ public class NodeTest
 		assertTrue(clientPeer.isClosed());
 	}
 	
-	@Test
 	public void testUdr() throws Throwable
 	{
 		//Log.getLog().setDebugEnabled(true);
@@ -126,65 +120,30 @@ public class NodeTest
 		
 		waitPeerOpened();
 				
-		newUdr().send();
+		DiameterRequest udr = new DiameterRequest(_client, Sh.UDR, Sh.SH_APPLICATION_ID.getId(), _client.getSessionManager().newSessionId());
+		udr.getAVPs().add(Common.DESTINATION_REALM, "server");
+		udr.getAVPs().add(Common.DESTINATION_HOST, "server");
+		udr.getAVPs().add(Sh.DATA_REFERENCE, DataReference.SCSCFName);
+		AVP<AVPList> userIdentity = new AVP<AVPList>(Sh.USER_IDENTITY, new AVPList());
+        userIdentity.getValue().add(Cx.PUBLIC_IDENTITY, "sip:alice@cipango.org");
+		udr.getAVPs().add(userIdentity);
+		udr.getAVPs().add(Common.AUTH_SESSION_STATE, AuthSessionState.NO_STATE_MAINTAINED);
+		udr.getSession();
+		udr.send();
 		serverHandler.assertDone();
 		clientHandler.assertDone();
 	}
 	
-	@Test
-	public void testTimeout() throws Throwable
-	{
-		//Log.getLog().setDebugEnabled(true);
-		
-		TestDiameterHandler serverHandler = new TestDiameterHandler()
-		{
-
-			@Override
-			public void doHandle(DiameterMessage message) throws Throwable
-			{
-				Thread.sleep(300);
-				((DiameterServletRequest) message).createAnswer(Common.DIAMETER_SUCCESS).send();
-			}
-			
-		};
-		_server.setHandler(serverHandler);
-		_server.start();
-		
-		TestDiameterHandler clientHandler = new TestDiameterHandler()
-		{
-			@Override
-			public void doHandle(DiameterMessage message) throws Throwable
-			{
-			}
-		};
-		_client.setHandler(clientHandler);
-		_client.setRequestTimeout(200);
-		_client.start();
-		
-		waitPeerOpened();
-				
-		newUdr().send();
-		assertEquals(1, clientHandler.waitNoAnswer());
-		serverHandler.assertDone();
-		Thread.sleep(150);
-		clientHandler.assertDone(0);
-		assertTrue(_peer.isOpen());
-	}
-	
-	
-	@Test
 	public void testRedirectDefaultPort() throws Throwable
 	{
 		testRedirect(3868, Arrays.asList("aaa://localhost"));
 	}
 	
-	@Test
 	public void testRedirectCustomPort() throws Throwable
 	{
 		testRedirect(38682, Arrays.asList("aaa://localhost:38682"));
 	}
 	
-	@Test
 	public void testRedirectBadFirstHost() throws Throwable
 	{
 		testRedirect(38682, Arrays.asList("aaa://invalid", "aaa://localhost:38682"));
@@ -276,7 +235,6 @@ public class NodeTest
 	 * Ensure that a new DiameterErrorEvent is thrown if unable to send the request after a redirect.
 	 * @throws Throwable
 	 */
-	@Test
 	public void testRedirectBad() throws Throwable
 	{
 		Node server2 = null;
@@ -319,7 +277,7 @@ public class NodeTest
 			newUdr().send();
 			redirectHandler.assertDone();
 			clientHandler.assertDone(0);
-			assertEquals(1, clientHandler.waitNoAnswer());
+			assertEquals(1, clientHandler.getNbNoAnswer());
 		}
 		finally
 		{
@@ -349,7 +307,6 @@ public class NodeTest
 		return factory;
 	}
 	
-	@Test
 	public void testDiameterFactory() throws Throwable
 	{
 		//Log.getLog().setDebugEnabled(true);
@@ -423,101 +380,7 @@ public class NodeTest
 		assertTrue(_peer.isOpen());
 	}
 	
-	@Test
-	public void testSession() throws Throwable
-	{
-		//Log.getLog().setDebugEnabled(true);
-		
-		TestDiameterHandler serverHandler = new TestDiameterHandler()
-		{
-			private String _sessionId;
-			private DiameterSession _session;
-			
-			@Override
-			public void doHandle(DiameterMessage message) throws Throwable
-			{
-				if (message instanceof DiameterServletAnswer)
-				{
-					assertEquals(Sh.PNA, message.getCommand());
-					assertEquals(_sessionId, message.getSessionId());
-					assertEquals(_session, message.getSession());
-				}
-				else
-				{
-					DiameterServletAnswer sna;
-					DiameterServletRequest request = (DiameterServletRequest) message;
-	
-					assertEquals(true, message.isRequest());
-					assertEquals(Sh.SNR, request.getCommand());
-					assertEquals(request.getApplicationId(), Sh.SH_APPLICATION_ID.getId());
-					assertEquals(request.getDestinationHost(), "server");
-					sna = request.createAnswer(Common.DIAMETER_SUCCESS);
-					_sessionId = request.getSessionId();
-					assertNotNull(_sessionId);
-					_session = request.getSession();
-					assertNotNull(_session);
-					sna.send();
-					
-					Thread.sleep(50);
-					DiameterServletRequest pnr = _session.createRequest(Sh.PNR, true);
-					pnr.send();
-				}
-			}
-			
-		};
-		_server.setHandler(serverHandler);
-		_server.start();
-		
-		TestDiameterHandler clientHandler = new TestDiameterHandler()
-		{
-			private String _sessionId;
-			private DiameterSession _session;
-			
-			@Override
-			public void doHandle(DiameterMessage message) throws Throwable
-			{
-				if (message instanceof DiameterServletAnswer)
-				{
-					DiameterServletAnswer sna = (DiameterServletAnswer) message;
-					assertEquals(Sh.SNA, sna.getCommand());
-					assertEquals(sna.getApplicationId(), Sh.SH_APPLICATION_ID.getId());
-					_sessionId = sna.getSessionId();
-					_session = sna.getSession();
-					assertNotNull(_sessionId);
-					assertNotNull(_session);
-					assertEquals(_sessionId, sna.getRequest().getSessionId());
-				}
-				else
-				{
-					DiameterServletRequest pnr = (DiameterServletRequest) message;
-					assertEquals(Sh.PNR, pnr.getCommand());
-					assertEquals(_sessionId, pnr.getSessionId());
-					assertEquals(_session, pnr.getSession());
-					pnr.createAnswer(Common.DIAMETER_SUCCESS).send();
-				}
-			}
-		};
-		_client.setHandler(clientHandler);
-		_client.start();
-		
-		waitPeerOpened();
-		
-		String id = _client.getSessionManager().newSessionId();
-		DiameterRequest snr = new DiameterRequest(_client, Sh.SNR, Sh.SH_APPLICATION_ID.getId(), id);
-		snr.add(Common.DESTINATION_REALM, "server");
-		snr.add(Common.DESTINATION_HOST, "server");
-		snr.add(Sh.DATA_REFERENCE, DataReference.SCSCFName);
-		AVP<AVPList> userIdentity = new AVP<AVPList>(Sh.USER_IDENTITY, new AVPList());
-        userIdentity.getValue().add(Cx.PUBLIC_IDENTITY, "sip:alice@cipango.org");
-		snr.getAVPs().add(userIdentity);
-		snr.add(Common.AUTH_SESSION_STATE, AuthSessionState.NO_STATE_MAINTAINED);
-		snr.getAVPs().add(Sh.SH_APPLICATION_ID.getAVP());
-		
-		snr.send();
-		
-		serverHandler.assertDone(2);
-		clientHandler.assertDone(2);
-	}
+
 		
 	public static abstract class TestDiameterHandler extends DiameterContext
 	{
@@ -588,8 +451,8 @@ public class NodeTest
 			if (_msgReceived.get() != msgExpected)
 				Assert.fail("Received " + _msgReceived + " messages when expected " + msgExpected);
 		}
-		
-		public int waitNoAnswer()
+
+		public int getNbNoAnswer()
 		{
 			synchronized (this)
 			{
@@ -601,11 +464,6 @@ public class NodeTest
 				{
 				}
 			}
-			return _nbNoAnswer;
-		}
-
-		public int getNbNoAnswer()
-		{
 			return _nbNoAnswer;
 		}
 	}
