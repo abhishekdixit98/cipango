@@ -132,47 +132,6 @@ public class NodeTest
 	}
 	
 	@Test
-	public void testTimeout() throws Throwable
-	{
-		//Log.getLog().setDebugEnabled(true);
-		
-		TestDiameterHandler serverHandler = new TestDiameterHandler()
-		{
-
-			@Override
-			public void doHandle(DiameterMessage message) throws Throwable
-			{
-				Thread.sleep(300);
-				((DiameterServletRequest) message).createAnswer(Common.DIAMETER_SUCCESS).send();
-			}
-			
-		};
-		_server.setHandler(serverHandler);
-		_server.start();
-		
-		TestDiameterHandler clientHandler = new TestDiameterHandler()
-		{
-			@Override
-			public void doHandle(DiameterMessage message) throws Throwable
-			{
-			}
-		};
-		_client.setHandler(clientHandler);
-		_client.setRequestTimeout(200);
-		_client.start();
-		
-		waitPeerOpened();
-				
-		newUdr().send();
-		assertEquals(1, clientHandler.waitNoAnswer());
-		serverHandler.assertDone();
-		Thread.sleep(150);
-		clientHandler.assertDone(0);
-		assertTrue(_peer.isOpen());
-	}
-	
-	
-	@Test
 	public void testRedirectDefaultPort() throws Throwable
 	{
 		testRedirect(3868, Arrays.asList("aaa://localhost"));
@@ -319,7 +278,7 @@ public class NodeTest
 			newUdr().send();
 			redirectHandler.assertDone();
 			clientHandler.assertDone(0);
-			assertEquals(1, clientHandler.waitNoAnswer());
+			assertEquals(1, clientHandler.getNbNoAnswer());
 		}
 		finally
 		{
@@ -588,8 +547,8 @@ public class NodeTest
 			if (_msgReceived.get() != msgExpected)
 				Assert.fail("Received " + _msgReceived + " messages when expected " + msgExpected);
 		}
-		
-		public int waitNoAnswer()
+
+		public int getNbNoAnswer()
 		{
 			synchronized (this)
 			{
@@ -601,11 +560,6 @@ public class NodeTest
 				{
 				}
 			}
-			return _nbNoAnswer;
-		}
-
-		public int getNbNoAnswer()
-		{
 			return _nbNoAnswer;
 		}
 	}

@@ -19,53 +19,24 @@ import java.net.InetAddress;
 
 import javax.servlet.sip.SipURI;
 
+import org.cipango.sip.Via;
+
 import org.eclipse.jetty.util.component.LifeCycle;
 
-/**
- * Connector for the SIP protocol.
- * A connector receives and sends SIP messages. Connectors are managed by the {@link ConnectorManager}
- */
 public interface SipConnector extends LifeCycle
 {    
-	/**
-	 * Open the connector
-	 * @throws IOException
-	 */
 	void open() throws IOException;
-	
-	/**
-	 * Close the connector
-	 * @throws IOException
-	 */
 	void close() throws IOException;
 
-	/**
-	 * @return the hostname (host or IP address) of the interface on which the connector will bind
-	 */
     String getHost();
-
-	/**
-	 * @return the port on which the the connector will bind
-	 */
-	int getPort();
-
-    /**
-     * @return the actual address on which the connector is bound
-     */
 	InetAddress getAddr();
+	int getPort();
 	
-	/**
-	 * @return the port on which the the connector will bind
-	 */
-	int getLocalPort();
-	
-	/**
-	 * @return the underlying socket for this connector
-	 */
-	Object getConnection();
-
 	String getExternalHost();
 
+	Object getConnection();
+	int getLocalPort();
+	
     String getTransport(); 
     int getTransportOrdinal();
 	int getDefaultPort();
@@ -73,8 +44,9 @@ public interface SipConnector extends LifeCycle
 	boolean isSecure();
 	
     SipURI getSipUri();
-    //Via getVia(); // TODO buffer
-    //void setTransportParam(boolean b);
+    Via getVia(); // TODO buffer
+
+    void setTransportParam(boolean b);
     
     SipConnection getConnection(InetAddress addr, int port) throws IOException;
      
@@ -85,9 +57,13 @@ public interface SipConnector extends LifeCycle
     //void send(Buffer buffer, SipEndpoint endpoint) throws IOException;
     
     long getNbParseError();
-    
-    
     void setStatsOn(boolean on);
-    //boolean getStatsOn();
     void statsReset();
+    
+    /**
+     * Returns the IP family
+     * @see SipConnectors#IPv4
+     * @see SipConnectors#IPv6
+     */
+    int getIpFamily();
 }

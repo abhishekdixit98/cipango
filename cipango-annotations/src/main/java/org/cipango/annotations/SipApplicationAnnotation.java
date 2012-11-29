@@ -13,17 +13,20 @@
 // ========================================================================
 package org.cipango.annotations;
 
-import javax.servlet.sip.annotation.SipApplication;
+import java.util.EventListener;
 
+import javax.servlet.sip.annotation.SipApplication;
+import javax.servlet.sip.annotation.SipListener;
+import javax.servlet.sip.annotation.SipServlet;
+
+import org.cipango.servlet.SipServletHolder;
 import org.cipango.sipapp.SipAppContext;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.DiscoveredAnnotation;
 
 public class SipApplicationAnnotation extends DiscoveredAnnotation
 {
-	private static final Logger LOG = Log.getLogger(SipApplicationAnnotation.class);
-	
+    
     public SipApplicationAnnotation (SipAppContext context, String className)
     {
         super(context, className);
@@ -39,7 +42,7 @@ public class SipApplicationAnnotation extends DiscoveredAnnotation
         
         if (clazz == null)
         {
-            LOG.warn(_className+" cannot be loaded");
+            Log.warn(_className+" cannot be loaded");
             return;
         }
         
@@ -52,7 +55,7 @@ public class SipApplicationAnnotation extends DiscoveredAnnotation
 		if (context.getName() != null && !context.getName().equals(annotation.name()))
 			throw new IllegalStateException("App-name in sip.xml: " + context.getName() 
 					+ " does not match with SipApplication annotation: " + annotation.name());
-		context.getSipMetaData().setAppName(annotation.name());
+		context.setName(annotation.name());
 		
 		context.setDistributable(annotation.distributable());
 		context.setDisplayName(annotation.displayName());

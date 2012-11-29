@@ -14,10 +14,12 @@
 package org.cipango.console;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.util.jar.JarInputStream;
 import java.util.zip.ZipEntry;
@@ -150,12 +152,10 @@ public class Deployer
 	 */
 	public void deploy(String name, byte[] sarContent) throws Exception
 	{
-		int index = Math.max(name.lastIndexOf("/"), name.lastIndexOf("\\"));
-		if (index != -1)
-			name = name.substring(index + 1);
-		
 		if (!name.endsWith(".war") && !name.endsWith(".sar") && !name.endsWith(".jar"))
+		{
 			throw new IllegalArgumentException("Bad extension in name: " + name  + ". Allowed is '.war' and '.sar'");
+		}
 
 		assertValidArchive(sarContent);
 
