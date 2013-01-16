@@ -71,7 +71,10 @@ public class ServerTransaction extends Transaction
     
     public void cancel(SipRequest cancel) throws IOException
     {
-       _listener.handleCancel(this, cancel);
+    	if (_listener == null)
+    		LOG.warn("No transaction listener set on {}. Could not handle:\n{}", this, cancel);
+    	else
+    		_listener.handleCancel(this, cancel);
     }
     
     public void handleAck(SipRequest ack)
