@@ -83,10 +83,10 @@ public class TcpConnector extends AbstractSipConnector //implements Buffers
 		if (_tcpThreadPool instanceof LifeCycle)
             ((LifeCycle)_tcpThreadPool).stop();
 		
-		Iterator<TcpConnection> it = _connections.values().iterator();
-		while (it.hasNext())
+		Object[]  connections = _connections.values().toArray();
+		for (Object o : connections)
 		{
-			TcpConnection connection = it.next();
+			TcpConnection connection =  (TcpConnection) o;
 			try
 			{
 				connection.close();
