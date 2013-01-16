@@ -830,6 +830,11 @@ public class SipAppContext extends WebAppContext implements SipHandler
 
 		_sipSecurityHandler = sipSecurityHandler;
 	}
+	
+    public boolean isUnavailable()
+    {
+    	return getUnavailableException() != null;
+    }
 		
 	@Override
 	public String toString()
@@ -853,11 +858,6 @@ public class SipAppContext extends WebAppContext implements SipHandler
         }
     }
     
-    public boolean isUnavailable()
-    {
-    	return getUnavailableException() != null;
-    }
-
     public class Factory implements SipFactory
     {
         private Factory() { }
