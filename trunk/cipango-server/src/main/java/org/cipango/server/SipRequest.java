@@ -39,6 +39,7 @@ import javax.servlet.sip.SipServletRequest;
 import javax.servlet.sip.SipServletResponse;
 import javax.servlet.sip.SipURI;
 import javax.servlet.sip.TooManyHopsException;
+import javax.servlet.sip.UAMode;
 import javax.servlet.sip.URI;
 import javax.servlet.sip.ar.SipApplicationRouterInfo;
 import javax.servlet.sip.ar.SipApplicationRoutingDirective;
@@ -690,6 +691,15 @@ public class SipRequest extends SipMessage implements SipServletRequest
 	{
 		if (_proxy != null)
 			throw new IllegalStateException("getProxy() had already been called");
+		
+		if (getTransaction() instanceof ServerTransaction)
+		{
+			ServerTransaction tx = (ServerTransaction) getTransaction();
+			if (_session.getUA() == null)
+				_session.createUA(UAMode.UAS);
+			tx.setListener(_session.getUA());
+		}
+		
 		return B2bHelper.getInstance();
 	}
 	
