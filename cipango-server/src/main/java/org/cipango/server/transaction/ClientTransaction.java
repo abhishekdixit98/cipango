@@ -36,7 +36,6 @@ import org.cipango.sip.Via;
 import org.cipango.util.TimerTask;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
 /**
  * INVITE and non-INVITE client transaction. 
@@ -44,8 +43,6 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class ClientTransaction extends Transaction 
 {
-	private static final Logger LOG = Log.getLogger(ClientTransaction.class);
-	
 	// INVITE request retransmit, for UDP only
 	private static final int TIMER_A = 0;
 	
@@ -111,7 +108,7 @@ public class ClientTransaction extends Transaction
 		} 
         catch (IOException e) 
         {
-			LOG.ignore(e);
+			Log.ignore(e);
 		}
 	}
 	
@@ -153,7 +150,7 @@ public class ClientTransaction extends Transaction
 		} 
         catch (IOException e) 
         {
-			LOG.warn(e);
+			Log.warn(e);
 		}
         return cancelTx;
 	}
@@ -165,7 +162,7 @@ public class ClientTransaction extends Transaction
 			if (getConnection().isOpen())
 				getServer().getConnectorManager().send(_request, getConnection());
 			else
-				LOG.debug("Could not sent request {} as the connection {} is closed", _request, getConnection());
+				Log.debug("Could not sent request {} as the connection {} is closed", _request, getConnection());
 		}
 		else 
 		{
@@ -184,12 +181,7 @@ public class ClientTransaction extends Transaction
 			
 			SipURI target = (SipURI) uri;
 			
-			InetAddress address;
-			if (target.getMAddrParam() != null)
-				address = InetAddress.getByName(target.getMAddrParam());
-			else
-				address = InetAddress.getByName(target.getHost()); // TODO 3263
-			
+			InetAddress address = InetAddress.getByName(target.getHost()); // TODO 3263
 			int transport = SipConnectors.getOrdinal(target.getTransportParam()); // TODO opt
 			
 			if (transport == -1) 
@@ -205,14 +197,11 @@ public class ClientTransaction extends Transaction
 			customizeVia(via);
 			_request.pushVia(via);
 			
-			SipConnection connection = getServer().getConnectorManager().getConnection(
+			SipConnection connection = getServer().getConnectorManager().sendRequest(
 					_request,
 					transport,
 					address,
 					port);
-			setConnection(connection);
-			_listener.customizeRequest(_request, connection);
-			connection = getServer().getConnectorManager().send(_request, connection);
 			setConnection(connection);
 		}
 	}
@@ -233,14 +222,8 @@ public class ClientTransaction extends Transaction
         if (isInvite()) 
         {
 			setState(STATE_CALLING);
-			try
-			{
-				doSend();
-			}
-			finally
-			{
-				startTimer(TIMER_B, 64L*__T1);
-			}
+			doSend();
+			startTimer(TIMER_B, 64L*__T1);
 			if (!isTransportReliable())
 				startTimer(TIMER_A, _aDelay);
 		} 
@@ -252,14 +235,8 @@ public class ClientTransaction extends Transaction
         else 
         {
 			setState(STATE_TRYING);
-			try
-			{
-				doSend();
-			}
-			finally
-			{
-				startTimer(TIMER_F, 64L*__T1);
-			}
+			doSend();
+			startTimer(TIMER_F, 64L*__T1);
 			if (!isTransportReliable()) 
 				startTimer(TIMER_E, _eDelay);
 		}
@@ -323,7 +300,7 @@ public class ClientTransaction extends Transaction
 			case STATE_ACCEPTED:
 				if (!(200 <= status && status < 300))
 				{
-					LOG.debug("non 2xx response {} in Accepted state", response);
+					Log.debug("non 2xx response {} in Accepted state", response);
 					response.setHandled(true);
 				}
 				else
@@ -332,7 +309,7 @@ public class ClientTransaction extends Transaction
 				}
 				break;
 			default:
-				LOG.debug("handleResponse (invite) && state ==" + _state);
+				Log.debug("handleResponse (invite) && state ==" + _state);
 				response.setHandled(true);
 			}
 		} 
@@ -377,7 +354,7 @@ public class ClientTransaction extends Transaction
 				break;
 				
 			default:
-				LOG.warn("handleResponse (non-invite) && state ==" + _state);
+				Log.warn("handleResponse (non-invite) && state ==" + _state);
 				response.setHandled(true);
 			}
 		}
@@ -410,7 +387,7 @@ public class ClientTransaction extends Transaction
 			} 
             catch (IOException e) 
             {
-				LOG.debug("Failed to (re)send request " + _request);
+				Log.debug("Failed to (re)send request " + _request);
 			}
 			_aDelay = _aDelay * 2;
 			startTimer(TIMER_A, _aDelay);
@@ -434,7 +411,7 @@ public class ClientTransaction extends Transaction
             }
             catch (IOException e)
             {
-                LOG.debug("Failed to (re)send request " + _request);
+                Log.debug("Failed to (re)send request " + _request);
             }
             if (_state == STATE_TRYING)
                 _eDelay = Math.min(_eDelay * 2, __T2);
@@ -476,40 +453,30 @@ public class ClientTransaction extends Transaction
 	
 	class TimeoutConnection implements SipConnection
 	{
-		private SipConnector _connector;
-		
-		public TimeoutConnection()
-		{
-			if (getConnection() == null)
-				_connector = getServer().getConnectorManager().getDefaultConnector();
-			else
-				_connector = getConnection().getConnector();
-		}
 		
 		public SipConnector getConnector()
-		{			
-			
-			return _connector;
+		{
+			return getConnection().getConnector();
 		}
 
 		public InetAddress getLocalAddress()
 		{
-			return _connector.getAddr();
+			return getConnection().getLocalAddress();
 		}
 
 		public int getLocalPort()
 		{
-			return _connector.getPort();
+			return getConnection().getLocalPort();
 		}
 
 		public InetAddress getRemoteAddress()
 		{
-			return _connector.getAddr();
+			return getConnection().getLocalAddress();
 		}
 
 		public int getRemotePort()
 		{
-			return _connector.getPort();
+			return getConnection().getLocalPort();
 		}
 
 		public void write(Buffer buffer) throws IOException

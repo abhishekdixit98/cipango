@@ -21,14 +21,11 @@ import org.cipango.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.annotations.AnnotationParser;
 import org.eclipse.jetty.annotations.ClassNameResolver;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 public class MavenAnnotationConfiguration extends AnnotationConfiguration 
 {
-	private static final Logger LOG = Log.getLogger(MavenAnnotationConfiguration.class);
-	
 	   /* ------------------------------------------------------------ */
     @Override
     public void parseWebInfClasses(final WebAppContext context, final AnnotationParser parser) throws Exception
@@ -39,7 +36,7 @@ public class MavenAnnotationConfiguration extends AnnotationConfiguration
             super.parseWebInfClasses (context, parser);
         else
         {
-            LOG.debug("Scanning classes ");
+            Log.debug("Scanning classes ");
             //Look for directories on the classpath and process each one of those
             for (File f:jwac.getClassPathFiles())
             {

@@ -33,11 +33,11 @@ import javax.servlet.sip.TooManyHopsException;
 import javax.servlet.sip.URI;
 import javax.servlet.sip.ar.SipApplicationRoutingDirective;
 
+import org.cipango.server.session.SessionManager;
+import org.cipango.server.session.SessionManager.SessionScope;
 import org.cipango.server.session.AppSession;
 import org.cipango.server.session.CallSession;
 import org.cipango.server.session.Session;
-import org.cipango.server.session.SessionManager;
-import org.cipango.server.session.SessionManager.SessionScope;
 import org.cipango.server.transaction.ClientTransaction;
 import org.cipango.server.transaction.ClientTransactionListener;
 import org.cipango.server.transaction.ServerTransaction;
@@ -46,16 +46,13 @@ import org.cipango.server.transaction.Transaction;
 import org.cipango.sip.NameAddr;
 import org.cipango.sip.SipGrammar;
 import org.cipango.sip.SipHeaders;
-import org.cipango.sip.SipParams;
 import org.cipango.util.TimerTask;
-import org.eclipse.jetty.util.LazyList;
+
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.LazyList;
 
 public class SipProxy implements Proxy, ServerTransactionListener, Serializable
 {    
-	private static final Logger LOG = Log.getLogger(SipProxy.class);
-	
 	private static final long serialVersionUID = 1L;
 
 	public static final int DEFAULT_TIMEOUT = 15;
@@ -95,8 +92,8 @@ public class SipProxy implements Proxy, ServerTransactionListener, Serializable
         else if (maxForwards == -1) 
             request.setMaxForwards(70);
         
-        if (LOG.isDebugEnabled()) 
-        	LOG.debug("Created proxy for tx {}", _tx, null);
+        if (Log.isDebugEnabled()) 
+        	Log.debug("Created proxy for tx {}", _tx, null);
     }
 	
 	/**
@@ -274,11 +271,8 @@ public class SipProxy implements Proxy, ServerTransactionListener, Serializable
 	 */
 	public void proxyTo(List<? extends URI> targets) 
     {
-		
 		for (URI uri : targets) 
 		{
-			if (!uri.isSipURI() && getOriginalRequest().getHeader(SipHeaders.ROUTE) == null)
-	 	 	 	throw new IllegalArgumentException("Cannot route " + uri);
 			addBranch(uri);
 		}
 		startProxy();
@@ -289,8 +283,6 @@ public class SipProxy implements Proxy, ServerTransactionListener, Serializable
 	 */
 	public void proxyTo(URI uri) 
     {
-		if (!uri.isSipURI() && getOriginalRequest().getHeader(SipHeaders.ROUTE) == null)
- 	 	 	throw new IllegalArgumentException("Cannot route " + uri);
 		addBranch(uri);
 		startProxy();
 	}
@@ -422,8 +414,8 @@ public class SipProxy implements Proxy, ServerTransactionListener, Serializable
     			Branch branch = (Branch) LazyList.get(_targets, 0);
     			_targets = LazyList.remove(_targets, 0);
                 
-                if (LOG.isDebugEnabled()) 
-                	LOG.debug("Proxying to {} ", branch.getUri(), null);
+                if (Log.isDebugEnabled()) 
+                	Log.debug("Proxying to {} ", branch.getUri(), null);
                 
                 branch.start();
 
@@ -442,11 +434,8 @@ public class SipProxy implements Proxy, ServerTransactionListener, Serializable
 	
 	private SipURI newProxyURI(boolean applicationId)
 	{
-		return newProxyURI(_tx.getRequest().getConnection().getConnector(), applicationId);
-	}
-	
-	private SipURI newProxyURI(SipConnector connector, boolean applicationId)
-	{		        
+		SipConnector connector = _tx.getRequest().getConnection().getConnector();
+		        
 		SipURI rrUri = (SipURI) connector.getSipUri().clone();
 		rrUri.setParameter("lr", "");
 		
@@ -488,14 +477,14 @@ public class SipProxy implements Proxy, ServerTransactionListener, Serializable
 		}
 		if (isInTargetSet(target))
 		{
-			if (LOG.isDebugEnabled())
-				LOG.debug("target {} is already in target set", target);
+			if (Log.isDebugEnabled())
+				Log.debug("target {} is already in target set", target);
 			return null;
 		}
 		else
 		{
-			if (LOG.isDebugEnabled())
-				LOG.debug("adding target {} to target set", target);
+			if (Log.isDebugEnabled())
+				Log.debug("adding target {} to target set", target);
 			
 			Branch branch = new Branch(target);
 			_targets = LazyList.add(_targets, branch);
@@ -507,7 +496,7 @@ public class SipProxy implements Proxy, ServerTransactionListener, Serializable
 	{
 		if (_tx.isCompleted())
 			throw new IllegalStateException("transaction completed");
-				
+		
 		Branch branch = addTarget(uri);
 		if (branch != null)
 		{
@@ -531,7 +520,7 @@ public class SipProxy implements Proxy, ServerTransactionListener, Serializable
         } 
         catch (Exception e)
         {
-            LOG.debug(e);
+            Log.debug(e);
         }
     }
     
@@ -544,8 +533,8 @@ public class SipProxy implements Proxy, ServerTransactionListener, Serializable
     {
 		assert (_actives == 0);
 		
-	    if (LOG.isDebugEnabled()) 
-	    	LOG.debug("tryFinal, branches: {}, untried: {}", _branches, _targets);
+	    if (Log.isDebugEnabled()) 
+	    	Log.debug("tryFinal, branches: {}, untried: {}", _branches, _targets);
         
     	if (_best == null)
     	{
@@ -553,16 +542,16 @@ public class SipProxy implements Proxy, ServerTransactionListener, Serializable
 			_best.setToTag(ID.newTag());
     	}
     	
-        if (LOG.isDebugEnabled()) 
-        	LOG.debug("final response is {}", _best, null);
+        if (Log.isDebugEnabled()) 
+        	Log.debug("final response is {}", _best, null);
         
         _best.setBranchResponse(false);
         invokeServlet(_best);
        
         if (_actives > 0)
         {
-            if (LOG.isDebugEnabled()) 
-            	LOG.debug("new branch(es) created in callback {}", _branches, null);
+            if (Log.isDebugEnabled()) 
+            	Log.debug("new branch(es) created in callback {}", _branches, null);
             return;
         }
 		forward(_best);
@@ -866,7 +855,7 @@ public class SipProxy implements Proxy, ServerTransactionListener, Serializable
 			}
 			catch (Exception e)
 			{
-				LOG.debug(e);
+				Log.debug(e);
 				// TODO
 			}
 		}
@@ -896,7 +885,7 @@ public class SipProxy implements Proxy, ServerTransactionListener, Serializable
         public void timeoutTimerC()
         {
         	_timerC = null;
-        	LOG.debug("Timer C timed out for branch {}", _ctx.getBranch(), null);
+        	Log.debug("Timer C timed out for branch {}", _ctx.getBranch(), null);
         	if (_provisional)
         	{
         		cancel();
@@ -919,13 +908,13 @@ public class SipProxy implements Proxy, ServerTransactionListener, Serializable
 	        
 	        if (_tx.isCompleted() && !response.is2xx())
 			{
-				if (LOG.isDebugEnabled())
-					LOG.debug("Dropping response " + response.getStatus() + " since proxy is completed");
+				if (Log.isDebugEnabled())
+					Log.debug("Dropping response " + response.getStatus() + " since proxy is completed");
 				return;
 			}
 	        
-	        if (LOG.isDebugEnabled()) 
-	        	LOG.debug("Got response {}", response, null);
+	        if (Log.isDebugEnabled()) 
+	        	Log.debug("Got response {}", response, null);
 	        
 	        SipRequest request = _tx.getRequest();
 	        
@@ -985,7 +974,7 @@ public class SipProxy implements Proxy, ServerTransactionListener, Serializable
 					} 
 	                catch (ServletParseException e)
 	                {
-						LOG.ignore(e);
+						Log.ignore(e);
 					}
 	            }
 				
@@ -1027,22 +1016,6 @@ public class SipProxy implements Proxy, ServerTransactionListener, Serializable
 		
 		public void transactionTerminated(Transaction transaction)
 		{	
-		}
-
-		public void customizeRequest(SipRequest request, SipConnection connection)
-		{
-			SipConnector connector = _tx.getRequest().getConnection().getConnector();
-			if (getRecordRoute() && connection.getConnector() != connector)
-			{
-				SipURI rrUri = newProxyURI(connection.getConnector(), true);
-				rrUri.setParameter(SipParams.DRR, "2");
-				_branchRRUri.setParameter(SipParams.DRR, "");
-				if (connector.getTransportOrdinal() == SipConnectors.TCP_ORDINAL)
-					_branchRRUri.setTransportParam("tcp");
-				if (connection.getConnector().getTransportOrdinal() == SipConnectors.TCP_ORDINAL)
-					rrUri.setTransportParam("tcp");
-				request.addRecordRoute(new NameAddr(rrUri));
-			}
 		}
     }
 	

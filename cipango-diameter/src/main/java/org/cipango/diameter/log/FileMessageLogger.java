@@ -13,12 +13,9 @@ import org.eclipse.jetty.util.RolloverFileOutputStream;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
 public class FileMessageLogger extends AbstractLifeCycle implements DiameterMessageListener
 {
-	private static final Logger LOG = Log.getLogger(FileMessageLogger.class);
-	
 	private enum Direction { IN, OUT }
 	public final static String YYYY_MM_DD="yyyy_mm_dd";
 	private OutputStream _out;
@@ -46,7 +43,7 @@ public class FileMessageLogger extends AbstractLifeCycle implements DiameterMess
 		
 		super.doStart();
         
-        LOG.info("Diameter Access log started in {}", 
+        Log.info("Diameter Access log started in {}", 
                 _out instanceof RolloverFileOutputStream ? 
                         ((RolloverFileOutputStream) _out).getDatedFilename() :
                             "stdout");
@@ -63,7 +60,7 @@ public class FileMessageLogger extends AbstractLifeCycle implements DiameterMess
 			} 
             catch (IOException e) 
             {
-				LOG.ignore(e);
+				Log.ignore(e);
 			}
 			_out = null;
 		}
@@ -100,7 +97,7 @@ public class FileMessageLogger extends AbstractLifeCycle implements DiameterMess
 		} 
         catch (Exception e) 
         {
-			LOG.warn("Failed to log message", e);
+			Log.warn("Failed to log message", e);
 		}
 	}
 	

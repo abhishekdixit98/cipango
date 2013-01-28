@@ -19,8 +19,6 @@ import javax.management.AttributeNotFoundException;
 import javax.management.MBeanServerConnection;
 import javax.management.ObjectName;
 
-import org.cipango.console.printer.generic.HtmlPrinter;
-
 public class ServletMappingPrinter implements HtmlPrinter
 {
 
@@ -36,7 +34,7 @@ public class ServletMappingPrinter implements HtmlPrinter
 
 	public void print(Writer out) throws Exception
 	{
-		out.write("<h2>Servlets</h2>\n");
+		out.write("<h2>Servlets</h2>");
 		for (int i = 0; i < _appContexts.length; i++)
 		{
 			
@@ -51,7 +49,7 @@ public class ServletMappingPrinter implements HtmlPrinter
 			catch (AttributeNotFoundException e) {
 				contextPath = (String) _connection.getAttribute(_appContexts[i], "contextPath");
 				out.write("<h3>" + contextPath + "</h3>\n");
-				out.write("No SIP servlets for this application\n");
+				out.write("No SIP servlets for this application");
 			}
 		}
 	}
@@ -65,8 +63,8 @@ public class ServletMappingPrinter implements HtmlPrinter
 
 		if (sipServletMappings != null && sipServletMappings.length != 0)
 		{
-			out.write("<div class=\"data\">\n<table>\n");
-			out.write("\t<tr><th>SIP Servlet name</th><th>Mapping</th></tr>\n");
+			out.write("<div class=\"data\"><table class=\"table_hover\">");
+			out.write("<tr><th>SIP Servlet name</th><th>Mapping</th></tr>");
 			for (int i = 0; i < sipServletMappings.length; i++)
 			{
 				String matchingRuleExpression = (String) _connection
@@ -74,13 +72,13 @@ public class ServletMappingPrinter implements HtmlPrinter
 								"matchingRuleExpression");
 				String servletName = (String) _connection
 						.getAttribute(sipServletMappings[i], "servletName");
-				out.write("\t<tr class=\"" + (i % 2 == 0 ? "even" : "odd")
+				out.write("<tr class=\"" + (i % 2 == 0 ? "even" : "odd")
 						+ "\">");
 				out.write("<td>" + servletName + "</td><td>"
 						+ matchingRuleExpression + "</td>");
-				out.write("</tr>\n");
+				out.write("</tr>");
 			}
-			out.write("</table>\n</div>\n");
+			out.write("</table></div>");
 		}
 		else
 		{
@@ -89,19 +87,19 @@ public class ServletMappingPrinter implements HtmlPrinter
 			{
 				ObjectName[] sipServlets = 
 					(ObjectName[]) _connection.getAttribute(servletHandler, "sipServlets");
-				out.write("<div class=\"data\"><table>\n");
-				out.write("\t<tr><th>SIP Servlet name</th><th>Main servlet</th></tr>\n");
+				out.write("<div class=\"data\"><table class=\"table_hover\">\n");
+				out.write("<tr><th>SIP Servlet name</th><th>Main servlet</th></tr>");
 				for (int i = 0; i < sipServlets.length; i++)
 				{
 					String servletName = (String) _connection
 							.getAttribute(sipServlets[i], "name");
-					out.write("\t<tr class=\"" + (i % 2 == 0 ? "even" : "odd")
+					out.write("<tr class=\"" + (i % 2 == 0 ? "even" : "odd")
 							+ "\">");
 					out.write("<td>" + servletName + "</td><td>"
 							+ sipServlets[i].equals(mainServlet) + "</td>");
-					out.write("</tr>\n");
+					out.write("</tr>");
 				}
-				out.write("</table>\n</div>\n");
+				out.write("</table></div>");
 			}
 			else
 				out.write("No SIP servlets for this application");
