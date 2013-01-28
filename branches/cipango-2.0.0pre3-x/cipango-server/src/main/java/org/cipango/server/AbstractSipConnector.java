@@ -191,6 +191,7 @@ public abstract class AbstractSipConnector extends AbstractLifeCycle implements 
         //_acceptor = new Thread(new Acceptor());
         //_acceptor.start();
         
+        long start = System.currentTimeMillis();
         synchronized(this)
         {
             _acceptorThread = new Thread[getAcceptors()];
@@ -205,7 +206,27 @@ public abstract class AbstractSipConnector extends AbstractLifeCycle implements 
             }
         }
         
+        long iterations = 100;
+        while (!isAcceptorThreadsStarted() && iterations-- > 0)
+        {
+          Thread.sleep(10);
+        }
+        Log.debug("Acceptors threads started in " + (System.currentTimeMillis() - start) + "ms for " + this);
+        
         Log.info("Started {}", this);
+    }
+    
+    private boolean isAcceptorThreadsStarted()
+    {
+    	if (_acceptorThread == null)
+    		return false;
+    	
+    	for (Thread thread : _acceptorThread)
+    	{
+    		if (thread == null)
+    			return false;
+    	}
+    	return true;
     }
         
     protected void doStop() throws Exception 
