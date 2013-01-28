@@ -41,7 +41,7 @@ public class SipFields implements Cloneable
 {    
 	private Map<Buffer, Field> _fields = new LinkedHashMap<Buffer, Field>();
 	
-	@SuppressWarnings("rawtypes")
+    @SuppressWarnings("unchecked")
 	public static List qualityList(final Iterator it)
     {
     	return HttpFields.qualityList(
