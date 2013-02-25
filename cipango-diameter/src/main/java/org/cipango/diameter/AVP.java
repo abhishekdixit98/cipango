@@ -1,5 +1,5 @@
 // ========================================================================
-// Copyright 2008-2012 NEXCOM Systems
+// Copyright 2008-2009 NEXCOM Systems
 // ------------------------------------------------------------------------
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@ import org.cipango.diameter.util.Visitable;
 
 public class AVP<T> implements Visitable
 {
-	private Type<T> _type;
-	private T _value;
+	public Type<T> _type;
+	public T _value;
 	
 	public AVP(Type<T> type)
 	{
@@ -48,7 +48,6 @@ public class AVP<T> implements Visitable
 		return _value;
 	}
 	
-	@SuppressWarnings("unchecked")
 	public void accept(DiameterVisitor visitor)
 	{
 		if (_value instanceof AVPList)

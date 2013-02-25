@@ -327,10 +327,7 @@ public abstract class Common
 		VENDOR_SPECIFIC_APPLICATION_ID_ORDINAL = 260,
 		PRODUCT_NAME_ORDINAL = 269,
 		FAILED_AVP_ORDINAL = 279,
-		ERROR_MESSAGE_ORDINAL = 281,
-		ROUTE_RECORD_ORDINAL = 282,
 		REDIRECT_HOST_ORDINAL = 292,
-		ERROR_REPORTING_HOST = 294,
 		EXPERIMENTAL_RESULT_ORDINAL = 297,
 		EXPERIMENTAL_RESULT_CODE_ORDINAL = 298;
 	
@@ -538,7 +535,7 @@ public abstract class Common
 	 * the vendor assigned name for the product. The Product-Name AVP SHOULD
 	 * remain constant across firmware revisions for the same product.
 	 */
-	public static final Type<String> PRODUCT_NAME = newUTF8StringType("Product-Name", PRODUCT_NAME_ORDINAL).setMandatory(false);
+	public static final Type<String> PRODUCT_NAME = newUTF8StringType("Product-Name", PRODUCT_NAME_ORDINAL);
 	
 	/**
 	 * The Host-IP-Address AVP (AVP Code 257) is of type Address and is used to
@@ -662,8 +659,7 @@ public abstract class Common
      * computers running Diameter software modules, for instance), the
      * revision of the Diameter software module may be reported instead.
 	 */
-	public static final Type<Integer> FIRMWARE_REVISION = 
-			newUnsigned32Type("Firmware-Revision", FIRMWARE_REVISION_ORDINAL).setMandatory(false);
+	public static final Type<Integer> FIRMWARE_REVISION = newUnsigned32Type("Firmware-Revision", FIRMWARE_REVISION_ORDINAL);
 	
 	/**
 	 * The Failed-AVP AVP (AVP Code 279) is of type Grouped and provides
@@ -689,31 +685,6 @@ public abstract class Common
      *               1* {AVP}
 	 */
 	public static final Type<AVPList> FAILED_AVP = newGroupedType("Failed-AVP", FAILED_AVP_ORDINAL);
-	
-	
-	/**
-	 * The Error-Message AVP (AVP Code 281) is of type UTF8String. It MAY accompany a Result-Code
-	 * AVP as a human readable error message. The Error-Message AVP is not intended to be useful in
-	 * real-time, and SHOULD NOT be expected to be parsed by network entities.
-	 */
-	public static final Type<String> ERROR_MESSAGE_AVP = newUTF8StringType("Error-Message", ERROR_MESSAGE_ORDINAL).setMandatory(false);
-	
-	/**
-	 * The Route-Record AVP (AVP Code 282) is of type DiameterIdentity.  The
-	 * identity added in this AVP MUST be the same as the one received in
-	 * the Origin-Host of the Capabilities Exchange message.
-	 */
-	public static final Type<String> ROUTE_RECORD_AVP = newUTF8StringType("Route-Record", ROUTE_RECORD_ORDINAL);
-	
-	/**
-	 * The Error-Reporting-Host AVP (AVP Code 294) is of type DiameterIdentity. This AVP contains
-	 * the identity of the Diameter host that sent the Result-Code AVP to a value other than 2001
-	 * (Success), only if the host setting the Result-Code is different from the one encoded in the
-	 * Origin-Host AVP. This AVP is intended to be used for troubleshooting purposes, and MUST be
-	 * set when the Result- Code AVP indicates a failure.
-	 */
-	public static final Type<String> ERROR_REPORTING_HOST_AVP = 
-			newUTF8StringType("Error-Reporting-Host", ERROR_REPORTING_HOST).setMandatory(false);
 	
 	// Radius for digest authentication (RFC 4590)
 	public static final int

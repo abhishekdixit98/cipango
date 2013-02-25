@@ -13,7 +13,6 @@ public class Type<T>
 	private int _code;
 	private String _name;
 	private DataFormat<T> _format;
-	private boolean _mandatory;
 	
 	public Type(int vendorId, int code, String name, DataFormat<T> format)
 	{
@@ -21,7 +20,6 @@ public class Type<T>
 		_code = code;
 		_name = name;
 		_format = format;
-		_mandatory = true;
 	}
 	
 	public int getVendorId()
@@ -53,16 +51,5 @@ public class Type<T>
 	public String toString()
 	{
 		return _name + " (" + _vendorId + "/" + _code + ")";
-	}
-
-	public boolean isMandatory()
-	{
-		return _mandatory;
-	}
-
-	public Type<T> setMandatory(boolean mandatory)
-	{
-		_mandatory = mandatory;
-		return this;
 	}
 }

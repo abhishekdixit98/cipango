@@ -2,38 +2,39 @@
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
 
 <Configure class="org.cipango.server.Server" id="Server">
-  <!-- =========================================================== -->
-  <!-- Server Thread Pool                                          -->
-  <!-- =========================================================== -->
-  <Set name="ThreadPool">
-    <!-- Default queued blocking threadpool -->
-    <New class="org.eclipse.jetty.util.thread.QueuedThreadPool">
-      <Set name="minThreads">10</Set>
-      <Set name="maxThreads">200</Set>
-      <Set name="detailedDump">false</Set>
-      <Set name="name">qtp-http</Set>
-    </New>
-  </Set>
+    <!-- =========================================================== -->
+    <!-- Server Thread Pool                                          -->
+    <!-- =========================================================== -->
+    <Set name="ThreadPool">
+      <!-- Default queued blocking threadpool -->
+      <New class="org.eclipse.jetty.util.thread.QueuedThreadPool">
+        <Set name="minThreads">10</Set>
+        <Set name="maxThreads">200</Set>
+        <Set name="detailedDump">false</Set>
+      </New>
+    </Set>
 
-  <!-- =========================================================== -->
-  <!-- Set connectors                                              -->
-  <!-- =========================================================== -->
+    <!-- =========================================================== -->
+    <!-- Set connectors                                              -->
+    <!-- =========================================================== -->
 
-  <Call name="addConnector">
-    <Arg>
-        <New class="org.eclipse.jetty.server.nio.SelectChannelConnector" id="SelectChannelConnector">
-          <Set name="host"><Property name="jetty.host" /></Set>
-          <Set name="port"><Property name="jetty.port" default="8080"/></Set>
-          <Set name="maxIdleTime">300000</Set>
-          <Set name="Acceptors">2</Set>
-          <Set name="statsOn">false</Set>
-          <Set name="confidentialPort">8443</Set>
-          <Set name="lowResourcesConnections">20000</Set>
-          <Set name="lowResourcesMaxIdleTime">5000</Set>
-        </New>
-    </Arg>
-  </Call>
+    <Call name="addConnector">
+      <Arg>
+          <New class="org.eclipse.jetty.server.nio.SelectChannelConnector">
+            <Set name="host"><Property name="jetty.host" /></Set>
+            <Set name="port"><Property name="jetty.port" default="8080"/></Set>
+            <Set name="maxIdleTime">300000</Set>
+            <Set name="Acceptors">2</Set>
+            <Set name="statsOn">false</Set>
+            <Set name="confidentialPort">8443</Set>
+            <Set name="lowResourcesConnections">20000</Set>
+            <Set name="lowResourcesMaxIdleTime">5000</Set>
+          </New>
+      </Arg>
+    </Call>
 
+
+  
   <Set name="handler">
      <New class="org.cipango.server.handler.SipContextHandlerCollection" id="Contexts"/>
   </Set>
@@ -65,11 +66,6 @@
         </New>
       </Arg>
     </Call>
-    <Set name="mtu"><Property default="65536" name="sip.mtu"/></Set>
-    <!-- If the client's source port doesn't match the port in the Via header (usually due to NAT),
-         and no ";rport" is given in that Via (RFC 3581), force ";rport=..."
-         in that Via header anyway so Cipango can route back replies correctly -->
-    <Set name="forceClientRport">false</Set>
   </Get>
  
   <!-- Set name="applicationRouter">
@@ -96,7 +92,6 @@
       <Set name="minThreads">5</Set>
       <Set name="maxThreads">100</Set>
       <Set name="detailedDump">false</Set>
-      <Set name="name">qtp-sip</Set>
     </New>
   </Set>
   

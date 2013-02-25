@@ -49,7 +49,7 @@ public class Cx
 	
 	/**
 	 * The User-Authorization-Request (UAR) command, indicated by the
-	 * Command-Code field set to 300 and the 'R' bit set in the Command Flags
+	 * Command-Code field set to 300 and the ‘R’ bit set in the Command Flags
 	 * field, is sent by a Diameter Multimedia client to a Diameter Multimedia
 	 * server in order to request the authorization of the registration of a
 	 * multimedia user.
@@ -79,7 +79,7 @@ public class Cx
 
 	/**
 	 * The User-Authorization-Answer (UAA) command, indicated by the
-	 * Command-Code field set to 300 and the 'R' bit cleared in the Command
+	 * Command-Code field set to 300 and the ‘R’ bit cleared in the Command
 	 * Flags field, is sent by a server in response to the
 	 * User-Authorization-Request command. The Experimental-Result AVP may
 	 * contain one of the values defined in section 6.2.
@@ -136,7 +136,7 @@ public class Cx
 
 	/**
 	 * The Server-Assignment-Answer (SAA) command, indicated by the Command-Code
-	 * field set to 301 and the 'R' bit cleared in the Command Flags field, is
+	 * field set to 301 and the ‘R’ bit cleared in the Command Flags field, is
 	 * sent by a server in response to the Server-Assignment-Request command.
 	 * The Experimental-Result AVP may contain one of the values defined in
 	 * section 6.2. If Result-Code or Experimental-Result does not inform about
@@ -172,7 +172,7 @@ public class Cx
 
 	/**
 	 * The Location-Info-Request (LIR) command, indicated by the Command-Code
-	 * field set to 302 and the 'R' bit set in the Command Flags field, is sent
+	 * field set to 302 and the ‘R’ bit set in the Command Flags field, is sent
 	 * by a Diameter Multimedia client to a Diameter Multimedia server in order
 	 * to request name of the server that is currently serving the user.
 	 * 
@@ -199,7 +199,7 @@ public class Cx
 	
 	/**
 	 * The Location-Info-Answer (LIA) command, indicated by the Command-Code
-	 * field set to 302 and the 'R' bit cleared in the Command Flags field, is
+	 * field set to 302 and the ‘R’ bit cleared in the Command Flags field, is
 	 * sent by a server in response to the Location-Info-Request command. The
 	 * Experimental-Result AVP may contain one of the values defined in section
 	 * 6.2.
@@ -229,7 +229,7 @@ public class Cx
 
 	/**
 	 * The Multimedia-Auth-Request (MAR) command, indicated by the Command-Code
-	 * field set to 303 and the 'R' bit set in the Command Flags field, is sent
+	 * field set to 303 and the ‘R’ bit set in the Command Flags field, is sent
 	 * by a Diameter Multimedia client to a Diameter Multimedia server in order
 	 * to request security information.
 	 * 
@@ -258,7 +258,7 @@ public class Cx
 	
 	/**
 	 * The Multimedia-Auth-Answer (MAA) command, indicated by the Command-Code
-	 * field set to 303 and the 'R' bit cleared in the Command Flags field, is
+	 * field set to 303 and the ‘R’ bit cleared in the Command Flags field, is
 	 * sent by a server in response to the Multimedia-Auth-Request command. The
 	 * Experimental-Result AVP may contain one of the values defined in section
 	 * 6.2.
@@ -289,7 +289,7 @@ public class Cx
 
 	/**
 	 * The Registration-Termination-Request (RTR) command, indicated by the
-	 * Command-Code field set to 304 and the 'R' bit set in the Command Flags
+	 * Command-Code field set to 304 and the ‘R’ bit set in the Command Flags
 	 * field, is sent by a Diameter Multimedia server to a Diameter Multimedia
 	 * client in order to request the de-registration of a user.
 	 * 
@@ -317,7 +317,7 @@ public class Cx
 
 	/**
 	 * The Registration-Termination-Answer (RTA) command, indicated by the
-	 * Command-Code field set to 304 and the 'R' bit cleared in the Command
+	 * Command-Code field set to 304 and the ‘R’ bit cleared in the Command
 	 * Flags field, is sent by a client in response to the
 	 * Registration-Termination-Request command. The Experimental-Result AVP may
 	 * contain one of the values defined in section 6.2.
@@ -344,7 +344,7 @@ public class Cx
 
 	/**
 	 * The Push-Profile-Request (PPR) command, indicated by the Command-Code
-	 * field set to 305 and the 'R' bit set in the Command Flags field, is sent
+	 * field set to 305 and the ‘R’ bit set in the Command Flags field, is sent
 	 * by a Diameter Multimedia server to a Diameter Multimedia client in order
 	 * to update the subscription data and for SIP Digest authentication the
 	 * authentication data of a multimedia user in the Diameter Multimedia
@@ -375,7 +375,7 @@ public class Cx
 
 	/**
 	 * The Push-Profile-Answer (PPA) command, indicated by the Command-Code
-	 * field set to 305 and the 'R' bit cleared in the Command Flags field, is
+	 * field set to 305 and the ‘R’ bit cleared in the Command Flags field, is
 	 * sent by a client in response to the Push-Profile-Request command. The
 	 * Experimental-Result AVP may contain one of the values defined in section
 	 * 6.2.
@@ -507,7 +507,7 @@ public class Cx
 	/**
 	 * The Mandatory-Capability AVP is of type Unsigned32. The value included in this AVP can be used
 	 * to represent a single determined mandatory capability of an S-CSCF. Each mandatory capability
-	 * available in an individual operator's network shall be allocated a unique value.  The allocation
+	 * available in an individual operator’s network shall be allocated a unique value.  The allocation
 	 * of these values to individual capabilities is an operator issue.
 	 */
 	public static final Type<Integer> MANDATORY_CAPABILITIES = IMS.newIMSType("Mandatory-Capability", 
@@ -516,7 +516,7 @@ public class Cx
 	/**
 	 * The Optional-Capability AVP is of type Unsigned32. The value included in this AVP can be used 
 	 * to represent a single determined optional capability of an S-CSCF. Each optional capability 
-	 * available in an individual operator's network shall be allocated a unique value.  The allocation
+	 * available in an individual operator’s network shall be allocated a unique value.  The allocation
 	 * of these values to individual capabilities is an operator issue.
 	 */
 	public static final Type<Integer> OPTIONAL_CAPABILITIES = IMS.newIMSType("Optional-Capability", 
@@ -777,8 +777,8 @@ public class Cx
 	 *     *[ AVP ]
 	 * </pre>
 	 */
-	public static final Type<AVPList> ASSOCIATED_IDENTITIES = IMS.newIMSType("Associated-Identities", 
-			ASSOCIATED_IDENTITIES_ORDINAL, Common.__grouped).setMandatory(false);
+	public static final Type<AVPList> ASSOCIATED_IDENTITIES = IMS.newIMSType("SIP-Digest-Authenticate", 
+			ASSOCIATED_IDENTITIES_ORDINAL, Common.__grouped);
 	
 	public static enum OriginatingRequest
 	{
@@ -811,7 +811,7 @@ public class Cx
 	 * </pre>
 	 */
 	public static final Type<AVPList> SIP_DIGEST_AUTHENTICATE = IMS.newIMSType("SIP-Digest-Authenticate", 
-			SIP_DIGEST_AUTHENTICATE_ORDINAL, Common.__grouped).setMandatory(false);
+			SIP_DIGEST_AUTHENTICATE_ORDINAL, Common.__grouped);
 	
 	/**
 	 * The Wildcarded-PSI AVP is of type UTF8String. This AVP contains a
@@ -819,7 +819,7 @@ public class Cx
 	 * is described in 3GPP TS 23.003 [13].
 	 */
 	public static final Type<String> WILCARDED_PSI = IMS.newIMSType("Wildcarded-PSI", 
-			WILCARDED_PSI_ORDINAL, Common.__utf8String).setMandatory(false);
+			WILCARDED_PSI_ORDINAL, Common.__utf8String);
 	
 	/**
 	 * The Public-Identity AVP is of type UTF8String. This AVP contains the
@@ -837,7 +837,7 @@ public class Cx
 	 * contents of this AVP is described in 3GPP TS 23.003 [13].
 	 */
 	public static final Type<String> WILCARDED_IMPU = IMS.newIMSType("Wildcarded-IMPU", 
-			WILCARDED_IMPU_ORDINAL, Common.__utf8String).setMandatory(false);
+			WILCARDED_IMPU_ORDINAL, Common.__utf8String);
 
 	/**
 	 * The UAR-Flags AVP is of type Unsigned32 and it contains a bit mask. The
@@ -850,7 +850,7 @@ public class Cx
 	 * I-CSCF and discarded by the receiving HSS.
 	 */
 	public static final Type<Integer> UAR_FLAGS = IMS.newIMSType("UAR-Flags", 
-			UAR_FLAGS_ORDINAL, Common.__unsigned32).setMandatory(false);
+			UAR_FLAGS_ORDINAL, Common.__unsigned32);
 	
 	/**
 	 * The Server-Name AVP is of type UTF8String. This AVP contains a SIP-URL (as defined in IETF 

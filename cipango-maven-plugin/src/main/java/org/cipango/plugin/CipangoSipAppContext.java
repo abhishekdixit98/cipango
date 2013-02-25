@@ -12,25 +12,22 @@ import java.util.TreeSet;
 
 import org.cipango.sipapp.SipAppContext;
 import org.eclipse.jetty.plus.webapp.EnvConfiguration;
+import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
-import org.eclipse.jetty.webapp.Configuration;
 
 public class CipangoSipAppContext extends SipAppContext
 {
-	private static final Logger LOG = Log.getLogger(CipangoSipAppContext.class);
-	
+
     private static final String WEB_INF_CLASSES_PREFIX = "/WEB-INF/classes";
     private static final String WEB_INF_LIB_PREFIX = "/WEB-INF/lib";
     
     private List<File> classpathFiles;
     private File jettyEnvXmlFile;
     private File webXmlFile;
-    private boolean baseAppFirst = true;
 
     private String[] configs = 
     	new String[]{
@@ -47,13 +44,7 @@ public class CipangoSipAppContext extends SipAppContext
     
     private String jettyEnvXml;
     private List<Resource> overlays;
-    
-    /**
-     * @deprecated The value of this parameter will be ignored by the plugin. Overlays will always be unpacked.
-     */
     private boolean unpackOverlays;
-    private File classes = null;
-    private File testClasses = null;
     private List<File> webInfClasses = new ArrayList<File>();
     private List<File> webInfJars = new ArrayList<File>();
     private Map<String, File> webInfJarMap = new HashMap<String, File>();
@@ -114,32 +105,6 @@ public class CipangoSipAppContext extends SipAppContext
     @Override
     public void doStart () throws Exception
     {
-        //Set up the pattern that tells us where the jars are that need scanning for
-        //stuff like taglibs so we can tell jasper about it (see TagLibConfiguration)
-        String tmp = (String)getAttribute("org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern");
-       
-        tmp = addPattern(tmp, ".*/.*jsp-api-[^/]*\\.jar$");
-        tmp = addPattern(tmp, ".*/.*jsp-[^/]*\\.jar$");  
-        tmp = addPattern(tmp, ".*/.*taglibs[^/]*\\.jar$");
-        tmp = addPattern(tmp, ".*/.*jstl[^/]*\\.jar$");
-        tmp = addPattern(tmp, ".*/.*jsf-impl-[^/]*\\.jar$"); // add in 2 most popular jsf impls
-        tmp = addPattern(tmp, ".*/.*javax.faces-[^/]*\\.jar$");
-        tmp = addPattern(tmp, ".*/.*myfaces-impl-[^/]*\\.jar$");
-
-        setAttribute("org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern", tmp);
-   
-        //Set up the classes dirs that comprises the equivalent of WEB-INF/classes
-        if (testClasses != null)
-            webInfClasses.add(testClasses);
-        if (classes != null)
-            webInfClasses.add(classes);
-        
-        // Set up the classpath
-        classpathFiles = new ArrayList<File>();
-        classpathFiles.addAll(webInfClasses);
-        classpathFiles.addAll(webInfJars);
-
-        
         // Initialize map containing all jars in /WEB-INF/lib
         webInfJarMap.clear();
         for (File file : webInfJars)
@@ -149,9 +114,9 @@ public class CipangoSipAppContext extends SipAppContext
             if (fileName.endsWith(".jar"))
                 webInfJarMap.put(fileName, file);
         }
-        
-        setShutdown(false);
 
+        setShutdown(false);
+        
         loadConfigurations();
     	Configuration[] configurations = getConfigurations();
     	for (int i = 0; i < configurations.length; i++)
@@ -225,44 +190,10 @@ public class CipangoSipAppContext extends SipAppContext
         return webInfClasses;
     }
     
-    public void setClasses(File dir)
-    {
-        classes = dir;
-    }
-    
-    public File getClasses()
-    {
-        return classes;
-    }
-    
     public void setWebInfLib (List<File> jars)
     {
         webInfJars.addAll(jars);
     }    
-    
-    public void setTestClasses (File dir)
-    {
-        testClasses = dir;
-    }
-    
-    
-    public File getTestClasses ()
-    {
-        return testClasses;
-    }
-    
-    /* ------------------------------------------------------------ */
-    public void setBaseAppFirst(boolean value)
-    {
-        baseAppFirst = value;
-    }
-
-    /* ------------------------------------------------------------ */
-    public boolean getBaseAppFirst()
-    {
-        return baseAppFirst;
-    }
-    
     /* ------------------------------------------------------------ */
     /**
      * This method is provided as a conveniance for jetty maven plugin configuration 
@@ -295,48 +226,33 @@ public class CipangoSipAppContext extends SipAppContext
         resource = super.getResource(uriInContext);
 
         // If no regular resource exists check for access to /WEB-INF/lib or /WEB-INF/classes
-        if ((resource == null || !resource.exists()) && uriInContext != null && classes != null)
+        if ((resource == null || !resource.exists()) && uriInContext != null && webInfClasses != null)
         {
             String uri = URIUtil.canonicalPath(uriInContext);
-            if (uri == null)
-                return null;
 
             try
             {
-                // Replace /WEB-INF/classes with candidates for the classpath
+                // Replace /WEB-INF/classes with real classes directory
                 if (uri.startsWith(WEB_INF_CLASSES_PREFIX))
                 {
-                    if (uri.equalsIgnoreCase(WEB_INF_CLASSES_PREFIX) || uri.equalsIgnoreCase(WEB_INF_CLASSES_PREFIX+"/"))
+                    Resource res = null;
+                    int i=0;
+                    while (res == null && (i < webInfClasses.size()))
                     {
-                        //exact match for a WEB-INF/classes, so preferentially return the resource matching the web-inf classes
-                        //rather than the test classes
-                        if (classes != null)
-                            return Resource.newResource(classes);
-                        else if (testClasses != null)
-                            return Resource.newResource(testClasses);
-                    }
-                    else
-                    {
-                        //try matching                       
-                        Resource res = null;
-                        int i=0;
-                        while (res == null && (i < webInfClasses.size()))
+                        String newPath = uri.replace(WEB_INF_CLASSES_PREFIX, webInfClasses.get(i).getPath());
+                        res = Resource.newResource(newPath);
+                        if (!res.exists())
                         {
-                            String newPath = uri.replace(WEB_INF_CLASSES_PREFIX, webInfClasses.get(i).getPath());
-                            res = Resource.newResource(newPath);
-                            if (!res.exists())
-                            {
-                                res = null; 
-                                i++;
-                            }
+                            res = null; 
+                            i++;
                         }
-                        return res;
                     }
-                }       
+                    return res;
+                }
+                // Return the real jar file for all accesses to
+                // /WEB-INF/lib/*.jar
                 else if (uri.startsWith(WEB_INF_LIB_PREFIX))
                 {
-                    // Return the real jar file for all accesses to
-                    // /WEB-INF/lib/*.jar
                     String jarName = uri.replace(WEB_INF_LIB_PREFIX, "");
                     if (jarName.startsWith("/") || jarName.startsWith("\\")) 
                         jarName = jarName.substring(1);
@@ -355,7 +271,7 @@ public class CipangoSipAppContext extends SipAppContext
             }
             catch (IOException e)
             {
-                LOG.ignore(e);
+                Log.ignore(e);
             }
         }
         return resource;
@@ -393,23 +309,6 @@ public class CipangoSipAppContext extends SipAppContext
             }
         }
         return paths;
-    }
-    
-    public String addPattern (String s, String pattern)
-    {
-        if (s == null)
-            s = "";
-        else
-            s = s.trim();
-        
-        if (!s.contains(pattern))
-        {
-            if (s.length() != 0)
-                s = s + "|";
-            s = s + pattern;
-        }
-        
-        return s;
     }
 
 }
