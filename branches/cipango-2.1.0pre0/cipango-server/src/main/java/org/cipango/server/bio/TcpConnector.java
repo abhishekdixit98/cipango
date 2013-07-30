@@ -29,7 +29,6 @@ import org.cipango.server.SipConnection;
 import org.cipango.server.SipConnector;
 import org.cipango.server.SipConnectors;
 import org.cipango.server.SipMessage;
-import org.cipango.server.transaction.Transaction;
 import org.cipango.sip.BufferOverflowException;
 import org.cipango.sip.SipParser;
 
@@ -49,13 +48,11 @@ public class TcpConnector extends AbstractSipConnector //implements Buffers
 	
 	public static final int DEFAULT_TCP_MESSAGE = 1024 * 2;
 	public static final int MAX_TCP_MESSAGE = 1024 * 400;
-	
-	public static final int DEFAULT_SO_TIMEOUT = 2 * Transaction.__T1 * 64;
     
     private ServerSocket _serverSocket;
     private InetAddress _addr;
     private Map<String, TcpConnection> _connections;
-    private int _connectionTimeout = DEFAULT_SO_TIMEOUT;
+    private int _connectionTimeout = -1;
     private int _backlogSize = 50;
     
     private ThreadPool _tcpThreadPool;
@@ -280,7 +277,10 @@ public class TcpConnector extends AbstractSipConnector //implements Buffers
 	
 	public int getConnectionTimeout()
 	{
-		return _connectionTimeout;
+		if (_connectionTimeout != -1)
+			return _connectionTimeout;
+		else
+			return 	2 * getServer().getTransactionManager().getTimersSettings().getT1() * 64;
 	}
 
 	public void setConnectionTimeout(int connectionTimeout)
@@ -297,7 +297,7 @@ public class TcpConnector extends AbstractSipConnector //implements Buffers
 		{
 			super(socket);
 			socket.setTcpNoDelay(true);
-			socket.setSoTimeout(_connectionTimeout);
+			socket.setSoTimeout(getConnectionTimeout());
 			
 			_local = socket.getLocalAddress();
 			_remote = socket.getInetAddress(); 

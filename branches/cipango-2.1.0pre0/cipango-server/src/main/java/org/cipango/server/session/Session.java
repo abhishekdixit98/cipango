@@ -1414,8 +1414,9 @@ public class Session implements SessionIf
 			private long _seq;
 			protected SipResponse _response;
 			private TimerTask[] _timers;
-			private long _retransDelay = Transaction.__T1;
-			
+			private long _retransDelay;
+		    protected Transaction.TimersSettings _timersConfiguration;
+
 			public ReliableResponse(long seq) { _seq = seq; }
 			
 			public long getSeq() { return _seq; }
@@ -1425,9 +1426,12 @@ public class Session implements SessionIf
 			{
 				_response = response;
 				
+				_timersConfiguration = getServer().getTransactionManager().getTimersSettings();
+				_retransDelay = _timersConfiguration.getT1();
+
 				_timers = new TimerTask[2];
 				_timers[TIMER_RETRANS] = getCallSession().schedule(new Timer(TIMER_RETRANS), _retransDelay);
-				_timers[TIMER_WAIT_ACK] = getCallSession().schedule(new Timer(TIMER_WAIT_ACK), 64*Transaction.__T1);
+				_timers[TIMER_WAIT_ACK] = getCallSession().schedule(new Timer(TIMER_WAIT_ACK), 64*_timersConfiguration.getT1());
 			}
 			
 			public void stopRetrans()
@@ -1555,7 +1559,7 @@ public class Session implements SessionIf
 						Log.debug(e);
 					}
 				}
-				return Math.min(delay*2, Transaction.__T2);
+				return Math.min(delay*2, _timersConfiguration.getT2());
 			}
 			
 			class Reliable1xx extends ReliableResponse
