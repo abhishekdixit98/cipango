@@ -46,13 +46,14 @@ public class ServerTransaction extends Transaction
     
     private ServerTransactionListener _listener;
     
-    private long gDelay = __T1;
+    private long gDelay;
     
 	public ServerTransaction(SipRequest request) 
     {
 		super(request, request.getTopVia().getBranch());
 		_timers = new TimerTask[TIMER_L+1];
-		
+	    gDelay = _timersConfiguration.getT1();
+
 		setConnection(request.getConnection());
 		
 		if (isInvite()) 
@@ -87,7 +88,7 @@ public class ServerTransaction extends Transaction
     		if (isTransportReliable())
     			terminate(); // TIMER_I == 0
     		else
-    			startTimer(TIMER_I, __T4);
+    			startTimer(TIMER_I, _timersConfiguration.getTI());
     	}
     	else
     	{
@@ -144,12 +145,12 @@ public class ServerTransaction extends Transaction
                     if (!isTransportReliable()) 
                         startTimer(TIMER_G, gDelay);
                     
-                    startTimer(TIMER_H, 64*__T1);
+                    startTimer(TIMER_H, _timersConfiguration.getTH());
                 } 
                 else if (status >= 200) 
                 {
                 	setState(STATE_ACCEPTED);
-                	startTimer(TIMER_L, 64*__T1);
+                	startTimer(TIMER_L, _timersConfiguration.getTL());
                 }
                 break;
             case STATE_ACCEPTED:
@@ -180,7 +181,7 @@ public class ServerTransaction extends Transaction
                     if (isTransportReliable()) 
                         terminate(); // TIMER_J == 0
                     else 
-                    	startTimer(TIMER_J, 64*__T1);
+                    	startTimer(TIMER_J, _timersConfiguration.getTJ());
                 } 
                 break;
             default:
@@ -217,7 +218,7 @@ public class ServerTransaction extends Transaction
 				Log.debug("failed to retransmit response on timer G expiry", e);
 			}
 			gDelay = gDelay * 2;
-			startTimer(TIMER_G, Math.min(gDelay, __T2));
+			startTimer(TIMER_G, Math.min(gDelay, _timersConfiguration.getT2()));
 			break;
 		case TIMER_H:
 			// TODO ? SipErrorListener.noAck 
