@@ -2,4 +2,4 @@
 
 . "./setEnv.sh"
 
-${SIPP} ${UAS_SCRIPT} $@
+${SIPP} ${UAS_SCRIPT}
