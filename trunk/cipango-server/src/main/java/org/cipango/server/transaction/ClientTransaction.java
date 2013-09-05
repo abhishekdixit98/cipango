@@ -69,8 +69,8 @@ public class ClientTransaction extends Transaction
     
 	private static final char[] TIMERS = {'A','B','D','E','F','K','M'};
 
-	private long _aDelay = __T1;
-    private long _eDelay = __T1;
+	private long _aDelay;
+    private long _eDelay;
     
     private ClientTransactionListener _listener;
     private SipRequest _pendingCancel;
@@ -88,6 +88,8 @@ public class ClientTransaction extends Transaction
         _listener = listener;
         
         _timers = new TimerTask[TIMER_M+1];
+    	_aDelay = _timersConfiguration.getT1();
+        _eDelay = _timersConfiguration.getT1();
 	}
 	
 	public ClientTransactionListener getListener()
@@ -239,7 +241,7 @@ public class ClientTransaction extends Transaction
 			}
 			finally
 			{
-				startTimer(TIMER_B, 64L*__T1);
+				startTimer(TIMER_B, _timersConfiguration.getTB());
 			}
 			if (!isTransportReliable())
 				startTimer(TIMER_A, _aDelay);
@@ -258,7 +260,7 @@ public class ClientTransaction extends Transaction
 			}
 			finally
 			{
-				startTimer(TIMER_F, 64L*__T1);
+				startTimer(TIMER_F, _timersConfiguration.getTF());
 			}
 			if (!isTransportReliable()) 
 				startTimer(TIMER_E, _eDelay);
@@ -284,7 +286,7 @@ public class ClientTransaction extends Transaction
                 else if (200 <= status && status < 300) 
                 {
 					setState(STATE_ACCEPTED);
-					startTimer(TIMER_M, 64L*__T1);
+					startTimer(TIMER_M, _timersConfiguration.getTM());
 				} 
                 else 
                 {
@@ -293,7 +295,7 @@ public class ClientTransaction extends Transaction
 					if (isTransportReliable()) 
 						terminate();
 					else 
-						startTimer(TIMER_D, __TD);
+						startTimer(TIMER_D, _timersConfiguration.getTD());
 				}
 				_listener.handleResponse(response);
 				break;
@@ -302,7 +304,7 @@ public class ClientTransaction extends Transaction
 				if (200 <= status && status < 300) 
                 {
 					setState(STATE_ACCEPTED);
-					startTimer(TIMER_M, 64L*__T1);
+					startTimer(TIMER_M, _timersConfiguration.getTM());
 				} 
                 else if (status >= 300) 
                 {
@@ -311,7 +313,7 @@ public class ClientTransaction extends Transaction
 					if (isTransportReliable()) 
 						terminate();
 					else 
-						startTimer(TIMER_D, __TD);
+						startTimer(TIMER_D, _timersConfiguration.getTD());
 				}
 				_listener.handleResponse(response);
 				break;
@@ -352,7 +354,7 @@ public class ClientTransaction extends Transaction
 					if (isTransportReliable()) 
 						terminate(); // TIMER_K == 0
 					else 
-						startTimer(TIMER_K, __T4);
+						startTimer(TIMER_K, _timersConfiguration.getTK());
 				}
                 if (!_cancel)
                     _listener.handleResponse(response);
@@ -366,7 +368,7 @@ public class ClientTransaction extends Transaction
 					if (isTransportReliable())
 						terminate();
 					else 
-						startTimer(TIMER_K, __T4);
+						startTimer(TIMER_K, _timersConfiguration.getTK());
                     if (!_cancel)
                         _listener.handleResponse(response);
 				}
@@ -437,9 +439,9 @@ public class ClientTransaction extends Transaction
                 LOG.debug("Failed to (re)send request " + _request);
             }
             if (_state == STATE_TRYING)
-                _eDelay = Math.min(_eDelay * 2, __T2);
+                _eDelay = Math.min(_eDelay * 2, _timersConfiguration.getT2());
             else
-                _eDelay = __T2;
+                _eDelay = _timersConfiguration.getT2();
             startTimer(TIMER_E, _eDelay);
             break;
         case TIMER_F:

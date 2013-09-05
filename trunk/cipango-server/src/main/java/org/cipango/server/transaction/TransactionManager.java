@@ -25,6 +25,7 @@ import org.cipango.server.SipMessage;
 import org.cipango.server.SipProxy;
 import org.cipango.server.SipRequest;
 import org.cipango.server.SipResponse;
+import org.cipango.server.transaction.Transaction.TimersSettings;
 import org.cipango.sip.SipGrammar;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.log.Log;
@@ -38,6 +39,8 @@ public class TransactionManager extends HandlerWrapper implements SipHandler
     private CounterStatistic _retransStats = new CounterStatistic();
     private CounterStatistic _notFoundStats = new CounterStatistic();
 	
+    protected TimersSettings _timersSettings = new TimersSettings();
+    
 	public void handle(SipServletMessage message) throws ServletException, IOException 
     {
 		if (((SipMessage) message).isRequest())
@@ -157,38 +160,63 @@ public class TransactionManager extends HandlerWrapper implements SipHandler
 		return ctx;
 	}
 	
-	public int getT1() { return Transaction.__T1; }
-	public int getT2() { return Transaction.__T2; }
-	public int getT4() { return Transaction.__T4; }
-	public int getTD() { return Transaction.__TD; }
+	public TimersSettings getTimersSettings()
+	{
+		synchronized (_timersSettings)
+		{
+			return _timersSettings;
+		}
+	}
+
+	public void setTimersSettings(TimersSettings timersSettings)
+	{
+		synchronized (_timersSettings)
+		{
+			_timersSettings = timersSettings;
+		}
+	}
+
+	public int getT1() { return getTimersSettings().getT1(); }
+	public int getT2() { return getTimersSettings().getT2(); }
+	public int getT4() { return getTimersSettings().getT4(); }
+	public int getTD() { return getTimersSettings().getTD(); }
+
 	public int getTimerC() { return SipProxy.__timerC; }
 	
 	public void setT1(int millis)
 	{ 
 		if (millis < 0)
 			throw new IllegalArgumentException("SIP Timers must be positive");
-		Transaction.__T1 = millis;
+		TimersSettings settings = new TimersSettings(_timersSettings);
+		settings.setT1(millis);
+		setTimersSettings(settings);
 	}
 	
 	public void setT2(int millis) 
 	{
 		if (millis < 0)
 			throw new IllegalArgumentException("SIP Timers must be positive");
-		Transaction.__T2 = millis;
+		TimersSettings settings = new TimersSettings(_timersSettings);
+		settings.setT2(millis);
+		setTimersSettings(settings);
 	}
 	
 	public void setT4(int millis) 
 	{
 		if (millis < 0)
 			throw new IllegalArgumentException("SIP Timers must be positive");
-		Transaction.__T4 = millis;
+		TimersSettings settings = new TimersSettings(_timersSettings);
+		settings.setT4(millis);
+		setTimersSettings(settings);
 	}
 	
 	public void setTD(int millis) 
 	{
 		if (millis < 0)
 			throw new IllegalArgumentException("SIP Timers must be positive");
-		Transaction.__TD = millis;
+		TimersSettings settings = new TimersSettings(_timersSettings);
+		settings.setTD(millis);
+		setTimersSettings(settings);
 	}
 	
 	public void setTimerC(int millis) 
