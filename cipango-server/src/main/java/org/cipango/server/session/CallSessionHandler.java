@@ -21,25 +21,23 @@ import java.util.Map;
 import javax.servlet.ServletException;
 import javax.servlet.sip.SipServletMessage;
 
+import org.cipango.server.session.SessionManager.*;
 import org.cipango.server.ID;
 import org.cipango.server.Server;
 import org.cipango.server.SipHandler;
 import org.cipango.server.SipMessage;
 import org.cipango.server.SipRequest;
-import org.cipango.server.session.SessionManager.SessionScope;
 import org.cipango.sipapp.SipAppContext;
+
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
 /**
  * Performs call lock for received messages. 
  */
 public class CallSessionHandler extends HandlerWrapper implements SipHandler 
 {
-	private static final Logger LOG = Log.getLogger(CallSessionHandler.class);
-	
 	private Server _server;
 	private Map<String, Queue> _queues = new HashMap<String, Queue>();
 	
@@ -88,8 +86,8 @@ public class CallSessionHandler extends HandlerWrapper implements SipHandler
 	
 		String id = getCallSessionId(baseMessage);
 		
-		if (LOG.isDebugEnabled())
-			LOG.debug("handling message {} for call session: {}", baseMessage.getRequestLine(), id);
+		if (Log.isDebugEnabled())
+			Log.debug("handling message {} for call session: {}", baseMessage.getRequestLine(), id);
 			
 		Queue queue = null;
 		synchronized (_queues) 
@@ -190,7 +188,7 @@ public class CallSessionHandler extends HandlerWrapper implements SipHandler
 						}
 						catch (Exception e)
 						{
-							LOG.ignore(e);
+							Log.ignore(e);
 						}
 					}
 				}

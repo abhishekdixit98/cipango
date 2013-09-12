@@ -30,6 +30,8 @@ import javax.servlet.sip.ProxyBranch;
 import javax.servlet.sip.Rel100Exception;
 import javax.servlet.sip.SipServletRequest;
 import javax.servlet.sip.SipServletResponse;
+import javax.servlet.sip.SipURI;
+import javax.servlet.sip.URI;
 
 import org.cipango.server.session.SessionManager;
 import org.cipango.server.session.SessionManager.SessionScope;
@@ -43,12 +45,9 @@ import org.cipango.sip.SipStatus;
 import org.cipango.sip.Via;
 import org.cipango.sip.security.Authenticate;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
 public class SipResponse extends SipMessage implements SipServletResponse
 {
-	private static final Logger LOG = Log.getLogger(SipResponse.class);
-	
     private SipRequest _request;
     private int _status;
     private String _reason;
@@ -86,10 +85,9 @@ public class SipResponse extends SipMessage implements SipServletResponse
         
 		if (needsContact() && _session != null)
 		{
-			if (request.getConnection() != null)
-				setContact(_session.getContact(request.getConnection().getConnector()));
-			else 
-				setContact(_session.getContact());
+			URI uri = request.getConnection().getConnector().getSipUri().clone();
+			uri.setParameter(ID.APP_SESSION_ID_PARAMETER, appSession().getAppId());
+			setContact(new NameAddr(uri));
 		}
         // TODO Server
 	}
@@ -101,6 +99,9 @@ public class SipResponse extends SipMessage implements SipServletResponse
     {
 		if (!SipMethods.INVITE.equalsIgnoreCase(getMethod())) 
 			throw new IllegalStateException("Not INVITE method");
+		
+		if (isCommitted())
+			throw new IllegalStateException("Already committed");
         
         if (_status > 100 && _status < 200)
         {   // For Sip servlet 1.0 compliance
@@ -255,7 +256,7 @@ public class SipResponse extends SipMessage implements SipServletResponse
         } 
         catch (IOException e)
         {
-            LOG.debug(e);
+            Log.debug(e);
         }
 	}
 	
@@ -403,7 +404,7 @@ public class SipResponse extends SipMessage implements SipServletResponse
         } 
         catch (Exception e) 
         {
-            LOG.warn(e);
+            Log.warn(e);
             if (e instanceof IOException)
                 throw (IOException) e; 
             throw new IllegalStateException(e.getMessage());

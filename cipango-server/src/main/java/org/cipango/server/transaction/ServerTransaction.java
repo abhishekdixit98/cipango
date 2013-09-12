@@ -19,13 +19,11 @@ import java.io.IOException;
 import org.cipango.server.SipRequest;
 import org.cipango.server.SipResponse;
 import org.cipango.util.TimerTask;
+
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
 public class ServerTransaction extends Transaction
 {	
-	private static final Logger LOG = Log.getLogger(ServerTransaction.class);
-	
 	// INVITE response retransmit interval
 	private static final int TIMER_G = 0;
 	
@@ -48,14 +46,13 @@ public class ServerTransaction extends Transaction
     
     private ServerTransactionListener _listener;
     
-    private long gDelay;
+    private long gDelay = __T1;
     
 	public ServerTransaction(SipRequest request) 
     {
 		super(request, request.getTopVia().getBranch());
 		_timers = new TimerTask[TIMER_L+1];
-	    gDelay = _timersConfiguration.getT1();
-
+		
 		setConnection(request.getConnection());
 		
 		if (isInvite()) 
@@ -72,10 +69,7 @@ public class ServerTransaction extends Transaction
     
     public void cancel(SipRequest cancel) throws IOException
     {
-    	if (_listener == null)
-    		LOG.warn("No transaction listener set on {}. Could not handle:\n{}", this, cancel);
-    	else
-    		_listener.handleCancel(this, cancel);
+       _listener.handleCancel(this, cancel);
     }
     
     public void handleAck(SipRequest ack)
@@ -84,7 +78,7 @@ public class ServerTransaction extends Transaction
     	{
     		if (_state != STATE_COMPLETED)
     		{
-    			LOG.info("ACK in state {} for transaction {}", getStateAsString(), this);
+    			Log.info("ACK in state {} for transaction {}", getStateAsString(), this);
     			return;
     		}
     		setState(STATE_CONFIRMED);
@@ -93,11 +87,11 @@ public class ServerTransaction extends Transaction
     		if (isTransportReliable())
     			terminate(); // TIMER_I == 0
     		else
-    			startTimer(TIMER_I, _timersConfiguration.getTI());
+    			startTimer(TIMER_I, __T4);
     	}
     	else
     	{
-    		LOG.info("ACK for non-INVITE: {}", this);
+    		Log.info("ACK for non-INVITE: {}", this);
     	}
     }
     
@@ -119,7 +113,7 @@ public class ServerTransaction extends Transaction
     		}
     		catch (Exception e)
     		{
-    			LOG.debug(e);
+    			Log.debug(e);
     		}
     	}
     }
@@ -150,12 +144,12 @@ public class ServerTransaction extends Transaction
                     if (!isTransportReliable()) 
                         startTimer(TIMER_G, gDelay);
                     
-                    startTimer(TIMER_H, _timersConfiguration.getTH());
+                    startTimer(TIMER_H, 64*__T1);
                 } 
                 else if (status >= 200) 
                 {
                 	setState(STATE_ACCEPTED);
-                	startTimer(TIMER_L, _timersConfiguration.getTL());
+                	startTimer(TIMER_L, 64*__T1);
                 }
                 break;
             case STATE_ACCEPTED:
@@ -186,7 +180,7 @@ public class ServerTransaction extends Transaction
                     if (isTransportReliable()) 
                         terminate(); // TIMER_J == 0
                     else 
-                    	startTimer(TIMER_J, _timersConfiguration.getTJ());
+                    	startTimer(TIMER_J, 64*__T1);
                 } 
                 break;
             default:
@@ -200,7 +194,7 @@ public class ServerTransaction extends Transaction
         }
 		catch (IOException e) 
         {
-			LOG.debug(e);
+			Log.debug(e);
 		}
 	}
 	
@@ -220,10 +214,10 @@ public class ServerTransaction extends Transaction
 			} 
             catch (IOException e) 
             {
-				LOG.debug("failed to retransmit response on timer G expiry", e);
+				Log.debug("failed to retransmit response on timer G expiry", e);
 			}
 			gDelay = gDelay * 2;
-			startTimer(TIMER_G, Math.min(gDelay, _timersConfiguration.getT2()));
+			startTimer(TIMER_G, Math.min(gDelay, __T2));
 			break;
 		case TIMER_H:
 			// TODO ? SipErrorListener.noAck 

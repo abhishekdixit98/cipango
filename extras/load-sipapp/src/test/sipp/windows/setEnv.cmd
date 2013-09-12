@@ -6,7 +6,8 @@
 @set SIPP_EXE="C:\Program Files\sipp\sipp"
 
 @rem The limit for the load message
-@set NB_MESSAGE= 1000000
+@set NB_MESSAGE= 50
+
 @set AS=192.168.2.10
 
 
@@ -28,8 +29,8 @@
 
 @rem default -trace_err -trace_screen
 @rem for debugging  -trace_msg
-@set TRACE_OPTIONS=-trace_err
- 
-@set LOAD_CALL_RATE=30
+@set TRACE_OPTIONS=-trace_err -trace_msg
+
+@set LOAD_CALL_RATE=10
 @set /A RATE_PERIOD="1000"
 

@@ -30,7 +30,6 @@ public class SipGrammar
 	private static final String 
 		ALPHA = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ",
 		DIGITS = "0123456789",
-		HEX_DIGITS = DIGITS + "abcdefABCDEF",
 	    HNV_UNRESERVED = "[]/?:+$",
 	    LWS  = " \r\n\t",
 		MARK = "-_.!~*'()",
@@ -51,8 +50,7 @@ public class SipGrammar
 		__user = new SipCharset(UNRESERVED + USER_UNRESERVED + '%'), 
 		__host = new SipCharset(ALPHA + DIGITS + '.' + '-' + '[' + ']' + ':'), 
 		__passwd = new SipCharset(UNRESERVED + PASSWD_UNRESERVED + '%'),
-		__globalPhoneDigits = new SipCharset(DIGITS + '-' + '.' + '(' + ')'),
-		__localPhoneDigits = new SipCharset(HEX_DIGITS + '-' + '.' + '(' + ')' + '*' + '#');
+		__phoneDigits = new SipCharset(DIGITS + '-' + '.' + '(' + ')');
 	
 	public static final boolean isURIScheme(String s)
 	{
