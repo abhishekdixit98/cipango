@@ -17,12 +17,9 @@ package org.cipango.diameter.log;
 import org.cipango.diameter.node.DiameterConnection;
 import org.cipango.diameter.node.DiameterMessage;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
 public class BasicMessageLog implements DiameterMessageListener
 {
-	private static final Logger LOG = Log.getLogger(BasicMessageLog.class);
-	
 	enum Direction { IN, OUT }
 	
 	protected void doLog(Direction direction, DiameterMessage message, DiameterConnection connection)
@@ -38,7 +35,7 @@ public class BasicMessageLog implements DiameterMessageListener
 		sb.append(' ');
 		sb.append(message);
 		
-		LOG.info(sb.toString());
+		Log.info(sb.toString());
 	}
 	
 	public void messageReceived(DiameterMessage message, DiameterConnection connection) 

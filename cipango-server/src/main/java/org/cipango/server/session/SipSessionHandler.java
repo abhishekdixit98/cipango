@@ -27,6 +27,7 @@ import org.cipango.server.SipHandler;
 import org.cipango.server.SipMessage;
 import org.cipango.server.SipRequest;
 import org.cipango.server.SipResponse;
+import org.cipango.server.transaction.ClientTransaction;
 import org.cipango.server.transaction.ServerTransaction;
 import org.cipango.servlet.SipServletHandler;
 import org.cipango.servlet.SipServletHolder;
@@ -37,7 +38,6 @@ import org.cipango.util.ExceptionUtil;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
 /**
  * Handles incoming messages in the appropriate SipSession context.
@@ -45,8 +45,6 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class SipSessionHandler extends AbstractHandler implements SipHandler
 {
-	private static final Logger LOG = Log.getLogger(SipSessionHandler.class);
-	
 	public void handle(String target, Request baseRequest, HttpServletRequest request,
 			HttpServletResponse response) throws IOException, ServletException 
 	{
@@ -70,7 +68,7 @@ public class SipSessionHandler extends AbstractHandler implements SipHandler
 	
 			if (handler == null)
 			{
-				LOG.debug("SIP application {} has no matching servlet for {}", appContext.getName(), request.getMethod());
+				Log.debug("SIP application {} has no matching servlet for {}", appContext.getName(), request.getMethod());
 				if (!request.isAck())
 				{						
 					SipResponse response = (SipResponse) request.createResponse(SipServletResponse.SC_NOT_FOUND);
@@ -102,8 +100,8 @@ public class SipSessionHandler extends AbstractHandler implements SipHandler
 			session.setSubscriberURI(request.getSubscriberURI());
 			session.setRegion(request.getRegion());
 		
-	        if (LOG.isDebugEnabled())
-	            LOG.debug("new session {}", session);
+	        if (Log.isDebugEnabled())
+	            Log.debug("new session {}", session);
 		}
 		else
 		{
@@ -155,7 +153,7 @@ public class SipSessionHandler extends AbstractHandler implements SipHandler
         	}
         	else
         	{
-        		LOG.debug(e);
+        		Log.debug(e);
         	}
         }
 	}
