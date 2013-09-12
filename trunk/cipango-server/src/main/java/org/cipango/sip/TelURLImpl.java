@@ -60,12 +60,15 @@ public class TelURLImpl implements TelURL, Serializable
 		else 
 		{
 			_number = _uri.substring(indexScheme + 1, indexParam);
-			if (!SipGrammar.__phoneDigits.containsAll(getPhoneNumber())) 
-				throw new ServletParseException("Invalid phone number [" + _number
-						+ "] in URI [" + _uri + "]");
 			String sParams = _uri.substring(indexParam + 1);
 			parseParams(sParams);
 		}
+		if (isGlobal() && !SipGrammar.__globalPhoneDigits.containsAll(getPhoneNumber())) 
+			throw new ServletParseException("Invalid global phone number [" + _number
+					+ "] in URI [" + _uri + "]");
+		if (!isGlobal() && !SipGrammar.__localPhoneDigits.containsAll(getPhoneNumber())) 
+			throw new ServletParseException("Invalid local phone number [" + _number
+					+ "] in URI [" + _uri + "]");
 	}
 	
 	private void parseParams(String sParams) throws ServletParseException 
@@ -127,7 +130,7 @@ public class TelURLImpl implements TelURL, Serializable
 		if (!number.startsWith("+"))
 			throw new IllegalArgumentException("Not a global number: " + number);
 		String n = number.startsWith("+") ? number.substring(1) : number;
-		if (!SipGrammar.__phoneDigits.containsAll(n)) 
+		if (!SipGrammar.__globalPhoneDigits.containsAll(n)) 
 			throw new IllegalArgumentException("Invalid phone number [" + number + "]");
 		_number = number;
 	}
@@ -136,7 +139,7 @@ public class TelURLImpl implements TelURL, Serializable
 	{
 		if (number.startsWith("+"))
 			throw new IllegalArgumentException("Not a local number: " + number);
-		if (!SipGrammar.__phoneDigits.containsAll(number)) 
+		if (!SipGrammar.__localPhoneDigits.containsAll(number)) 
 			throw new IllegalArgumentException("Invalid phone number [" + number + "]");
 		_number = number;
 		setParameter(PHONE_CONTEXT, phoneContext);
