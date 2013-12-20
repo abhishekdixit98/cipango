@@ -8,7 +8,7 @@ BuildRoot:	%{buildroot}
 Summary: A Java container of Sip Servlet applications
 Name: cipango
 Version: @@@VERSION@@@
-Release: SNAPSHOT
+Release: 1
 License: Apache 2
 Group: Applications/SIP
 Source: http://cipango.googlecode.com/files/cipango-%{version}-src.zip
