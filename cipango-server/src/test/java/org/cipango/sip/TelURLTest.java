@@ -14,6 +14,8 @@
 
 package org.cipango.sip;
 
+
+import javax.servlet.sip.ServletParseException;
 import javax.servlet.sip.TelURL;
 
 import junit.framework.TestCase;
@@ -34,8 +36,22 @@ public class TelURLTest extends TestCase
 		try	{ url.setPhoneNumber("+1/3"); fail();} catch (IllegalArgumentException e) {	}
 		try	{ url.setPhoneNumber("1-212-555-0101"); fail();} catch (IllegalArgumentException e) {}
 		try	{ url.setPhoneNumber("+1-212-555-0101", "atlanta.com"); fail();} catch (IllegalArgumentException e) {}
+		
+
+		assertEquals("#123#", newTelURL("tel:#123#;phone-context=atlanta.com").getPhoneNumber());
+		url.setPhoneNumber("1ABCDEF2", "atlanta.com");
+		assertEquals("*123*",  newTelURL("tel:*123*;phone-context=atlanta.com").getPhoneNumber());
+		url.setPhoneNumber("1abcdef2", "atlanta.com");
+		try	{ url.setPhoneNumber("+#123#"); fail();} catch (IllegalArgumentException e) {}
+		try	{ url.setPhoneNumber("+123A"); fail();} catch (IllegalArgumentException e) {}
+		try	{ newTelURL("tel:+*123*").getPhoneNumber(); fail();} catch (ServletParseException e) {}
+		try	{ newTelURL("tel:+123A").getPhoneNumber(); fail();} catch (ServletParseException e) {}
 	}	
 	
+	private TelURL newTelURL(String url) throws ServletParseException {
+		return (TelURL) URIFactory.parseURI(url);
+	}
+
 	public void testParameters() throws Exception
 	{
 		String tel = "tel:863-1234;phone-context=+1-914-555";
