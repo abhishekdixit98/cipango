@@ -14,13 +14,10 @@
 
 package org.cipango.io;
 
-import static junit.framework.Assert.assertEquals;
+import junit.framework.TestCase;
 
-import org.junit.Test;
-
-public class SipBufferTest
+public class SipBufferTest extends TestCase
 {
-	@Test
 	public void testBuffer() throws Exception
 	{
 		String s = "ŽˆÛ£";

@@ -12,12 +12,14 @@
 // limitations under the License.
 // ========================================================================
 package org.cipango.sip.security;
-import static junit.framework.Assert.*;
 
+import junit.framework.TestCase;
+
+import org.cipango.sip.security.Authenticate;
+import org.cipango.sip.security.Authorization;
 import org.cipango.util.DigestAuthenticator;
-import org.junit.Test;
 
-public class AuthorizationTest
+public class AuthorizationTest extends TestCase
 {
 	static String rfc2617 = "Digest username=\"Mufasa\"," + "realm=\"testrealm@host.com\","
 			+ "nonce=\"dcd98b7102dd2f0e8b11d0f600bfb0c093\"," + "uri=\"/dir/index.html\","
@@ -25,15 +27,13 @@ public class AuthorizationTest
 			+ "response=\"6629fae49393a05397450978507c4ef1\","
 			+ "opaque=\"5ccc069c403ebaf9f0171e9517f40e41\"";
 
-	@Test
 	public void testDigestAuthenticator()
 	{
 		Authorization ah = new Authorization(rfc2617);
 		String res = new DigestAuthenticator().calculateResponse(ah, "Circle Of Life", "GET");
 		assertEquals("6629fae49393a05397450978507c4ef1", res);
 	}
-
-	@Test
+	
 	public void testGetParameters()
 	{
 		Authorization ah = new Authorization(rfc2617);
@@ -48,8 +48,7 @@ public class AuthorizationTest
 		assertEquals("5ccc069c403ebaf9f0171e9517f40e41", ah.getOpaque());
 		
 	}
-
-	@Test
+	
 	public void testToString()
 	{
 		Authorization ah = new Authorization(rfc2617);
@@ -64,14 +63,8 @@ public class AuthorizationTest
 		assertEquals("0a4f113b", ah.getCNonce());
 		assertEquals("5ccc069c403ebaf9f0171e9517f40e41", ah.getOpaque());
 		
-		String s = ah.toString();
-		assertTrue(s.contains("nc=00000001"));
-		assertTrue(s.contains("response=\"6629fae49393a05397450978507c4ef1\""));
-		//System.out.println(ah);
-		
 	}
-
-	@Test
+	
 	public void testGenerateResponse()
 	{
 		Authenticate authenticate = new Authenticate(AuthenticateTest.RFC2617);

@@ -7,21 +7,26 @@ module Sipatra
   
   class Base
     include HelperMethods
-    attr_accessor :sip_factory, :context, :session, :message, :params, :log
-    alias :request  :message 
-    alias :response :message 
-            
+    attr_accessor :sip_factory, :context, :session, :msg, :params
+    
     def initialize()
-      @params = Hash.new { |hash,key| hash[key.to_s] if Symbol === key }
+      @params = Hash.new {|hash,key| hash[key.to_s] if Symbol === key }
     end
     
     # called from Java to set SIP servlet bindings
     def set_bindings(*args)
-      @context, @sip_factory, @session, @message, @log = args
+      @context, @sip_factory, @session, @msg = args
       session.extend Sipatra::SessionExtension
-      message.extend Sipatra::MessageExtension
+      msg.extend Sipatra::MessageExtension
     end
-
+    
+    def session=(session)
+      @session = session
+      class << @session
+         include SessionExtension
+       end
+    end
+    
     # called to process a SIP request
     def do_request
       call! self.class.req_handlers
@@ -31,17 +36,7 @@ module Sipatra
     def do_response
       call! self.class.resp_handlers
     end
-
-    # Access settings defined with Base.set.
-    def self.settings
-      self
-    end
-
-    # Access settings defined with Base.set.
-    def settings
-      self.class.settings
-    end
-
+    
     # Exit the current block, halts any further processing
     # of the message.
     # TODO: handle a response (as param)
@@ -55,28 +50,16 @@ module Sipatra
     end
     
     def request?
-      !message.respond_to?(:getRequest)
+      !msg.respond_to?(:getRequest)
     end
     
     def response?
-      message.respond_to?(:getRequest)
+      msg.respond_to?(:getRequest)
     end
     
     private
     
-    def session=(session)
-      @session = session
-      class << @session
-         include SessionExtension
-       end
-    end
-
-    # Retrieve the OUTBOUND_INTERFACES value from cipango.
-    def get_addresses
-      context.getAttribute('javax.servlet.sip.outboundInterfaces')
-    end
-    
-    def message_type
+    def msg_type
       response? ? :response : :request
     end
     
@@ -92,7 +75,7 @@ module Sipatra
       #clear (for multi usage)
       @params.clear
       if request?
-        match = arg.match message.requestURI.to_s
+        match = arg.match msg.requestURI.to_s
         if match
           eval_options(opts)
           if keys.any?
@@ -106,7 +89,7 @@ module Sipatra
           return true
         end
       else
-        if ((arg == 0) or (arg == message.status))
+        if ((arg == 0) or (arg == msg.status))
           eval_options(opts)
           return true
         end
@@ -134,7 +117,7 @@ module Sipatra
     def call!(handlers)
       filter! :before
       catch(:halt) do
-        process_handler(handlers, message.method)
+        process_handler(handlers, msg.method)
         process_handler(handlers, "_")
       end
     ensure 
@@ -148,36 +131,7 @@ module Sipatra
       def configure(*envs, &block)
         yield self if envs.empty? || envs.include?(environment.to_sym)
       end
-
-      # Sets an option to the given value.  If the value is a proc,
-      # the proc will be called every time the option is accessed.
-      def set(option, value=self, &block)
-        raise ArgumentError if block && value != self
-        value = block if block
-        if value.kind_of?(Proc)
-          metadef(option, &value)
-          metadef("#{option}?") { !!__send__(option) }
-          metadef("#{option}=") { |val| metadef(option, &Proc.new{val}) }
-        elsif value == self && option.respond_to?(:each)
-          option.each { |k,v| set(k, v) }
-        elsif respond_to?("#{option}=")
-          __send__ "#{option}=", value
-        else
-          set option, Proc.new{value}
-        end
-        self
-      end
-
-      # Same as calling `set :option, true` for each of the given options.
-      def enable(*opts)
-        opts.each { |key| set(key, true) }
-      end
-
-      # Same as calling `set :option, false` for each of the given options.
-      def disable(*opts)
-        opts.each { |key| set(key, false) }
-      end
-
+      
       # Methods defined in the block and/or in the module
       # arguments available to handlers.
       def helpers(*modules, &block)
@@ -228,12 +182,12 @@ module Sipatra
         end
       end
       
-      def before(message_type = nil, &block)
-        add_filter(:before, message_type, &block)
+      def before(msg_type = nil, &block)
+        add_filter(:before, msg_type, &block)
       end
       
-      def after(message_type = nil, &block)
-        add_filter(:after, message_type, &block)
+      def after(msg_type = nil, &block)
+        add_filter(:after, msg_type, &block)
       end
             
       def reset!
@@ -256,14 +210,10 @@ module Sipatra
         filters[:after]
       end
       
-      def invoke_hook(name, *args)
-        extensions.each { |e| e.send(name, *args) if e.respond_to?(name) }
-      end
-
       private
       
-      def add_filter(type, msg_type = nil, &block)
-        if msg_type
+      def add_filter(type, message_type = nil, &block)
+        if message_type
           add_filter(type) do
             next unless msg_type == message_type
             instance_eval(&block)
@@ -272,15 +222,7 @@ module Sipatra
           filters[type] << block
         end
       end
-
-      def metadef(message, &block)
-        (class << self; self; end).
-          send :define_method, message, &block
-        if !['?', '='].include?(message.to_s[-1, 1])
-          invoke_hook(:option_set, self, message)
-        end
-      end
-
+            
       # compiles a URI pattern
       def compile_uri_pattern(uri)
         keys = []
@@ -299,7 +241,6 @@ module Sipatra
       end
       
       def handler(method_name, verb, pattern, keys, options={}, &block)
-        raise ArgumentError, "A block should be given to a handler definition method" if block.nil?
         define_method method_name, &block
         unbound_method = instance_method(method_name)
         block =
@@ -346,7 +287,7 @@ module Sipatra
     delegate :ack, :bye, :cancel, :info, :invite, :message,
       :notify, :options, :prack, :publish, :refer, 
       :register, :subscribe, :update, 
-      :helpers, :configure, :settings, :set, :enable, :disable,
+      :helpers, :configure,
       :before, :after, :request, :response
   end
   

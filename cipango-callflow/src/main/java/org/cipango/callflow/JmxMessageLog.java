@@ -16,8 +16,6 @@ package org.cipango.callflow;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -25,13 +23,6 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
-
-import javax.management.ListenerNotFoundException;
-import javax.management.MBeanNotificationInfo;
-import javax.management.Notification;
-import javax.management.NotificationEmitter;
-import javax.management.NotificationFilter;
-import javax.management.NotificationListener;
 
 import org.apache.commons.jexl.Expression;
 import org.apache.commons.jexl.ExpressionFactory;
@@ -41,22 +32,14 @@ import org.cipango.server.SipConnection;
 import org.cipango.server.SipMessage;
 import org.cipango.server.log.AbstractMessageLog;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
-public class JmxMessageLog extends AbstractMessageLog implements NotificationEmitter
+public class JmxMessageLog extends AbstractMessageLog
 {
-	private static final Logger LOG = Log.getLogger(JmxMessageLog.class);
-	
-	private static final int DEFAULT_MAX_MESSAGES = 100;
+	private static final int DEFAULT_MAX_MESSAGES = 50;
 	
 	private MessageInfo[] _messages;
 	private int _maxMessages = DEFAULT_MAX_MESSAGES;
 	private int _cursor;
-	private long _messageId = 0;
-	
-	private Map<String, String> _alias = new HashMap<String, String>();
-	
-	private List<ListenerInfo> _listeners = new ArrayList<JmxMessageLog.ListenerInfo>();
 	
 	public int getMaxMessages()
 	{
@@ -65,8 +48,6 @@ public class JmxMessageLog extends AbstractMessageLog implements NotificationEmi
 
 	public void setMaxMessages(int maxMessages)
 	{
-		if (maxMessages <= 0)
-			throw new IllegalArgumentException("Max message must be greater than 0");
 		synchronized (this)
 		{
 			if (isRunning() && maxMessages != _maxMessages)
@@ -110,23 +91,12 @@ public class JmxMessageLog extends AbstractMessageLog implements NotificationEmi
 					&& connection.getLocalPort() == connection.getRemotePort())
 				return;
 				
-			MessageInfo messageInfo = new MessageInfo(message, direction, connection);
 			synchronized (this)
 			{
-				_messages[_cursor] = messageInfo;
+				_messages[_cursor] = new MessageInfo(message, direction, connection);
 				_cursor = getNextCursor();
-				_messageId++;
 			}
-			if (!_listeners.isEmpty())
-			{
-				String infoLine;
-				synchronized (this)
-				{
-					infoLine = generateInfoLine(direction, connection, System.currentTimeMillis());
-				}
-				CallflowNotification notification = new CallflowNotification(messageInfo, _messageId, infoLine);
-				sendNotification(notification);
-			}
+			
 		}
 	}
 		
@@ -186,7 +156,7 @@ public class JmxMessageLog extends AbstractMessageLog implements NotificationEmi
 			Expression msgExpression = null;
 			if (msgFilter != null && !msgFilter.trim().equals(""))
 			{
-				LOG.debug("Get messages with filter: " + msgFilter);
+				Log.debug("Get messages with filter: " + msgFilter);
 				msgExpression = ExpressionFactory.createExpression("log." + msgFilter);
 			}
 		
@@ -220,7 +190,7 @@ public class JmxMessageLog extends AbstractMessageLog implements NotificationEmi
 		return generateGraph(getMessageList(maxMessages, msgFilter), xslUri, includeMsg);
 	}
 	
-	protected byte[] generateGraph(List<MessageInfo> messages, String xslUri, boolean includeMsg) throws IOException
+	private byte[] generateGraph(List<MessageInfo> messages, String xslUri, boolean includeMsg) throws IOException
 	{
 		ByteArrayOutputStream os = new ByteArrayOutputStream();
 		OutputStreamWriter out = new OutputStreamWriter(os);
@@ -241,8 +211,7 @@ public class JmxMessageLog extends AbstractMessageLog implements NotificationEmi
 				if (indexLocal == -1)
 				{
 					out.write("\t\t<host>");
-					String alias = _alias.get(info.getLocalKey());
-					out.write(alias == null ? "Cipango" : alias);
+					out.write("Cipango");
 					out.write("</host>\n");
 					indexLocal = index++;
 				}
@@ -252,8 +221,7 @@ public class JmxMessageLog extends AbstractMessageLog implements NotificationEmi
 			if (!hostsMap.containsKey(info.getRemoteKey()))
 			{
 				out.write("\t\t<host>");
-				String alias = _alias.get(info.getRemoteKey());
-				out.write(alias == null ? info.getRemote() : alias);
+				out.write(info.getRemote());
 				out.write("</host>\n");
 				hostsMap.put(info.getRemoteKey(), index++);
 			}
@@ -308,19 +276,13 @@ public class JmxMessageLog extends AbstractMessageLog implements NotificationEmi
 		return os.toByteArray();
 	}
 	
-	protected void replaceAll(StringBuilder sb, String toFind, Object toSet)
+	private void replaceAll(StringBuilder sb, String toFind, Object toSet)
 	{
 		int index = 0;
 		while ((index = sb.indexOf(toFind)) != -1)
 			sb.replace(index, index + toFind.length(), toSet.toString());
 	}
-	
-	public void addAlias(String host, int port, String name) throws UnknownHostException
-	{
-		InetAddress addr = InetAddress.getByName(host);
-		_alias.put(addr.getHostAddress() + ":" + port, name);
-	}
-			
+		
 	private class LogIterator implements ListIterator<MessageInfo>
 	{
 		private int _itCursor;
@@ -393,101 +355,6 @@ public class JmxMessageLog extends AbstractMessageLog implements NotificationEmi
 		public void set(MessageInfo arg0)
 		{
 			throw new UnsupportedOperationException("Read-only");
-		}
-	}
-
-	public void addNotificationListener(NotificationListener listener, NotificationFilter filter,
-			Object handback) throws IllegalArgumentException
-	{
-		synchronized (_listeners)
-		{
-			_listeners.add(new ListenerInfo(listener, filter, handback));
-		}
-	}
-
-	public void removeNotificationListener(NotificationListener listener) throws ListenerNotFoundException
-	{
-		synchronized (_listeners)
-		{
-			Iterator<ListenerInfo> it = _listeners.iterator();
-			while (it.hasNext())
-			{
-				JmxMessageLog.ListenerInfo info = it.next();
-				if (info.listener.equals(listener))
-				{
-					it.remove();
-					return;
-				}
-			}
-		}
-		throw new ListenerNotFoundException();
-	}
-	
-	public void removeNotificationListener(NotificationListener listener, NotificationFilter filter,
-			Object handback) throws ListenerNotFoundException
-	{
-		synchronized (_listeners)
-		{
-			Iterator<ListenerInfo> it = _listeners.iterator();
-			while (it.hasNext())
-			{
-				JmxMessageLog.ListenerInfo info = it.next();
-				if (info.listener.equals(listener) && info.filter == filter && info.handback == handback)
-				{
-					it.remove();
-					return;
-				}
-			}
-		}
-		throw new ListenerNotFoundException();
-	}
-
-	public MBeanNotificationInfo[] getNotificationInfo()
-	{
-		String[] types = new String[] { "SIP" };
-		String name = MBeanNotificationInfo.class.getName();
-		String description = "SIP message notification";
-		MBeanNotificationInfo info = new MBeanNotificationInfo(types, name, description);
-
-		return new MBeanNotificationInfo[] { info };
-	}
-
-	private void sendNotification(Notification notification)
-	{
-		if (notification == null || _listeners.isEmpty())
-			return;
-		
-		synchronized (_listeners)
-		{
-			for (ListenerInfo info : _listeners)
-			{
-				if (info.filter == null || info.filter.isNotificationEnabled(notification))
-				{
-					try
-					{
-						info.listener.handleNotification(notification, info.handback);
-					}
-					catch (Exception e)
-					{
-						LOG.warn(e);
-					}
-				}
-			}
-		}
-	}
-	
-	
-	private class ListenerInfo
-	{
-		public NotificationListener listener;
-		NotificationFilter filter;
-		Object handback;
-
-		public ListenerInfo(NotificationListener listener, NotificationFilter filter, Object handback)
-		{
-			this.listener = listener;
-			this.filter = filter;
-			this.handback = handback;
 		}
 	}
 

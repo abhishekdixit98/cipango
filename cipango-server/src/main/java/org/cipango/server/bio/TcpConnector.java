@@ -32,30 +32,30 @@ import org.cipango.server.SipMessage;
 import org.cipango.server.transaction.Transaction;
 import org.cipango.sip.BufferOverflowException;
 import org.cipango.sip.SipParser;
+
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
-import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.bio.SocketEndPoint;
-import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
 
 public class TcpConnector extends AbstractSipConnector //implements Buffers
 {
-	private static final Logger LOG = Log.getLogger(TcpConnector.class);
-	
 	public static final int DEFAULT_PORT = 5060;
 	public static final boolean RELIABLE = true;
 	
 	public static final int DEFAULT_TCP_MESSAGE = 1024 * 2;
 	public static final int MAX_TCP_MESSAGE = 1024 * 400;
+	
+	public static final int DEFAULT_SO_TIMEOUT = 2 * Transaction.__T1 * 64;
     
     private ServerSocket _serverSocket;
     private InetAddress _addr;
     private Map<String, TcpConnection> _connections;
-    private int _connectionTimeout = -1;
+    private int _connectionTimeout = DEFAULT_SO_TIMEOUT;
     private int _backlogSize = 50;
     
     private ThreadPool _tcpThreadPool;
@@ -81,17 +81,17 @@ public class TcpConnector extends AbstractSipConnector //implements Buffers
 		if (_tcpThreadPool instanceof LifeCycle)
             ((LifeCycle)_tcpThreadPool).stop();
 		
-		Object[]  connections = _connections.values().toArray();
-		for (Object o : connections)
+		Iterator<TcpConnection> it = _connections.values().iterator();
+		while (it.hasNext())
 		{
-			TcpConnection connection =  (TcpConnection) o;
+			TcpConnection connection = it.next();
 			try
 			{
 				connection.close();
 			} 
 			catch (Exception e) 
 			{
-				LOG.ignore(e);
+				Log.ignore(e);
 			}
 		}
 	}
@@ -148,6 +148,7 @@ public class TcpConnector extends AbstractSipConnector //implements Buffers
 		TcpConnection connection = new TcpConnection(socket);
 		addConnection(socket.getInetAddress(), socket.getPort(), connection);
 		connection.dispatch();
+		
 	}
 	
 	protected void addConnection(InetAddress host, int port, TcpConnection connection)
@@ -157,7 +158,8 @@ public class TcpConnector extends AbstractSipConnector //implements Buffers
 			_connections.put(key(host, port), connection);
 		}
 	}
-
+	
+	
 	protected ServerSocket getServerSocket()
 	{
 		return _serverSocket;
@@ -225,6 +227,7 @@ public class TcpConnector extends AbstractSipConnector //implements Buffers
 		}
 	}
 	
+	
 	protected TcpConnection newConnection(InetAddress addr, int port) throws IOException
 	{
 		return new TcpConnection(new Socket(addr, port));
@@ -237,11 +240,26 @@ public class TcpConnector extends AbstractSipConnector //implements Buffers
 	
 	public void connectionOpened(TcpConnection connection)
 	{
-		
+		if (_statsStartedAt >= 0)
+		{
+			synchronized (_statsLock)
+			{
+				_connectionsOpen++;
+				if (_connectionsOpen > _connectionsOpenMax)
+					_connectionsOpenMax = _connectionsOpen;
+			}
+		}
 	}
 	
 	public void connectionClosed(TcpConnection connection) 
 	{
+		if (_statsStartedAt >= 0)
+		{
+			synchronized (_statsLock)
+			{
+				_connectionsOpen--;
+			}
+		}
 		synchronized (_connections) 
 		{
 			_connections.remove(connection.getRemoteAddr() + ":" + connection.getRemotePort());
@@ -265,12 +283,7 @@ public class TcpConnector extends AbstractSipConnector //implements Buffers
 	
 	public int getConnectionTimeout()
 	{
-		if (_connectionTimeout != -1)
-			return _connectionTimeout;
-		else if (getServer() != null)
-			return 	2 * getServer().getTransactionManager().getTimersSettings().getT1() * 64;
-		else
-			return 	2 * Transaction.DEFAULT_T1 * 64;
+		return _connectionTimeout;
 	}
 
 	public void setConnectionTimeout(int connectionTimeout)
@@ -287,7 +300,7 @@ public class TcpConnector extends AbstractSipConnector //implements Buffers
 		{
 			super(socket);
 			socket.setTcpNoDelay(true);
-			socket.setSoTimeout(getConnectionTimeout());
+			socket.setSoTimeout(_connectionTimeout);
 			
 			_local = socket.getLocalAddress();
 			_remote = socket.getInetAddress(); 
@@ -297,7 +310,7 @@ public class TcpConnector extends AbstractSipConnector //implements Buffers
         {
             if (!getTcpThreadPool().dispatch(this))
             {
-                LOG.warn("dispatch failed for {}", this);
+                Log.warn("dispatch failed for {}", this);
                 close();
             }
         }
@@ -382,14 +395,14 @@ public class TcpConnector extends AbstractSipConnector //implements Buffers
 			catch (EofException e)
 			{
 				//System.out.println(parser.getState());
-				LOG.debug("EOF: {}", this);
+				Log.debug("EOF: {}", this);
 				try 
 				{
 					close();
 				} 
 				catch (IOException e2)
 				{
-					LOG.ignore(e2);
+					Log.ignore(e2);
 				}
 			} 
 			
@@ -403,16 +416,16 @@ public class TcpConnector extends AbstractSipConnector //implements Buffers
 						_nbParseErrors++;
 					}
 				}
-				LOG.warn("TCP handle failed", e);
+				Log.warn("TCP handle failed", e);
 				if (handler.hasException())
-					LOG.warn(handler.getException());
+					Log.warn(handler.getException());
 				try 
 				{
 					close();
 				} 
 				catch (IOException e2) 
 				{
-					LOG.ignore(e2);
+					Log.ignore(e2);
 				}
 			} 
 			finally 
