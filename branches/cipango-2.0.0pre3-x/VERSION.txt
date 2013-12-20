@@ -1,4 +1,5 @@
-cipango-2.0.0pre3 - 24 November 2010
+cipango-2.0.0pre3 - 20 December 2013
+ + CIPANGO-207 Got ParseException on tel:#123#;phone-context=atlanta.com
  + CIPANGO-111 B2BUaHelper - createRequest - "From" not changed
  + CIPANGO-112 When a 200/INVITE from a reInvite is received, the ACK of initial INVITE is sent
  + CIPANGO-113 B2bHelper.createRequest set the request-URI to the to header.
