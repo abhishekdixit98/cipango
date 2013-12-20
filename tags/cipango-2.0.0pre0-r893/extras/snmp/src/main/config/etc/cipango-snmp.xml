@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
+
+<Configure class="org.cipango.server.Server" id="Server">
+  
+  <Set name="sessionManager">
+    <New class="org.cipango.server.session.SessionManager">
+      <Set name="callsThreshold">10</Set>
+    </New>
+  </Set>
+
+  <Call name="addLifeCycle">
+    <Arg>
+      <New class="org.cipango.snmp.SnmpAgent" id="SnmpAgent">
+        <Set name="server"><Ref id="Server"/></Set>
+        <Set name="trapReceivers">
+          <Array type="org.cipango.snmp.SnmpAddress">
+            <Item>
+              <New class="org.cipango.snmp.SnmpAddress">
+                <Set name="port"><SystemProperty default="162" name="snmp.trap.port"/></Set>
+                <Set name="host"><SystemProperty default="localhost" name="snmp.trap.host"/></Set>
+                <Set name="transport">UDP</Set>
+              </New>
+            </Item>
+          </Array>
+        </Set>
+        <Set name="connectors">
+          <Array type="org.cipango.snmp.SnmpAddress">
+            <Item>
+              <New class="org.cipango.snmp.SnmpAddress">
+                <Set name="port"><SystemProperty default="161" name="snmp.port"/></Set>
+                <Set name="host"><SystemProperty default="0.0.0.0" name="snmp.host"/></Set>
+                <Set name="transport">UDP</Set>
+              </New>
+            </Item>
+          </Array>
+        </Set>
+      </New>
+    </Arg>
+  </Call>
+  
+  <Call class="org.cipango.log.event.Events" name="setDispatcher">
+    <Arg><New class="org.cipango.jmx.log.event.JmxEventDispatcher" id="JmxEventDispatcher"/></Arg>
+  </Call>
+
+</Configure>
