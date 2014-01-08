@@ -27,12 +27,10 @@ import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler.Decorator;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
 public class SipResourceDecorator implements Decorator
 {
-	private static final Logger LOG = Log.getLogger(SipResourceDecorator.class);
-	
+
 	public static final String JNDI_SIP_PREFIX = "sip/";
 	public static final String JNDI_SIP_FACTORY = "SipFactory";
 	public static final String JNDI_TIMER_SERVICE = "TimerService";
@@ -75,21 +73,11 @@ public class SipResourceDecorator implements Decorator
 			sipCtx = (Context) compCtx.createSubcontext("sip");
 		}
 
-		if (!"/".equals(_name) && !"".equals(_name))
-		{
-			sipCtx.createSubcontext(_name);
-			compCtx.bind(JNDI_SIP_PREFIX + _name + JNDI_SIP_FACTORY_POSTFIX, _context.getSipFactory());
-			compCtx.bind(JNDI_SIP_PREFIX + _name + JNDI_TIMER_SERVICE_POSTFIX, _context.getTimerService());
-			compCtx.bind(JNDI_SIP_PREFIX + _name + JNDI_SIP_SESSIONS_UTIL_POSTFIX, _context.getSipSessionsUtil());
-		}
-		else
-		{
-			compCtx.bind(JNDI_SIP_PREFIX + JNDI_SIP_FACTORY_POSTFIX.substring(1), _context.getSipFactory());
-			compCtx.bind(JNDI_SIP_PREFIX + JNDI_TIMER_SERVICE_POSTFIX.substring(1), _context.getTimerService());
-			compCtx.bind(JNDI_SIP_PREFIX + JNDI_SIP_SESSIONS_UTIL_POSTFIX.substring(1), _context.getSipSessionsUtil());
-
-		}
-		LOG.debug("Bind SIP Resources on app " + _name);
+		sipCtx.createSubcontext(_name);
+		compCtx.bind(JNDI_SIP_PREFIX + _name + JNDI_SIP_FACTORY_POSTFIX, _context.getSipFactory());
+		compCtx.bind(JNDI_SIP_PREFIX + _name + JNDI_TIMER_SERVICE_POSTFIX, _context.getTimerService());
+		compCtx.bind(JNDI_SIP_PREFIX + _name + JNDI_SIP_SESSIONS_UTIL_POSTFIX, _context.getSipSessionsUtil());
+		Log.debug("Bind SIP Resources on app " + _name);
 		Thread.currentThread().setContextClassLoader(oldLoader);
 	}
 	
@@ -109,7 +97,7 @@ public class SipResourceDecorator implements Decorator
 		}
 		catch (Exception e) 
 		{
-			LOG.warn("Failed to bind SIP resources", e);
+			Log.warn("Failed to bind SIP resources", e);
 		}
 	}
 

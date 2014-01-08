@@ -48,7 +48,6 @@ public class AVP<T> implements Visitable
 		return _value;
 	}
 	
-	@SuppressWarnings("unchecked")
 	public void accept(DiameterVisitor visitor)
 	{
 		if (_value instanceof AVPList)

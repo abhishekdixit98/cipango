@@ -1,5 +1,5 @@
 // ========================================================================
-// Copyright 2007-2012 NEXCOM Systems
+// Copyright 2007-2008 NEXCOM Systems
 // ------------------------------------------------------------------------
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -70,67 +70,4 @@ public class AddressTest
 		assertEquals("19923n", a1.getParameter("tag"));
 		assertEquals("chair-dnrc.example.com", ((SipURI) a1.getURI()).getHost());
 	}
-	
-	@Test
-	public void testParam() throws ServletParseException
-	{
-		Address a1 = new NameAddr("<sip:user@192.168.1.1>;expires=300;received=\"sip:46.31.211.34:63102;transport=TCP\"");
-//		System.out.println(a1);
-//		System.out.println(a1.getParameter("received"));
-		assertEquals("sip:46.31.211.34:63102;transport=TCP",a1.getParameter("received"));
-		assertEquals("300",a1.getParameter("expires"));
-	}
-	
-	@Test
-	public void testParam2() throws ServletParseException
-	{
-		Address a1 = new NameAddr("<sip:user@192.168.1.1>;received= \"sip:46.31.211.34:63102;transport=TCP\";expires = 300;param2=\"a;2\"");
-//		System.out.println(a1);
-		//System.out.println(a1.getParameter("received"));
-		assertEquals("sip:46.31.211.34:63102;transport=TCP",a1.getParameter("received"));
-		assertEquals("300",a1.getParameter("expires"));
-		assertEquals("a;2",a1.getParameter("param2"));
-	}
-	
-	@Test
-	public void testParam3() throws ServletParseException
-	{
-		Address a1 = new NameAddr("<sip:user@192.168.1.1>;expires = 300 ; param1 ; q  = 1");
-//		System.out.println(a1);
-		assertEquals("300",a1.getParameter("expires"));
-		assertEquals("",a1.getParameter("param1"));
-		assertEquals("1",a1.getParameter("q"));
-	}
-	
-	@Test
-	public void testParamQuoteUtf8() throws ServletParseException
-	{
-		Address a1 = new NameAddr("<sip:user@192.168.1.1>;param1=\"éàô\"");
-		System.out.println(a1);
-		assertEquals("éàô",a1.getParameter("param1"));
-		assertEquals("<sip:user@192.168.1.1>;param1=\"éàô\"",a1.toString());
-	}
-	
-	@Test
-	public void testParamEscapeQuote() throws ServletParseException
-	{
-		Address a1 = new NameAddr("<sip:user@192.168.1.1>;param1=\"foo \\\" bar\"");
-		System.out.println(a1);
-		assertEquals("foo \" bar",a1.getParameter("param1"));
-		assertEquals("<sip:user@192.168.1.1>;param1=\"foo \\\" bar\"",a1.toString());
-	}
-	
-	@Test (expected = ServletParseException.class)
-	public void testInvalidParam() throws ServletParseException
-	{
-		new NameAddr("<sip:user@192.168.1.1:45841;transport=tcp>;expires =\"quoteNotTerminated");
-	}
-	
-	@Test (expected = ServletParseException.class)
-	public void testInvalidParam2() throws ServletParseException
-	{
-		new NameAddr("<sip:user@192.168.1.1:45841;transport=tcp>;invalidN?ame");
-	}
-	
-	
 }
