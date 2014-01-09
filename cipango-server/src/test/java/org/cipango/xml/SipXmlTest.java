@@ -88,7 +88,7 @@ public class SipXmlTest
 	@Test
 	public void testSipXml10() throws Exception
 	{
-		//System.setProperty("org.eclipse.jetty.xml.XmlParser.Validating", "false");
+		System.setProperty("org.eclipse.jetty.xml.XmlParser.Validating", "false");
 		
 		SipAppContext context = new SipAppContext();
 		SipMetaData metaData = context.getSipMetaData();
@@ -204,7 +204,6 @@ public class SipXmlTest
 		assertEquals(2, mappings.length);
 	}
 
-	@SuppressWarnings("unchecked")
 	@Test
 	public void testNamespace() throws Exception
 	{
@@ -257,7 +256,7 @@ public class SipXmlTest
 		processor.process(new SipAppContext(), descriptor);
 	}
 
-
+	@Test
 	public void testXmlXsd() throws Exception
 	{
 		//System.out.println(WebAppContext.class.getResource("/javax/servlet/resources/javaee_5.xsd"));
@@ -265,7 +264,7 @@ public class SipXmlTest
 		parser.parse(getClass().getResource("/org/cipango/xml/sip-xsd.xml").toString());
 	}
 
-
+	@Test
 	public void testWeb() throws Exception 
 	{
 		XmlParser parser = getParser(true);

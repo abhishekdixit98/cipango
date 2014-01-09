@@ -19,11 +19,9 @@ import org.cipango.sipapp.SipAppContext;
 import org.eclipse.jetty.annotations.AbstractDiscoverableAnnotationHandler;
 import org.eclipse.jetty.annotations.AnnotationParser.Value;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
 public class SipApplicationKeyAnnotationHandler extends AbstractDiscoverableAnnotationHandler
 {
-	private static final Logger LOG = Log.getLogger(SipApplicationKeyAnnotationHandler.class);
 
 	public SipApplicationKeyAnnotationHandler(SipAppContext context)
 	{
@@ -33,7 +31,7 @@ public class SipApplicationKeyAnnotationHandler extends AbstractDiscoverableAnno
 	public void handleClass(String className, int version, int access, String signature, String superName,
 			String[] interfaces, String annotation, List<Value> values)
 	{
-		LOG.warn("@SipApplicationKey annotation not applicable to classes: " + className);
+		Log.warn("@SipApplicationKey annotation not applicable to classes: " + className);
 	}
 
 	public void handleMethod(String className, String methodName, int access, String desc, String signature,
@@ -45,7 +43,7 @@ public class SipApplicationKeyAnnotationHandler extends AbstractDiscoverableAnno
 	public void handleField(String className, String fieldName, int access, String fieldType,
 			String signature, Object value, String annotation, List<Value> values)
 	{
-		LOG.warn("@SipApplication annotation not applicable for fields: " + className + "." + fieldName);
+		Log.warn("@SipApplication annotation not applicable for fields: " + className + "." + fieldName);
 	}
 
 

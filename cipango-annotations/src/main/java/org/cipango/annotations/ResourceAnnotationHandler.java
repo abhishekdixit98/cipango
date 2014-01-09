@@ -27,13 +27,10 @@ import org.cipango.sipapp.SipAppContext;
 import org.eclipse.jetty.plus.annotation.Injection;
 import org.eclipse.jetty.plus.annotation.InjectionCollection;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 public class ResourceAnnotationHandler extends org.eclipse.jetty.annotations.ResourceAnnotationHandler
 {
-	private static final Logger LOG = Log.getLogger(ResourceAnnotationHandler.class);
-	
 	public ResourceAnnotationHandler(WebAppContext wac)
 	{
 		super(wac);
@@ -78,7 +75,7 @@ public class ResourceAnnotationHandler extends org.eclipse.jetty.annotations.Res
 				// JavaEE Spec 5.2.3: Field cannot be static
 				if (Modifier.isStatic(field.getModifiers()))
 				{
-					LOG.warn("Skipping Resource annotation on " + clazz.getName() + "." + field.getName()
+					Log.warn("Skipping Resource annotation on " + clazz.getName() + "." + field.getName()
 							+ ": cannot be static");
 					return;
 				}
@@ -86,7 +83,7 @@ public class ResourceAnnotationHandler extends org.eclipse.jetty.annotations.Res
 				// JavaEE Spec 5.2.3: Field cannot be final
 				if (Modifier.isFinal(field.getModifiers()))
 				{
-					LOG.warn("Skipping Resource annotation on " + clazz.getName() + "." + field.getName()
+					Log.warn("Skipping Resource annotation on " + clazz.getName() + "." + field.getName()
 							+ ": cannot be final");
 					return;
 				}
@@ -113,19 +110,19 @@ public class ResourceAnnotationHandler extends org.eclipse.jetty.annotations.Res
 	{
 		if (field.getType() == SipFactory.class)
 		{
-			LOG.info("Detect SipFactory Resource from annotation");
+			Log.info("Detect SipFactory Resource from annotation");
 			return SipResourceDecorator.JNDI_SIP_PREFIX + getSipAppCtx().getName()
 					+ SipResourceDecorator.JNDI_SIP_FACTORY_POSTFIX;
 		}
 		else if (field.getType() == SipSessionsUtil.class)
 		{
-			LOG.info("Detect SipSessionsUtil Resource from annotation");
+			Log.info("Detect SipSessionsUtil Resource from annotation");
 			return SipResourceDecorator.JNDI_SIP_PREFIX + getSipAppCtx().getName()
 					+ SipResourceDecorator.JNDI_SIP_SESSIONS_UTIL_POSTFIX;
 		}
 		else if (field.getType() == TimerService.class)
 		{
-			LOG.info("Detect TimerService Resource from annotation");
+			Log.info("Detect TimerService Resource from annotation");
 			return SipResourceDecorator.JNDI_SIP_PREFIX + getSipAppCtx().getName()
 					+ SipResourceDecorator.JNDI_TIMER_SERVICE_POSTFIX;
 		}
