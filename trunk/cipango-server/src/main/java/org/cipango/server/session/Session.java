@@ -1148,17 +1148,20 @@ public class Session implements SessionIf
 			}
 			else if (request.isPrack())
 			{
-				ClientInvite invite = getClientInvite(request.getCSeq().getNumber(), false);
-				if (invite != null)
+				RAck rack = null;
+
+				try
 				{
-					try
+					rack = request.getRAck();
+					ClientInvite invite = getClientInvite(rack.getCSeq(), false);
+					if (invite != null)
 					{
-						invite.prack(request.getRAck().getRSeq());
+						invite.prack(rack.getRSeq());
 					}
-					catch (ServletParseException e)
-					{
-						LOG.ignore(e);
-					}
+				}
+				catch (Exception e)
+				{
+                    Log.ignore(e);
 				}
 			}
 		}
