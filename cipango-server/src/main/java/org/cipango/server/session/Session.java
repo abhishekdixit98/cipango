@@ -1142,8 +1142,7 @@ public class Session implements SessionIf
 				ClientInvite invite = getClientInvite(request.getCSeq().getNumber(), false);
 				if (invite != null)
 				{
-					invite._2xx = null;
-					invite._ack = request;
+					invite.ack(request);
 				}
 			}
 			else if (request.isPrack())
@@ -1419,7 +1418,14 @@ public class Session implements SessionIf
 				Reliable1xxClient reliable1xx = new Reliable1xxClient(response);
 				_reliable1xxs = LazyList.add(_reliable1xxs, reliable1xx);
 			}
-			
+
+			public void ack(SipRequest request)
+			{
+				_2xx = null;
+				_ack = request;
+				getCallSession().schedule(new Timer(), 64 * getServer().getTransactionManager().getTimersSettings().getT1());
+			}
+
 			public boolean prack(long rseq)
 			{
 				for (int i = LazyList.size(_reliable1xxs); i-->0;)
@@ -1442,7 +1448,13 @@ public class Session implements SessionIf
 				public long getRSeq() { return _1xx.getRSeq(); }
 				public SipResponse getResponse() { return _1xx; }
 			}
-		}
+
+			class Timer implements Runnable
+			{
+				public Timer() {}
+				public void run() { _ack = null; }
+			}
+        }
 		
 		abstract class ReliableResponse
 		{
