@@ -72,7 +72,6 @@ import org.cipango.sip.SipURIImpl;
 import org.cipango.sipapp.SipAppContext;
 import org.cipango.util.ReadOnlyAddress;
 import org.cipango.util.TimerTask;
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -981,11 +980,13 @@ public class Session implements SessionIf
 			if (transaction.isCompleted())
 			{
 				LOG.debug("ignoring late cancel {}", transaction);
+				cancel.createResponse(SipServletResponse.SC_CALL_LEG_DONE).send();
 			}
 			else
 			{
 				try
 				{
+					cancel.createResponse(SipServletResponse.SC_OK).send();
 					transaction.getRequest().createResponse(SipServletResponse.SC_REQUEST_TERMINATED).send();
 					setState(State.TERMINATED);
 				}
@@ -993,8 +994,8 @@ public class Session implements SessionIf
 				{
 					LOG.debug("failed to cancel request", e);
 				}
+				invokeServlet(cancel);
 			}
-			invokeServlet(cancel);
 		}
 		
 		public void handleResponse(SipResponse response)

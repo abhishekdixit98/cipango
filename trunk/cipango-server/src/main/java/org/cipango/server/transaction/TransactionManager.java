@@ -105,10 +105,7 @@ public class TransactionManager extends HandlerWrapper implements SipHandler
 	                transaction.send(unknown);
 	            }
 	            else 
-	            {
-	                SipResponse ok = (SipResponse) request.createResponse(SipServletResponse.SC_OK);
-	                transaction.send(ok);
-	                
+	            {	                
 	                stx.cancel(request);
 	            }
 	        }
