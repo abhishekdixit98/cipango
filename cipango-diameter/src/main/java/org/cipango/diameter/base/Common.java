@@ -327,10 +327,10 @@ public abstract class Common
 		VENDOR_SPECIFIC_APPLICATION_ID_ORDINAL = 260,
 		PRODUCT_NAME_ORDINAL = 269,
 		FAILED_AVP_ORDINAL = 279,
-		ERROR_MESSAGE_ORDINAL = 281,
-		ROUTE_RECORD_ORDINAL = 282,
+    ERROR_MESSAGE_ORDINAL = 281,
+ 		ROUTE_RECORD_ORDINAL = 282,
 		REDIRECT_HOST_ORDINAL = 292,
-		ERROR_REPORTING_HOST = 294,
+    ERROR_REPORTING_HOST = 294,
 		EXPERIMENTAL_RESULT_ORDINAL = 297,
 		EXPERIMENTAL_RESULT_CODE_ORDINAL = 298;
 	
@@ -690,7 +690,6 @@ public abstract class Common
 	 */
 	public static final Type<AVPList> FAILED_AVP = newGroupedType("Failed-AVP", FAILED_AVP_ORDINAL);
 	
-	
 	/**
 	 * The Error-Message AVP (AVP Code 281) is of type UTF8String. It MAY accompany a Result-Code
 	 * AVP as a human readable error message. The Error-Message AVP is not intended to be useful in
@@ -714,7 +713,7 @@ public abstract class Common
 	 */
 	public static final Type<String> ERROR_REPORTING_HOST_AVP = 
 			newUTF8StringType("Error-Reporting-Host", ERROR_REPORTING_HOST).setMandatory(false);
-	
+  
 	// Radius for digest authentication (RFC 4590)
 	public static final int
 		DIGEST_REALM_ORDINAL = 104,

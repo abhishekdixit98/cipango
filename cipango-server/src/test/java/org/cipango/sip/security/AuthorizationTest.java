@@ -12,7 +12,7 @@
 // limitations under the License.
 // ========================================================================
 package org.cipango.sip.security;
-import static junit.framework.Assert.*;
+import static junit.framework.Assert.assertEquals;
 
 import org.cipango.util.DigestAuthenticator;
 import org.junit.Test;
@@ -63,11 +63,6 @@ public class AuthorizationTest
 		assertEquals("00000001", ah.getNonceCount());
 		assertEquals("0a4f113b", ah.getCNonce());
 		assertEquals("5ccc069c403ebaf9f0171e9517f40e41", ah.getOpaque());
-		
-		String s = ah.toString();
-		assertTrue(s.contains("nc=00000001"));
-		assertTrue(s.contains("response=\"6629fae49393a05397450978507c4ef1\""));
-		//System.out.println(ah);
 		
 	}
 

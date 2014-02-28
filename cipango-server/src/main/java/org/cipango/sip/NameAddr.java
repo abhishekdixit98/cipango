@@ -1,5 +1,5 @@
 // ========================================================================
-// Copyright 2008-2012 NEXCOM Systems
+// Copyright 2008-2009 NEXCOM Systems
 // ------------------------------------------------------------------------
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,8 +17,9 @@ package org.cipango.sip;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map.Entry;
 import java.util.Set;
+import java.util.StringTokenizer;
+import java.util.Map.Entry;
 
 import javax.servlet.sip.Address;
 import javax.servlet.sip.ServletParseException;
@@ -131,161 +132,34 @@ public class NameAddr implements Address, Serializable
 		}
 		_uri = URIFactory.parseURI(sURI);
 		if (sParams != null && parseParam) 
-			parseParams2(sParams);
+			parseParams(sParams);
 	}
-	
-	private static final int PARAM_NAME = 0;
-	private static final int PARAM_VALUE = 1;
-	private static final int PARAM_VALUE_LEFT_QUOTE = 2;
-	private static final int PARAM_VALUE_RIGHT_QUOTE = 3;
-	
-	
-	private void parseParams2(String sParams) throws ServletParseException 
-	{
-		int state = PARAM_NAME;
-		String name = null;
-		String value;
-		int pos = 0;
-		for (int i = 0; i < sParams.length(); i++)
-		{
-			char c = sParams.charAt(i);
-			switch (state)
-			{
-			case PARAM_NAME:
-				if (c == '=')
-				{
-					name = sParams.substring(pos, i).trim().toLowerCase();
-					if (!SipGrammar.isToken(name)) 
-						throw new ServletParseException("Invalid parameter name [" 
-								+ name + "] in [" + _nameAddr + "]");
-					pos = i + 1;
-					state = PARAM_VALUE;
-				}
-				else if (c == ';')
-				{
-					name = sParams.substring(pos, i).trim().toLowerCase();
-					if (!SipGrammar.isToken(name)) 
-						throw new ServletParseException("Invalid parameter name [" 
-								+ name + "] in [" + _nameAddr + "]");
-					
-					_params.put(name, "");
-					pos = i + 1;
-				}
-				break;
-			case PARAM_VALUE:
-				if (c == ';')
-				{
-					value = sParams.substring(pos, i).trim();
-					_params.put(name, value);
-					pos = i + 1;
-					state = PARAM_NAME;
-				}
-				else if (c == '"')
-				{
-					pos = i;
-					state = PARAM_VALUE_LEFT_QUOTE;
-				}
-				break;
-			case PARAM_VALUE_LEFT_QUOTE:
-				if (c == '"' && sParams.charAt(i - 1) != '\\')
-				{
-					value =  SipGrammar.unquote(sParams.substring(pos, i + 1).trim());
-					_params.put(name, value);
-					pos = i + 1;
-					state = PARAM_VALUE_RIGHT_QUOTE;
-				}
-				break;
-			case PARAM_VALUE_RIGHT_QUOTE:
-				if (c == ';')
-				{
-					pos = i + 1;
-					state = PARAM_NAME;
-				}
-				break;
-			default:
-				break;
-			}
-		}
-		switch (state)
-		{
-		case PARAM_NAME:
-			name = sParams.substring(pos).trim().toLowerCase();
-			if (!SipGrammar.isToken(name)) 
-				throw new ServletParseException("Invalid parameter name [" 
-						+ name + "] in [" + _nameAddr + "]");
-			
-			_params.put(name, "");
-			break;
-		case PARAM_VALUE:
-			value = sParams.substring(pos).trim();
-			_params.put(name, value);
-			break;
-		case PARAM_VALUE_RIGHT_QUOTE:
-			break;
-		default:
-			throw new ServletParseException("Invalid parameter value [" 
-					+ sParams.substring(pos).trim() + "] in [" + _nameAddr + "]");
-		}
-	}
-	
 	
 	private void parseParams(String sParams) throws ServletParseException 
 	{
-		int beginIndex = 0;
-		int endIndex;
-		do
+		StringTokenizer st = new StringTokenizer(sParams, ";");
+		while (st.hasMoreTokens()) 
 		{
+			String param = st.nextToken();
 			String name;
 			String value;
-			endIndex = sParams.indexOf('=', beginIndex);
+			int index = param.indexOf('=');
 			
-			int indexSemi = sParams.indexOf(';', beginIndex);
-			
-			if (endIndex == -1 || (indexSemi < endIndex && indexSemi != -1))
-				endIndex = indexSemi;
-			
-			if (endIndex == -1)
+			if (index < 0) 
 			{
-				name = sParams.substring(beginIndex).trim();
+				name  = param.trim();
 				value = "";
-			}
-			else if (endIndex == indexSemi)
+			} 
+			else 
 			{
-				name = sParams.substring(beginIndex, endIndex).trim();
-				value = "";
+				name  = param.substring(0, index).trim();
+				value = SipGrammar.unquote(param.substring(index + 1).trim());
 			}
-			else
-			{
-				name = sParams.substring(beginIndex, endIndex).trim();
-				
-				int quoteIndex = sParams.indexOf('"', endIndex);
-				if (quoteIndex != -1 && (quoteIndex < indexSemi || indexSemi == -1))
-				{
-					beginIndex = quoteIndex + 1;
-					endIndex = sParams.indexOf('"', beginIndex);
-					value = SipGrammar.unquote(sParams.substring(beginIndex, endIndex).trim());
-				}
-				else
-				{
-					beginIndex = endIndex + 1;
-					endIndex = indexSemi;
-					if (endIndex == -1)
-						endIndex = sParams.length();
-
-					value = sParams.substring(beginIndex, endIndex);	
-				}
-			}
-			
 			if (!SipGrammar.isToken(name)) 
 				throw new ServletParseException("Invalid parameter name [" 
-						+ name + "] in [" + _nameAddr + "]");
-			
-			_params.put(name.trim().toLowerCase(), value.trim());
-			
-			beginIndex = endIndex == -1 ? -1 : sParams.indexOf(';', endIndex) + 1;
-			
+						+ name + "] in [" + _uri + "]");
+			_params.put(name.toLowerCase(), value);
 		}
-		while (beginIndex > 0);
 	}
 	
 	private int indexRQuote(String s, int start) 
@@ -432,7 +306,6 @@ public class NameAddr implements Address, Serializable
 		return sb.toString();
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public Object clone() 
 	{

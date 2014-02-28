@@ -25,7 +25,6 @@ import org.apache.commons.jexl.Expression;
 import org.apache.commons.jexl.ExpressionFactory;
 import org.apache.commons.jexl.JexlContext;
 import org.apache.commons.jexl.JexlHelper;
-import org.cipango.callflow.JmxMessageLog;
 import org.cipango.callflow.diameter.DiameterMessageFormator.Output;
 import org.cipango.diameter.Dictionary;
 import org.cipango.diameter.base.Accounting;
@@ -35,18 +34,16 @@ import org.cipango.diameter.ims.IMS;
 import org.cipango.diameter.ims.Sh;
 import org.cipango.diameter.io.Codecs;
 import org.cipango.diameter.log.DiameterMessageListener;
+import org.cipango.diameter.node.DiameterAnswer;
 import org.cipango.diameter.node.DiameterConnection;
 import org.cipango.diameter.node.DiameterMessage;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
 public class JmxMessageLogger extends AbstractLifeCycle implements DiameterMessageListener
 {
-	private static final Logger LOG = Log.getLogger(JmxMessageLog.class);
-	
 	private static final int DEFAULT_MAX_MESSAGES = 50;
 	public enum Direction { IN, OUT };
 	
@@ -61,9 +58,6 @@ public class JmxMessageLogger extends AbstractLifeCycle implements DiameterMessa
 
 	public void setMaxMessages(int maxMessages)
 	{
-		if (maxMessages <= 0)
-			throw new IllegalArgumentException("Max message must be greater than 0");
-		
 		synchronized (this)
 		{
 			if (isRunning() && maxMessages != _maxMessages)
@@ -198,7 +192,7 @@ public class JmxMessageLogger extends AbstractLifeCycle implements DiameterMessa
 			Expression msgExpression = null;
 			if (msgFilter != null && !msgFilter.trim().equals(""))
 			{
-				LOG.debug("Get messages with filter: " + msgFilter);
+				Log.debug("Get messages with filter: " + msgFilter);
 				msgExpression = ExpressionFactory.createExpression("log." + msgFilter);
 			}
 		

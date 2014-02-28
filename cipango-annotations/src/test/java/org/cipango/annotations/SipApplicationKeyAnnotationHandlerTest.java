@@ -13,12 +13,12 @@
 // ========================================================================
 package org.cipango.annotations;
 
-import static junit.framework.Assert.assertNotNull;
-import static junit.framework.Assert.fail;
-
+import static junit.framework.Assert.*;
 import javax.servlet.sip.SipServletRequest;
 import javax.servlet.sip.SipServletResponse;
 import javax.servlet.sip.annotation.SipApplicationKey;
+
+import junit.framework.TestCase;
 
 import org.cipango.sipapp.SipAppContext;
 import org.eclipse.jetty.annotations.AnnotationParser;

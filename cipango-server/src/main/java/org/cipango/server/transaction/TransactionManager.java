@@ -15,6 +15,7 @@
 package org.cipango.server.transaction;
 
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicLong;
 
 import javax.servlet.ServletException;
 import javax.servlet.sip.SipServletMessage;
@@ -27,15 +28,15 @@ import org.cipango.server.SipRequest;
 import org.cipango.server.SipResponse;
 import org.cipango.server.transaction.Transaction.TimersSettings;
 import org.cipango.sip.SipGrammar;
+
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 
 public class TransactionManager extends HandlerWrapper implements SipHandler
-{      
-	private static final Logger LOG = Log.getLogger(TransactionManager.class);
-	
+{   
+    private final AtomicLong _statsStartedAt = new AtomicLong(-1L);
+    
     private CounterStatistic _retransStats = new CounterStatistic();
     private CounterStatistic _notFoundStats = new CounterStatistic();
 	
@@ -57,7 +58,7 @@ public class TransactionManager extends HandlerWrapper implements SipHandler
         {
 			if (!("0".equals(branch) && request.isAck()))
 			{
-				LOG.debug("Not 3261 branch: {}. Dropping request", branch);
+				Log.debug("Not 3261 branch: {}. Dropping request", branch);
 				return;
 			}
 		}
@@ -68,8 +69,8 @@ public class TransactionManager extends HandlerWrapper implements SipHandler
 		
 		if (transaction != null) 
         {
-            if (LOG.isDebugEnabled()) 
-                LOG.debug("request {} in transaction {}", request.getRequestLine(), transaction);
+            if (Log.isDebugEnabled()) 
+                Log.debug("request {} in transaction {}", request.getRequestLine(), transaction);
 			
             request.setTransaction(transaction);
             if (request.isAck())
@@ -89,8 +90,8 @@ public class TransactionManager extends HandlerWrapper implements SipHandler
 			if (!request.isAck()) 
 				request.getCallSession().addServerTransaction(transaction);
 		 
-	        if (LOG.isDebugEnabled())
-	            LOG.debug("new transaction {} for request {}", transaction, request.getRequestLine());
+	        if (Log.isDebugEnabled())
+	            Log.debug("new transaction {} for request {}", transaction, request.getRequestLine());
 	
 	        // TODO move to Session
 			if (request.isCancel())
@@ -99,13 +100,16 @@ public class TransactionManager extends HandlerWrapper implements SipHandler
 	            ServerTransaction stx = request.getCallSession().getServerTransaction(txBranch);
 	            if (stx == null)
 	            {
-	                if (LOG.isDebugEnabled())
-	                    LOG.debug("No transaction for cancelled branch {}", txBranch, null);
+	                if (Log.isDebugEnabled())
+	                    Log.debug("No transaction for cancelled branch {}", txBranch, null);
 	                SipResponse unknown = (SipResponse) request.createResponse(SipServletResponse.SC_CALL_LEG_DONE);
 	                transaction.send(unknown);
 	            }
 	            else 
-	            {	                
+	            {
+	                SipResponse ok = (SipResponse) request.createResponse(SipServletResponse.SC_OK);
+	                transaction.send(ok);
+	                
 	                stx.cancel(request);
 	            }
 	        }
@@ -125,15 +129,15 @@ public class TransactionManager extends HandlerWrapper implements SipHandler
 
 		if (ctx == null)
 		{
-			if (LOG.isDebugEnabled())
-				LOG.debug("did not find client transaction for response {}", response);
+			if (Log.isDebugEnabled())
+				Log.debug("did not find client transaction for response {}", response);
 			
 			transactionNotFound();
 			return;
 		}
 		
-		if (LOG.isDebugEnabled())
-            LOG.debug("response {} for transaction {}", response, ctx);
+		if (Log.isDebugEnabled())
+            Log.debug("response {} for transaction {}", response, ctx);
 		
 		response.setTransaction(ctx);
 		ctx.handleResponse(response);
@@ -152,7 +156,7 @@ public class TransactionManager extends HandlerWrapper implements SipHandler
 		} 
         catch (IOException e)
         {
-			LOG.warn(e);
+			Log.warn(e);
 		}
 		return ctx;
 	}
@@ -225,11 +229,15 @@ public class TransactionManager extends HandlerWrapper implements SipHandler
 	
 	protected void retransReceived() 
 	{
+		if (_statsStartedAt.get() == -1)
+            return;
 		_retransStats.increment();
 	}
 	
 	protected void transactionNotFound()
 	{
+		if (_statsStartedAt.get() == -1)
+			return;
 		_notFoundStats.increment();
 	}
 	
@@ -245,7 +253,36 @@ public class TransactionManager extends HandlerWrapper implements SipHandler
 	
 	public void statsReset()
     {
+        updateNotEqual(_statsStartedAt,-1,System.currentTimeMillis());
+
         _retransStats.reset();
         _notFoundStats.reset();
+    }
+	
+	public void setStatsOn(boolean on)
+    {
+        if (on && _statsStartedAt.get() != -1)
+            return;
+
+        Log.debug("Statistics on = " + on + " for " + this);
+
+        statsReset();
+        _statsStartedAt.set(on?System.currentTimeMillis():-1);
+    }
+	
+	public boolean getStatsOn()
+    {
+        return _statsStartedAt.get() != -1;
+    }
+	
+	private void updateNotEqual(AtomicLong valueHolder, long compare, long value)
+    {
+        long oldValue = valueHolder.get();
+        while (compare != oldValue)
+        {
+            if (valueHolder.compareAndSet(oldValue,value))
+                break;
+            oldValue = valueHolder.get();
+        }
     }
 }

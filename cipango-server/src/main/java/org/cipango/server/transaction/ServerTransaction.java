@@ -16,19 +16,14 @@ package org.cipango.server.transaction;
 
 import java.io.IOException;
 
-import javax.servlet.sip.UAMode;
-
 import org.cipango.server.SipRequest;
 import org.cipango.server.SipResponse;
-import org.cipango.server.session.Session;
 import org.cipango.util.TimerTask;
+
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
 public class ServerTransaction extends Transaction
 {	
-	private static final Logger LOG = Log.getLogger(ServerTransaction.class);
-	
 	// INVITE response retransmit interval
 	private static final int TIMER_G = 0;
 	
@@ -75,19 +70,7 @@ public class ServerTransaction extends Transaction
     
     public void cancel(SipRequest cancel) throws IOException
     {
-    	if (_listener == null) {
-    		Session session = _request.session();
-    		if (session == null) {
-    			LOG.warn("No transaction listener set on {}. Could not handle:\n{}", this, cancel);
-    			return;
-    		}
-    		
-        	if (session.getUA() == null)
-    			session.createUA(UAMode.UAS);
-			setListener(session.getUA());
-    	}
-    	
-    	_listener.handleCancel(this, cancel);
+       _listener.handleCancel(this, cancel);
     }
     
     public void handleAck(SipRequest ack)
@@ -96,7 +79,7 @@ public class ServerTransaction extends Transaction
     	{
     		if (_state != STATE_COMPLETED)
     		{
-    			LOG.info("ACK in state {} for transaction {}", getStateAsString(), this);
+    			Log.info("ACK in state {} for transaction {}", getStateAsString(), this);
     			return;
     		}
     		setState(STATE_CONFIRMED);
@@ -109,7 +92,7 @@ public class ServerTransaction extends Transaction
     	}
     	else
     	{
-    		LOG.info("ACK for non-INVITE: {}", this);
+    		Log.info("ACK for non-INVITE: {}", this);
     	}
     }
     
@@ -131,7 +114,7 @@ public class ServerTransaction extends Transaction
     		}
     		catch (Exception e)
     		{
-    			LOG.debug(e);
+    			Log.debug(e);
     		}
     	}
     }
@@ -212,7 +195,7 @@ public class ServerTransaction extends Transaction
         }
 		catch (IOException e) 
         {
-			LOG.debug(e);
+			Log.debug(e);
 		}
 	}
 	
@@ -232,7 +215,7 @@ public class ServerTransaction extends Transaction
 			} 
             catch (IOException e) 
             {
-				LOG.debug("failed to retransmit response on timer G expiry", e);
+				Log.debug("failed to retransmit response on timer G expiry", e);
 			}
 			gDelay = gDelay * 2;
 			startTimer(TIMER_G, Math.min(gDelay, _timersConfiguration.getT2()));

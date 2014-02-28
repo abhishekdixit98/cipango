@@ -23,7 +23,6 @@ import javax.servlet.UnavailableException;
 
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
 
 
@@ -39,7 +38,6 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class SipServletHolder extends ServletHolder
 {
-	private static final Logger LOG = Log.getLogger(SipServletHandler.class);
 	
     private transient long _unavailable;
     private transient UnavailableException _unavailableEx;
@@ -99,7 +97,7 @@ public class SipServletHolder extends ServletHolder
         }
         catch(Exception e)
         {
-            LOG.ignore(e);
+            Log.ignore(e);
         }
 
         return isStarted()&& _unavailable==0 && super.isAvailable();

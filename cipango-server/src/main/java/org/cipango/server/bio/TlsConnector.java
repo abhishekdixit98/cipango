@@ -47,14 +47,13 @@ import javax.net.ssl.TrustManagerFactory;
 
 import org.cipango.server.SipConnectors;
 import org.cipango.server.SipMessage;
+
+import org.eclipse.jetty.http.security.Password;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.security.Password;
 
 public class TlsConnector extends TcpConnector
 {
-	private static final Logger LOG = Log.getLogger(TlsConnector.class);
 	
 	public static final int DEFAULT_PORT = 5061;
 	
@@ -144,8 +143,8 @@ public class TlsConnector extends TcpConnector
 		}
 		catch (Exception e)
 		{
-			LOG.warn(e.toString());
-			LOG.debug(e);
+			Log.warn(e.toString());
+			Log.debug(e);
 			throw new IOException("!JsseListener: " + e);
 		}
 		return socket;
@@ -208,14 +207,14 @@ public class TlsConnector extends TcpConnector
 		}
 		catch (SSLException e)
 		{
-			LOG.warn(e);
+			Log.warn(e);
 			try
 			{
 				stop();
 			}
 			catch (Exception e2)
 			{
-				LOG.warn(e2);
+				Log.warn(e2);
 				throw new IllegalStateException(e2.getMessage());
 			}
 		}
@@ -247,7 +246,7 @@ public class TlsConnector extends TcpConnector
         }
         catch (Exception e)
         {
-            LOG.warn(Log.EXCEPTION, e);
+            Log.warn(Log.EXCEPTION, e);
         }
         
     	super.process(message);
@@ -292,7 +291,7 @@ public class TlsConnector extends TcpConnector
         }
         catch (Exception e)
         {
-            LOG.warn(Log.EXCEPTION, e);
+            Log.warn(Log.EXCEPTION, e);
             return null;
         }
     }
@@ -545,14 +544,14 @@ public class TlsConnector extends TcpConnector
 						{
 							if (!_allowRenegotiate)
 							{
-								LOG.warn("SSL renegotiate denied: " + _socket);
+								Log.warn("SSL renegotiate denied: " + _socket);
 								try
 								{
 									_socket.close();
 								}
 								catch (IOException e)
 								{
-									LOG.warn(e);
+									Log.warn(e);
 								}
 							}
 						}
@@ -569,26 +568,26 @@ public class TlsConnector extends TcpConnector
 			}
 			catch (SSLException e)
 			{
-				LOG.warn(e);
+				Log.warn(e);
 				try
 				{
 					close();
 				}
 				catch (IOException e2)
 				{
-					LOG.ignore(e2);
+					Log.ignore(e2);
 				}
 			}
 			catch (IOException e)
 			{
-				LOG.debug(e);
+				Log.debug(e);
 				try
 				{
 					close();
 				}
 				catch (IOException e2)
 				{
-					LOG.ignore(e2);
+					Log.ignore(e2);
 				}
 			}
 		}
