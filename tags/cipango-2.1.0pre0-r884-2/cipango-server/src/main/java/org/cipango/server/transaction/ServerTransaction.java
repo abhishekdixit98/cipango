@@ -16,8 +16,11 @@ package org.cipango.server.transaction;
 
 import java.io.IOException;
 
+import javax.servlet.sip.UAMode;
+
 import org.cipango.server.SipRequest;
 import org.cipango.server.SipResponse;
+import org.cipango.server.session.Session;
 import org.cipango.util.TimerTask;
 
 import org.eclipse.jetty.util.log.Log;
@@ -70,6 +73,18 @@ public class ServerTransaction extends Transaction
     
     public void cancel(SipRequest cancel) throws IOException
     {
+        if (_listener == null) {
+            Session session = _request.session();
+    		if (session == null) {
+    			Log.warn("No transaction listener set on {}. Could not handle:\n{}", this, cancel);
+    			return;
+    		}
+
+        	if (session.getUA() == null)
+    			session.createUA(UAMode.UAS);
+			setListener(session.getUA());
+    	}
+
        _listener.handleCancel(this, cancel);
     }
     
