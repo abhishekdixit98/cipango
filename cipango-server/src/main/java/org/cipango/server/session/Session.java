@@ -963,11 +963,13 @@ public class Session implements SessionIf
 			if (transaction.isCompleted())
 			{
 				Log.debug("ignoring late cancel {}", transaction);
+				cancel.createResponse(SipServletResponse.SC_CALL_LEG_DONE).send();
 			}
 			else
 			{
 				try
 				{
+					cancel.createResponse(SipServletResponse.SC_OK).send();
 					transaction.getRequest().createResponse(SipServletResponse.SC_REQUEST_TERMINATED).send();
 					setState(State.TERMINATED);
 				}
@@ -975,8 +977,8 @@ public class Session implements SessionIf
 				{
 					Log.debug("failed to cancel request", e);
 				}
+				invokeServlet(cancel);
 			}
-			invokeServlet(cancel);
 		}
 		
 		public void handleResponse(SipResponse response)
